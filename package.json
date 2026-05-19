@@ -23,7 +23,7 @@
     "vue": "^3.5.32",
     "vue-echarts": "^8.0.1",
     "vue-router": "^5.0.7",
-    "zod": "^4.4.3"
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",
