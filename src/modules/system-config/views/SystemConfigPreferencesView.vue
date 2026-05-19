@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { useOnboarding } from '../../../composables/useOnboarding'
 
 interface PreferencesForm {
   locale: string
@@ -27,6 +28,26 @@ const form = reactive<PreferencesForm>({
 })
 
 const hasData = computed(() => true)
+
+const onboarding = useOnboarding()
+
+const handleResetOnboarding = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要重置引导吗？重置后下次登录时将重新显示引导。',
+      '重置引导',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      },
+    )
+    onboarding.reset()
+    ElMessage.success('引导已重置')
+  } catch {
+    ElMessage.info('已取消重置')
+  }
+}
 
 const rules: FormRules<PreferencesForm> = {
   locale: [{ required: true, message: '请选择语言', trigger: 'change' }],
@@ -116,6 +137,7 @@ const handleSave = async () => {
 
           <div class="actions">
             <el-button type="primary" :loading="saving" @click="handleSave">保存配置</el-button>
+            <el-button @click="handleResetOnboarding">重置引导</el-button>
           </div>
         </el-form>
       </el-card>

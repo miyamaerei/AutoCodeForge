@@ -111,7 +111,11 @@ const getMenuItemIndex = (id: string) => id
     <el-menu class="sidebar-menu" :default-openeds="openedMenus" :default-active="activeMenuIndex" unique-opened>
       <template v-for="item in menuItems" :key="item.id">
         <!-- 有子菜单的项 -->
-        <el-sub-menu v-if="item.children && item.children.length > 0" :index="item.id">
+        <el-sub-menu
+          v-if="item.children && item.children.length > 0"
+          :index="item.id"
+          :data-guide="item.id === 'task-center' ? 'task-center' : item.id === 'repo-management' ? 'repo-management' : item.id === 'pipeline-center' ? 'pipeline-center' : item.id === 'quick-actions' ? 'chat-console' : ''"
+        >
           <template #title>
             <span>{{ item.title }}</span>
           </template>
@@ -126,7 +130,12 @@ const getMenuItemIndex = (id: string) => id
         </el-sub-menu>
 
         <!-- 无子菜单的项 -->
-        <el-menu-item v-else :index="item.id" @click="handleMenuSelect(item.path)">
+        <el-menu-item
+          v-else
+          :index="item.id"
+          :data-guide="item.id === 'dashboard' ? 'dashboard' : item.id === 'settings-root' ? 'system-config' : item.id === 'agent-center' ? 'agent-center' : ''"
+          @click="handleMenuSelect(item.path)"
+        >
           {{ item.title }}
         </el-menu-item>
       </template>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
+import OnboardingGuide from './components/OnboardingGuide.vue'
 import type { MenuItem } from './components/AppSidebar.vue'
+import { useOnboarding } from './composables/useOnboarding'
 
 const userProfile = {
   initials: 'MI',
@@ -95,6 +97,11 @@ const userMenuItems = computed<MenuItem[]>(() => [
     path: '/dashboard',
   },
   {
+    id: 'agent-center',
+    title: 'Agent中心',
+    path: '/agent-center',
+  },
+  {
     id: 'pipeline-center',
     title: '流水线中心',
     path: '/pipeline-center',
@@ -183,6 +190,26 @@ const isSettingsMenu = computed(() => route.path.startsWith('/settings'))
 const menuItems = computed<MenuItem[]>(() =>
   isSettingsMenu.value ? settingsMenuItems.value : userMenuItems.value,
 )
+
+const onboarding = useOnboarding()
+const showOnboarding = ref(false)
+
+onMounted(() => {
+  if (onboarding.shouldShowOnboarding()) {
+    setTimeout(() => {
+      showOnboarding.value = true
+      onboarding.start()
+    }, 1000)
+  }
+})
+
+function handleOnboardingComplete(): void {
+  showOnboarding.value = false
+}
+
+function handleOnboardingSkip(): void {
+  showOnboarding.value = false
+}
 </script>
 
 <template>
@@ -199,6 +226,11 @@ const menuItems = computed<MenuItem[]>(() =>
         <RouterView />
       </el-main>
     </el-container>
+    <OnboardingGuide
+      v-if="showOnboarding"
+      @complete="handleOnboardingComplete"
+      @skip="handleOnboardingSkip"
+    />
   </el-container>
 </template>
 

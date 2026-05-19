@@ -7,6 +7,8 @@ import { pipelineCenterRoutes } from '../modules/pipeline-center'
 import { repoManagementRoutes } from '../modules/repo-management'
 import { systemConfigRoutes } from '../modules/system-config'
 import { taskCenterRoutes } from '../modules/task-center'
+import { agentCenterRoutes } from '../modules/agent-center'
+import { scheduledTaskRoutes } from '../modules/scheduled-task'
 
 const routes: RouteRecordRaw[] = [
   ...consoleRoutes,
@@ -16,6 +18,8 @@ const routes: RouteRecordRaw[] = [
   ...pipelineCenterRoutes,
   ...mdWikiRoutes,
   ...systemConfigRoutes,
+  ...agentCenterRoutes,
+  ...scheduledTaskRoutes,
 ]
 
 export const router = createRouter({
