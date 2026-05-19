@@ -7,14 +7,20 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
+# 根目录和所有子项目的 node_modules 都会被忽略
 node_modules
-.DS_Store
-dist
-dist-ssr
-coverage
-*.local
 
-.trae/
+# Build outputs
+# client 构建产物
+client/dist
+client/dist-ssr
+client/coverage
+# server 构建产物
+server/dist
+server/*.tsbuildinfo
+
+.DS_Store
 
 # Editor directories and files
 .vscode/*
@@ -26,16 +32,14 @@ coverage
 *.sln
 *.sw?
 
+# TypeScript build info
 *.tsbuildinfo
-
 .eslintcache
 
-# Cypress
-/cypress/videos/
-/cypress/screenshots/
-
-# Vitest
+# Client specific
+*.local
 __screenshots__/
-
-# Vite
 *.timestamp-*-*.mjs
+
+# Trae IDE
+.trae/

@@ -34,16 +34,16 @@ argument-hint: 'Describe module goal and pages (e.g. users list+detail+form)'
 ## Enforced Output Structure
 All module artifacts must live under one directory:
 
-- src/modules/<module>/api/<module>.api.ts
-- src/modules/<module>/api/<module>.types.ts
-- src/modules/<module>/models/<module>.model.ts
-- src/modules/<module>/models/<module>.mapper.ts
-- src/modules/<module>/store/use<Module>Store.ts
-- src/modules/<module>/routes.ts
-- src/modules/<module>/views/<Module>ListView.vue
-- src/modules/<module>/views/<Module>DetailView.vue
-- src/modules/<module>/views/<Module>FormView.vue
-- src/modules/<module>/index.ts
+- client/src/modules/<module>/api/<module>.api.ts
+- client/src/modules/<module>/api/<module>.types.ts
+- client/src/modules/<module>/models/<module>.model.ts
+- client/src/modules/<module>/models/<module>.mapper.ts
+- client/src/modules/<module>/store/use<Module>Store.ts
+- client/src/modules/<module>/routes.ts
+- client/src/modules/<module>/views/<Module>ListView.vue
+- client/src/modules/<module>/views/<Module>DetailView.vue
+- client/src/modules/<module>/views/<Module>FormView.vue
+- client/src/modules/<module>/index.ts
 
 ## Template Assets
 Use these templates to keep generated output consistent:
@@ -125,7 +125,7 @@ For strict naming/export enforcement in project files, pair this skill with:
 7. Console-related views satisfy PC-first layout constraints.
 
 ## Common Pitfalls
-- Putting files outside src/modules/<module>/.
+- Putting files outside client/src/modules/<module>/.
 - Using options-style Pinia store instead of setup store.
 - Forgetting meta.requiresAuth on one route.
 - Bypassing mapper and passing DTO directly to views.

@@ -9,10 +9,10 @@ argument-hint: 'Describe module, page type, and route path (e.g. users list page
 ## When to Use
 - You need a new Vue 3 page quickly.
 - You want consistent page naming and route conventions.
-- You want page scaffolding aligned with src/modules/** rules.
+- You want page scaffolding aligned with client/src/modules/** rules.
 
 ## Fixed Conventions
-1. Page files are under src/modules/<module>/views/.
+1. Page files are under client/src/modules/<module>/views/.
 2. Page component names are PascalCase and end with View.
 3. Routes are lazy-loaded.
 4. Every route has meta.requiresAuth set explicitly.
@@ -34,8 +34,8 @@ argument-hint: 'Describe module, page type, and route path (e.g. users list page
 5. Data source: existing store/composable or create TODO stub.
 
 ## Output Targets
-- src/modules/<module>/views/<ModulePascal><PageTypePascal>View.vue
-- src/modules/<module>/routes.ts
+- client/src/modules/<module>/views/<ModulePascal><PageTypePascal>View.vue
+- client/src/modules/<module>/routes.ts
 
 ## Procedure Checklist
 1. Create page view file from template.
@@ -60,7 +60,7 @@ argument-hint: 'Describe module, page type, and route path (e.g. users list page
 - __requires_auth__: true or false.
 
 ## Done Criteria
-1. View path and naming follow src/modules/<module>/views/<ModulePascal><PageTypePascal>View.vue.
+1. View path and naming follow client/src/modules/<module>/views/<ModulePascal><PageTypePascal>View.vue.
 2. Route is lazy-loaded and includes meta.requiresAuth.
 3. View has deterministic loading/error/empty states.
 4. View does not directly call axios.
