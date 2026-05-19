@@ -169,6 +169,11 @@ const settingsMenuItems = computed<MenuItem[]>(() => [
         title: 'Sandbox',
         path: '/settings/sandbox',
       },
+      {
+        id: 'settings-workflow',
+        title: 'Workflow',
+        path: '/settings/workflow',
+      },
     ],
   },
 ])

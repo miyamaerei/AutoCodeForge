@@ -6,6 +6,9 @@ import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import App from './App.vue'
 import { router } from './router'
+import { installHostBridge } from './host/terminalBridge'
+
+installHostBridge()
 
 const app = createApp(App)
 

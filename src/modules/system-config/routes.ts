@@ -96,6 +96,15 @@ export const systemConfigRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/settings/workflow',
+    name: 'system-config.workflow',
+    component: () => import('./views/SystemConfigWorkflowView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Workflow',
+    },
+  },
+  {
     path: '/system-config/api',
     name: 'system-config.api',
     component: () => import('./views/SystemConfigApiView.vue'),
