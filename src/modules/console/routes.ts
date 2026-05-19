@@ -31,7 +31,7 @@ export const consoleRoutes: RouteRecordRaw[] = [
   {
     path: '/wiki',
     name: 'console.wiki',
-    component: () => import('./views/ConsoleWikiView.vue'),
+    redirect: '/mdwiki',
     meta: {
       requiresAuth: false,
       title: 'Wiki',

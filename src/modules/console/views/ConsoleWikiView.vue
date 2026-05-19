@@ -1,150 +1,229 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useConsoleWiki, type WikiPageModel } from '../composables/useConsoleWiki'
 
-interface WikiPage {
-  id: string
-  title: string
-  category: string
-  updatedAt: string
-  author: string
+const {
+  loading,
+  error,
+  wikiMeta,
+  repositories,
+  activeRepositoryKey,
+  pages,
+  hasData,
+  loadPages,
+  setActiveRepository,
+} = useConsoleWiki()
+
+const selectedPageId = ref<string | null>(null)
+
+const selectedRepository = computed({
+  get: () => activeRepositoryKey.value,
+  set: (value: string) => setActiveRepository(value),
+})
+
+const selectedRepositoryInfo = computed(() =>
+  repositories.value.find((repo) => repo.key === selectedRepository.value) ?? null,
+)
+
+const groupedPages = computed(() => {
+  const groupMap = new Map<string, WikiPageModel[]>()
+
+  for (const page of pages.value) {
+    const groupKey = page.category || '根目录'
+    const current = groupMap.get(groupKey) ?? []
+    current.push(page)
+    groupMap.set(groupKey, current)
+  }
+
+  return Array.from(groupMap.entries())
+    .map(([group, items]) => ({
+      group,
+      items: [...items].sort((a, b) => a.menuOrder - b.menuOrder),
+    }))
+    .sort((a, b) => a.group.localeCompare(b.group, 'zh-CN'))
+})
+
+const selectedPage = computed(() => {
+  if (!selectedPageId.value) {
+    return null
+  }
+  return pages.value.find((page) => page.id === selectedPageId.value) ?? null
+})
+
+watch(
+  pages,
+  (newPages) => {
+    if (newPages.length === 0) {
+      selectedPageId.value = null
+      return
+    }
+
+    const stillExists = newPages.some((page) => page.id === selectedPageId.value)
+    if (!stillExists) {
+      selectedPageId.value = newPages[0]!.id
+    }
+  },
+  { immediate: true },
+)
+
+function selectPage(page: WikiPageModel): void {
+  selectedPageId.value = page.id
 }
 
-const selectedRepository = ref('AutoCodeForge')
-const repositories = ['AutoCodeForge', 'backend-service', 'mobile-app']
-
-const wikiPages = ref<WikiPage[]>([
-  {
-    id: '1',
-    title: '项目架构设计',
-    category: '架构',
-    updatedAt: '2024-05-19',
-    author: 'Alice Chen',
-  },
-  {
-    id: '2',
-    title: '开发环境配置',
-    category: '入门',
-    updatedAt: '2024-05-18',
-    author: 'Bob Smith',
-  },
-  {
-    id: '3',
-    title: 'API 文档',
-    category: '文档',
-    updatedAt: '2024-05-17',
-    author: 'Carol Wang',
-  },
-  {
-    id: '4',
-    title: '数据库设计',
-    category: '数据库',
-    updatedAt: '2024-05-16',
-    author: 'David Lee',
-  },
-])
-
-const selectedPage = ref<WikiPage | null>(null)
-
-const selectPage = (page: WikiPage) => {
-  selectedPage.value = page
+function sectionId(label: string): string {
+  return `toc-${label.replace(/\s+/g, '-').toLowerCase()}`
 }
+
+function scrollToSection(label: string): void {
+  const section = document.getElementById(sectionId(label))
+  section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+onMounted(async () => {
+  await loadPages()
+})
 </script>
 
 <template>
   <section class="wiki-view">
-    <el-container>
-      <el-aside width="280px" class="wiki-sidebar">
+    <el-skeleton v-if="loading" :rows="6" animated class="wiki-skeleton" />
+    <el-alert
+      v-else-if="error"
+      class="wiki-error"
+      type="error"
+      show-icon
+      :closable="false"
+      :title="error"
+    />
+    <div v-else-if="!hasData" class="empty-state">
+      <el-empty description="Wiki JSON 已加载，但没有可展示的页面" />
+    </div>
+
+    <div v-else class="wiki-shell">
+      <aside class="wiki-sidebar">
         <div class="sidebar-header">
           <h3>Wiki</h3>
+          <p>仓库菜单与页面目录</p>
         </div>
 
         <div class="repo-selector">
           <label>选择仓库</label>
           <el-select v-model="selectedRepository" size="small">
-            <el-option v-for="repo in repositories" :key="repo" :label="repo" :value="repo" />
+            <el-option
+              v-for="repo in repositories"
+              :key="repo.key"
+              :label="`${repo.repoName}@${repo.ref}`"
+              :value="repo.key"
+            />
           </el-select>
         </div>
 
+        <div class="wiki-meta" v-if="selectedRepositoryInfo">
+          <div>Author: {{ selectedRepositoryInfo.author }}</div>
+          <div>Updated: {{ selectedRepositoryInfo.updatedAt || 'unknown' }}</div>
+        </div>
+
         <div class="wiki-list">
-          <div
-            v-for="page in wikiPages"
-            :key="page.id"
-            class="wiki-item"
-            :class="{ active: selectedPage?.id === page.id }"
-            @click="selectPage(page)"
-          >
-            <div class="wiki-icon">📄</div>
-            <div class="wiki-info">
-              <div class="wiki-title">{{ page.title }}</div>
-              <div class="wiki-category">{{ page.category }}</div>
-            </div>
-          </div>
+          <section v-for="group in groupedPages" :key="group.group" class="wiki-group">
+            <h4>{{ group.group }}</h4>
+            <button
+              v-for="page in group.items"
+              :key="page.id"
+              type="button"
+              class="wiki-item"
+              :class="{ active: selectedPage?.id === page.id }"
+              @click="selectPage(page)"
+            >
+              <div class="wiki-icon">文</div>
+              <div class="wiki-info">
+                <div class="wiki-title">{{ page.title }}</div>
+                <div class="wiki-category">ref: {{ page.ref }}</div>
+              </div>
+            </button>
+          </section>
         </div>
+      </aside>
 
-        <div class="sidebar-footer">
-          <el-button type="primary" size="small" block>+ 新建页面</el-button>
-        </div>
-      </el-aside>
-
-      <el-main class="wiki-content">
+      <main class="wiki-content">
         <div v-if="selectedPage" class="content-area">
           <div class="content-header">
             <h2>{{ selectedPage.title }}</h2>
             <div class="content-meta">
-              <span>📅 {{ selectedPage.updatedAt }}</span>
-              <span>✍️ {{ selectedPage.author }}</span>
+              <span>仓库: {{ selectedPage.repoName }}</span>
+              <span>分支: {{ selectedPage.ref }}</span>
+              <span>作者: {{ selectedPage.author }}</span>
+              <span>更新时间: {{ selectedPage.updatedAt || 'unknown' }}</span>
+              <span>分类: {{ selectedPage.category }}</span>
+              <span>笔记数: {{ selectedPage.notes.length }}</span>
             </div>
           </div>
 
           <div class="content-body">
-            <el-card shadow="never">
-              <div class="wiki-markdown">
-                <h3>概述</h3>
-                <p>这是 {{ selectedPage.title }} 的详细文档。包含完整的说明和示例代码。</p>
+            <el-card shadow="never" class="content-card">
+              <section :id="sectionId('页面目的')" class="wiki-section">
+                <h3>页面目的</h3>
+                <p>{{ selectedPage.purpose }}</p>
+              </section>
 
-                <h3>目录</h3>
-                <ul>
-                  <li>简介</li>
-                  <li>功能特性</li>
-                  <li>使用方法</li>
-                  <li>常见问题</li>
+              <section :id="sectionId('页面笔记')" class="wiki-section">
+                <h3>页面笔记</h3>
+                <ul v-if="selectedPage.notes.length > 0" class="note-list">
+                  <li v-for="(note, index) in selectedPage.notes" :key="`${selectedPage.id}-${index}`">{{ note }}</li>
                 </ul>
+                <el-empty v-else description="该页面暂无 page_notes" :image-size="72" />
+              </section>
 
-                <h3>详细说明</h3>
-                <p>这里包含详细的技术说明和使用指南。您可以在这里找到所有相关的信息和最佳实践。</p>
-
-                <pre><code>// 示例代码
-function example() {
-  console.log('Hello, Wiki!');
-}</code></pre>
-
-                <h3>相关资源</h3>
-                <ul>
-                  <li><a href="#">项目仓库</a></li>
-                  <li><a href="#">API 文档</a></li>
-                  <li><a href="#">问题跟踪</a></li>
+              <section :id="sectionId('页面元信息')" class="wiki-section">
+                <h3>页面元信息</h3>
+                <ul class="note-list">
+                  <li>slug: {{ selectedPage.slug }}</li>
+                  <li>schemaVersion: {{ wikiMeta.schemaVersion }}</li>
+                  <li>generatedAt: {{ wikiMeta.generatedAt || 'unknown' }}</li>
                 </ul>
-              </div>
+              </section>
             </el-card>
-          </div>
-
-          <div class="content-footer">
-            <el-button type="primary" plain>编辑</el-button>
-            <el-button plain>版本历史</el-button>
-            <el-button type="danger" plain>删除</el-button>
           </div>
         </div>
 
         <div v-else class="empty-state">
-          <el-empty description="选择一个 Wiki 页面查看内容" />
+          <el-empty description="请选择左侧 Wiki 页面" />
         </div>
-      </el-main>
-    </el-container>
+      </main>
+
+      <aside class="wiki-toc" v-if="selectedPage">
+        <h4>页面目录</h4>
+        <button
+          v-for="item in selectedPage.toc"
+          :key="item"
+          type="button"
+          class="toc-item"
+          @click="scrollToSection(item)"
+        >
+          {{ item }}
+        </button>
+        <button type="button" class="toc-item" @click="scrollToSection('页面元信息')">页面元信息</button>
+      </aside>
+    </div>
   </section>
 </template>
 
 <style scoped>
 .wiki-view {
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+}
+
+.wiki-skeleton,
+.wiki-error {
+  margin: 20px;
+}
+
+.wiki-shell {
+  display: grid;
+  grid-template-columns: 360px minmax(760px, 1fr) 260px;
+  gap: 0;
+  min-width: 1280px;
   width: 100%;
   height: 100%;
   background: white;
@@ -168,6 +247,12 @@ function example() {
   border-bottom: 1px solid #e2e8f0;
 }
 
+.sidebar-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
 .sidebar-header h3 {
   font-size: 16px;
   font-weight: 700;
@@ -177,6 +262,17 @@ function example() {
 
 .repo-selector {
   margin-bottom: 16px;
+}
+
+.wiki-meta {
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .repo-selector label {
@@ -191,20 +287,29 @@ function example() {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.wiki-group h4 {
+  margin: 0 0 8px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .wiki-item {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   padding: 10px 12px;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-align: left;
 }
 
 .wiki-item:hover {
@@ -213,13 +318,27 @@ function example() {
 }
 
 .wiki-item.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e3a8a 0%, #0f766e 100%);
   color: white;
-  border-color: #667eea;
+  border-color: #1e3a8a;
 }
 
 .wiki-icon {
-  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.wiki-item.active .wiki-icon {
+  background: rgba(255, 255, 255, 0.22);
+  color: #f8fafc;
 }
 
 .wiki-info {
@@ -254,6 +373,7 @@ function example() {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  border-right: 1px solid #e2e8f0;
 }
 
 .content-area {
@@ -278,6 +398,7 @@ function example() {
 
 .content-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   font-size: 13px;
   color: #64748b;
@@ -289,48 +410,64 @@ function example() {
   margin-bottom: 16px;
 }
 
-.wiki-markdown {
-  line-height: 1.8;
-  color: #1f2937;
+.content-card {
+  border-color: #e2e8f0;
 }
 
-.wiki-markdown h3 {
+.wiki-section + .wiki-section {
+  margin-top: 24px;
+}
+
+.wiki-section h3 {
   font-size: 16px;
   font-weight: 700;
   color: #0f172a;
-  margin: 16px 0 8px;
+  margin: 0 0 10px;
 }
 
-.wiki-markdown p {
-  margin: 8px 0;
+.wiki-section p {
+  margin: 0;
+  line-height: 1.8;
   color: #4b5563;
 }
 
-.wiki-markdown ul {
-  margin: 8px 0;
+.note-list {
+  margin: 0;
   padding-left: 24px;
+  line-height: 1.8;
   color: #4b5563;
 }
 
-.wiki-markdown pre {
-  background: #f1f5f9;
-  padding: 12px 16px;
-  border-radius: 8px;
-  overflow-x: auto;
-  margin: 12px 0;
+.wiki-toc {
+  background: #f8fafc;
+  padding: 18px 14px;
+  overflow-y: auto;
 }
 
-.wiki-markdown code {
-  font-family: 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
+.wiki-toc h4 {
+  margin: 0 0 12px;
   color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
 }
 
-.content-footer {
-  padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  gap: 8px;
+.toc-item {
+  width: 100%;
+  display: block;
+  text-align: left;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.toc-item:hover {
+  border-color: #0f766e;
+  background: #f0fdfa;
 }
 
 .empty-state {

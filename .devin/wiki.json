@@ -1,299 +1,1405 @@
-﻿{
-    "repo_notes":  [
-                       {
-                           "content":  "Synced from DeepWiki: https://deepwiki.com/miyamaerei/AutoCodeForge/1-autocodeforge-overview on 2026-05-19. Source index snapshot referenced commit 770d83."
-                       }
-                   ],
-    "pages":  [
-                  {
-                      "title":  "AutoCodeForge Overview",
-                      "purpose":  "High-level introduction to AutoCodeForge: what it is, its purpose as an AI-driven software development console, the MVP scope, and how the major modules fit together. Links to all child sections for deeper coverage.",
-                      "page_notes":  [
-                                         {
-                                             "content":  "AutoCodeForge is an AI-driven software development console that converts natural-language requirements into executable coding tasks, with real-time execution visibility and artifact management. MVP scope emphasizes a runnable interactive frontend decoupled from backend via mock data."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Getting Started",
-                      "purpose":  "Setup instructions, development environment, npm scripts (dev, build, test:unit), environment variables (VITE_API_BASE_URL), and the USE_MOCK toggle. Covers the Vite + Vue 3 + TypeScript toolchain.",
-                      "parent":  "AutoCodeForge Overview",
-                      "page_notes":  [
-                                         {
-                                             "content":  "Development uses Vue 3 + TypeScript + Vite with npm scripts dev/build/test:unit and runtime toggles like USE_MOCK and VITE_API_BASE_URL for environment behavior."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Application Shell \u0026 Navigation",
-                      "purpose":  "Describes the root App.vue layout, the AppSidebar component, the two navigation modes (User vs Settings), MenuItem data structure, context-switching logic, and the global router setup in src/router/index.ts.",
-                      "parent":  "AutoCodeForge Overview",
-                      "page_notes":  [
-                                         {
-                                             "content":  "App.vue composes global layout and AppSidebar, switching between user and settings contexts by route prefix. Router-view hosts module screens while menu data drives navigation state."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Module Architecture",
-                      "purpose":  "Overview of the module-first architecture pattern used across all feature modules. Introduces the standard directory layout, naming conventions, data-flow layers (API -> Mapper -> Store -> View), and the GitHub Copilot skill system. Links to child pages for each architectural layer.",
-                      "page_notes":  [
-                                         {
-                                             "content":  "The codebase follows a module-first pattern where each feature owns API calls, store, routes, and views, enabling clear boundaries and scalable extension."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Module Directory Layout \u0026 Naming Conventions",
-                      "purpose":  "Detailed reference for the enforced module-first folder structure: api/, models/, store/, views/, routes.ts, index.ts. Covers DTO vs Model naming, mapper functions (dtoToModel/modelToDto), and the barrel-export pattern via index.ts.",
-                      "parent":  "Module Architecture",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Detailed reference for the enforced module-first folder structure: api/, models/, store/, views/, routes.ts, index.ts. Covers DTO vs Model naming, mapper functions (dtoToModel/modelToDto), and the barrel-export pattern via index.ts."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "State Management Pattern (Pinia Setup Stores)",
-                      "purpose":  "Explains the Pinia setup-store pattern used in every module: loading/error/data state lifecycle, try/catch/finally actions, storeToRefs usage in views, and the hasData guard to prevent redundant fetches. References useTaskCenterStore, usePipelineCenterStore, and useRepoManagementStore as concrete examples.",
-                      "parent":  "Module Architecture",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Explains the Pinia setup-store pattern used in every module: loading/error/data state lifecycle, try/catch/finally actions, storeToRefs usage in views, and the hasData guard to prevent redundant fetches. References useTaskCenterStore, usePipelineCenterStore, and useRepoManagementStore as concrete examples."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "API Layer \u0026 Mock System",
-                      "purpose":  "Covers the shared request.ts Axios wrapper, the USE_MOCK toggle in src/config/runtime.ts, the mock data layer (src/mock/), and how each module\u0027s .api.ts file branches between live HTTP calls and mock functions. Explains simulated latency via sleep().",
-                      "parent":  "Module Architecture",
-                      "page_notes":  [
-                                         {
-                                             "content":  "Runtime data access routes through a shared request layer and can branch to src/mock providers when USE_MOCK is enabled, supporting backend-independent demos and development."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Routing Conventions",
-                      "purpose":  "Documents the Vue Router setup, route naming pattern (\u003cmodule\u003e.\u003caction\u003e), lazy-loading with dynamic imports, meta.requiresAuth on every route, and how module route arrays are composed into the global router. Covers all six module route files.",
-                      "parent":  "Module Architecture",
-                      "page_notes":  [
-                                         {
-                                             "content":  "Routes are declared per module and merged centrally, with lazy-loaded views and consistent naming/meta conventions (including auth-related metadata)."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Console Module (AI Dev Console)",
-                      "purpose":  "Overview of the console module - the primary entry point for the AI development assistant. Introduces the ConsoleEntryView dashboard and links to child pages covering the chat interface, code review, wiki, and automations sub-views.",
-                      "page_notes":  [
-                                         {
-                                             "content":  "Console is the primary AI interaction surface, including chat-first workflows and shortcuts to review/wiki/automation functions."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Unified Chat Interface (Session \u0026 Ask Modes)",
-                      "purpose":  "Deep dive into ConsoleChatView.vue, the useConsoleChat composable, and the UnifiedChatPanel component. Covers session mode vs ask mode, session lifecycle (create/select/delete), suggested questions, chat option chips, and the getChatOptionsByModule configuration.",
-                      "parent":  "Console Module (AI Dev Console)",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Deep dive into ConsoleChatView.vue, the useConsoleChat composable, and the UnifiedChatPanel component. Covers session mode vs ask mode, session lifecycle (create/select/delete), suggested questions, chat option chips, and the getChatOptionsByModule configuration."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Console Sub-Views: Review, Wiki \u0026 Automations",
-                      "purpose":  "Covers the three specialized console views: ConsoleReviewView (PR management and code review), ConsoleWikiView (repository documentation browser), and ConsoleAutomationsView (AI automation workflow management). Explains their data structures and UI patterns.",
-                      "parent":  "Console Module (AI Dev Console)",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Covers the three specialized console views: ConsoleReviewView (PR management and code review), ConsoleWikiView (repository documentation browser), and ConsoleAutomationsView (AI automation workflow management). Explains their data structures and UI patterns."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "AI Task Center Module",
-                      "purpose":  "Overview of the AI Task Center - the core module for creating and monitoring AI-driven coding tasks. Introduces the three-panel layout, task lifecycle states, and links to child pages for the store/API layer and individual views.",
-                      "page_notes":  [
-                                         {
-                                             "content":  "Task Center orchestrates task creation, execution tracking, logs, chat, and diff feedback to make AI coding runs observable end-to-end."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Task Center Views \u0026 Lifecycle",
-                      "purpose":  "Covers TaskCenterListView (tabular task list), TaskCenterCreateView (form-based task creation with validation and redirect), TaskCenterView (three-panel dashboard: task menu, AI chat, execution feedback), and TaskCenterDetailView. Explains task states: running, completed, paused, failed.",
-                      "parent":  "AI Task Center Module",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Covers TaskCenterListView (tabular task list), TaskCenterCreateView (form-based task creation with validation and redirect), TaskCenterView (three-panel dashboard: task menu, AI chat, execution feedback), and TaskCenterDetailView. Explains task states: running, completed, paused, failed."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Task Center Store \u0026 API",
-                      "purpose":  "Documents useTaskCenterStore state properties (tasks, selectedTask, logs, chat, diff), actions (loadTasks, loadTaskDetail with Promise.all, submitTask, sendTaskChat), and the task-center.api.ts endpoints. Covers DTOs: TaskSummaryDto, TaskDetailDto, TaskCreateRequestDto, TaskLogDto, ChatMessageDto, TaskDiffDto.",
-                      "parent":  "AI Task Center Module",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Documents useTaskCenterStore state properties (tasks, selectedTask, logs, chat, diff), actions (loadTasks, loadTaskDetail with Promise.all, submitTask, sendTaskChat), and the task-center.api.ts endpoints. Covers DTOs: TaskSummaryDto, TaskDetailDto, TaskCreateRequestDto, TaskLogDto, ChatMessageDto, TaskDiffDto."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Repository Management Module",
-                      "purpose":  "Overview of the repo-management module: its purpose for managing VCS repositories, branches, and pull requests. Links to child pages for views and the store/API layer.",
-                      "page_notes":  [
-                                         {
-                                             "content":  "Repo Management focuses on repository inventory, branch data, and pull-request visibility to support VCS operations alongside AI workflows."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Repository Management Views",
-                      "purpose":  "Covers RepoManagementView (overview dashboard with 17:7 grid layout), RepoManagementListView (repository table), RepoManagementBranchesView (branch details with commit/author data), and RepoManagementPRsView (pull request list). Explains the fetch-on-mount pattern and empty/loading/error state machine.",
-                      "parent":  "Repository Management Module",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Covers RepoManagementView (overview dashboard with 17:7 grid layout), RepoManagementListView (repository table), RepoManagementBranchesView (branch details with commit/author data), and RepoManagementPRsView (pull request list). Explains the fetch-on-mount pattern and empty/loading/error state machine."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Repository Management Store \u0026 API",
-                      "purpose":  "Documents useRepoManagementStore (repositories, branches, loading, error, hasRepositories, hasBranches), repo-management.api.ts endpoints, and the mock data from src/mock/project.ts (RepositoryDto, BranchDto, PullRequestDto).",
-                      "parent":  "Repository Management Module",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Documents useRepoManagementStore (repositories, branches, loading, error, hasRepositories, hasBranches), repo-management.api.ts endpoints, and the mock data from src/mock/project.ts (RepositoryDto, BranchDto, PullRequestDto)."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Pipeline Center Module",
-                      "purpose":  "Overview of the pipeline-center module for CI/CD monitoring. Introduces pipelines vs builds, status indicators, and links to child pages for views and the store/API.",
-                      "page_notes":  [
-                                         {
-                                             "content":  "Pipeline Center monitors CI/CD pipelines and build runs with status-centric views for operational transparency."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Pipeline Center Views",
-                      "purpose":  "Covers PipelineCenterListView (pipeline table with success rate and rerun actions), PipelineCenterBuildsView (build history with duration and branch data), and PipelineCenterView (real-time execution dashboard with el-steps for Pull/Install/Test/Build stages and log output).",
-                      "parent":  "Pipeline Center Module",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Covers PipelineCenterListView (pipeline table with success rate and rerun actions), PipelineCenterBuildsView (build history with duration and branch data), and PipelineCenterView (real-time execution dashboard with el-steps for Pull/Install/Test/Build stages and log output)."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Pipeline Center Store \u0026 API",
-                      "purpose":  "Documents usePipelineCenterStore state (pipelines, builds, loading, error, hasPipelines, hasBuilds), pipeline-center.api.ts endpoints (fetchPipelines, fetchBuilds), PipelineDto and BuildDto structures, and the statusColorMap for UI rendering.",
-                      "parent":  "Pipeline Center Module",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Documents usePipelineCenterStore state (pipelines, builds, loading, error, hasPipelines, hasBuilds), pipeline-center.api.ts endpoints (fetchPipelines, fetchBuilds), PipelineDto and BuildDto structures, and the statusColorMap for UI rendering."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Dashboard Module",
-                      "purpose":  "Covers the DashboardView.vue: ECharts-based task trend visualization (tasks created vs successes), DashboardStatsDto (tasksToday, successRate, runningCount, alertCount), and the overall health alert panel. Explains the getDashboardStats and getRecentTasks mock functions.",
-                      "page_notes":  [
-                                         {
-                                             "content":  "Dashboard aggregates high-level health metrics and trend charts for quick system status awareness."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "System Configuration Module",
-                      "purpose":  "Overview of the system-config module and its eleven settings views under /settings/*. Introduces the two categories: operational settings (preferences, schedules, users) and integration settings (repositories, API keys, models, DeepWiki). Links to child pages for each group.",
-                      "page_notes":  [
-                                         {
-                                             "content":  "System Config centralizes operational preferences plus integrations such as API keys, model settings, and related governance controls."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Operational Settings Views",
-                      "purpose":  "Covers SystemConfigPreferencesView (locale, timezone, theme, landingPage, notifications), SystemConfigSchedulesView (cron expressions, retryLimit, alertChannel, timezone validation), SystemConfigUsersView (user management), and SystemConfigReviewView (minApprovals, requiredChecks, SLA, blockOnFailingChecks, enforceCodeOwners).",
-                      "parent":  "System Configuration Module",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Covers SystemConfigPreferencesView (locale, timezone, theme, landingPage, notifications), SystemConfigSchedulesView (cron expressions, retryLimit, alertChannel, timezone validation), SystemConfigUsersView (user management), and SystemConfigReviewView (minApprovals, requiredChecks, SLA, blockOnFailingChecks, enforceCodeOwners)."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Integration \u0026 AI Settings Views",
-                      "purpose":  "Covers SystemConfigRepositoriesView (provider, owner, authMode, mergeStrategies, requireChecks), SystemConfigApiView (API key management for OpenAI/GitHub/Azure), SystemConfigModelsView (LLM model selection: GPT-4, Claude, Llama), SystemConfigSkillView (execution mode, timeoutSeconds, allowWriteFiles, allowTerminal), SystemConfigDeepWikiView (embedding model, topK, metric, autoReindex), and SystemConfigKnowledgeView.",
-                      "parent":  "System Configuration Module",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Covers SystemConfigRepositoriesView (provider, owner, authMode, mergeStrategies, requireChecks), SystemConfigApiView (API key management for OpenAI/GitHub/Azure), SystemConfigModelsView (LLM model selection: GPT-4, Claude, Llama), SystemConfigSkillView (execution mode, timeoutSeconds, allowWriteFiles, allowTerminal), SystemConfigDeepWikiView (embedding model, topK, metric, autoReindex), and SystemConfigKnowledgeView."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "UI Component Library \u0026 Styling",
-                      "purpose":  "Overview of shared UI components and the global styling system. Links to child pages for the component catalog and the CSS design token system.",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Overview of shared UI components and the global styling system. Links to child pages for the component catalog and the CSS design token system."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Shared Components",
-                      "purpose":  "Documents the reusable components in src/components/: UnifiedChatPanel (message board, composer, option chips, auto-scroll), AppSidebar (MenuItem interface, active state logic, avatar pulse animation), WelcomeItem (icon/heading/default slots, timeline CSS), TheWelcome, HelloWorld, and the icon components in src/components/icons/.",
-                      "parent":  "UI Component Library \u0026 Styling",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Documents the reusable components in src/components/: UnifiedChatPanel (message board, composer, option chips, auto-scroll), AppSidebar (MenuItem interface, active state logic, avatar pulse animation), WelcomeItem (icon/heading/default slots, timeline CSS), TheWelcome, HelloWorld, and the icon components in src/components/icons/."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "CSS Design Tokens \u0026 Theming",
-                      "purpose":  "Explains the two-tier CSS variable system: palette variables (--vt-c-*) and semantic variables (--color-*). Covers light/dark mode via prefers-color-scheme, the app surface/background tokens in theme.css (--app-bg, --app-surface), Element Plus overrides, and the Inter font stack.",
-                      "parent":  "UI Component Library \u0026 Styling",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Explains the two-tier CSS variable system: palette variables (--vt-c-*) and semantic variables (--color-*). Covers light/dark mode via prefers-color-scheme, the app surface/background tokens in theme.css (--app-bg, --app-surface), Element Plus overrides, and the Inter font stack."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Developer Tooling \u0026 Build Infrastructure",
-                      "purpose":  "Overview of the build and test infrastructure. Links to child pages for TypeScript configuration and the Vite/Vitest setup.",
-                      "page_notes":  [
-                                         {
-                                             "content":  "Build/test foundation is Vite + TypeScript + Vitest with project-reference tsconfig structure and workspace scripts for development and validation."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "TypeScript Configuration",
-                      "purpose":  "Documents the Project References architecture: tsconfig.json (orchestrator), tsconfig.app.json (production source, @/* alias, noUncheckedIndexedAccess), tsconfig.vitest.json (jsdom+node types, includes __tests__), and tsconfig.node.json (Node 24 tooling isolation). Explains tsBuildInfoFile incremental caching.",
-                      "parent":  "Developer Tooling \u0026 Build Infrastructure",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Documents the Project References architecture: tsconfig.json (orchestrator), tsconfig.app.json (production source, @/* alias, noUncheckedIndexedAccess), tsconfig.vitest.json (jsdom+node types, includes __tests__), and tsconfig.node.json (Node 24 tooling isolation). Explains tsBuildInfoFile incremental caching."
-                                         }
-                                     ]
-                  },
-                  {
-                      "title":  "Vite Build \u0026 Vitest Testing",
-                      "purpose":  "Covers vite.config.ts (plugins: @vitejs/plugin-vue, vite-plugin-vue-devtools; @/* alias resolution), vitest.config.ts setup, npm scripts (dev, build, build-only, type-check, test:unit), and the HelloWorld.spec.ts test as an example of the testing pattern.",
-                      "parent":  "Developer Tooling \u0026 Build Infrastructure",
-                      "page_notes":  [
-                                         {
-                                             "content":  "DeepWiki sync note: Covers vite.config.ts (plugins: @vitejs/plugin-vue, vite-plugin-vue-devtools; @/* alias resolution), vitest.config.ts setup, npm scripts (dev, build, build-only, type-check, test:unit), and the HelloWorld.spec.ts test as an example of the testing pattern."
-                                         }
-                                     ]
-                  }
-              ]
+{
+  "repo_notes": [
+    {
+      "content": "Synced from DeepWiki: https://deepwiki.com/miyamaerei/AutoCodeForge/1-autocodeforge-overview on 2026-05-19. Source index snapshot referenced commit 770d83."
+    }
+  ],
+  "pages": [
+    {
+      "title": "AutoCodeForge Overview",
+      "purpose": "High-level introduction to AutoCodeForge: what it is, its purpose as an AI-driven software development console, the MVP scope, and how the major modules fit together. Links to all child sections for deeper coverage.",
+      "page_notes": [
+        {
+          "content": "AutoCodeForge is an AI-driven software development console that converts natural-language requirements into executable coding tasks, with real-time execution visibility and artifact management. MVP scope emphasizes a runnable interactive frontend decoupled from backend via mock data."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "parent": "根目录",
+      "slug": "autocodeforge-overview",
+      "menu": {
+        "group": "根目录",
+        "order": 1
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Getting Started",
+      "purpose": "Setup instructions, development environment, npm scripts (dev, build, test:unit), environment variables (VITE_API_BASE_URL), and the USE_MOCK toggle. Covers the Vite + Vue 3 + TypeScript toolchain.",
+      "parent": "AutoCodeForge Overview",
+      "page_notes": [
+        {
+          "content": "Development uses Vue 3 + TypeScript + Vite with npm scripts dev/build/test:unit and runtime toggles like USE_MOCK and VITE_API_BASE_URL for environment behavior."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "getting-started",
+      "menu": {
+        "group": "AutoCodeForge Overview",
+        "order": 2
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Application Shell & Navigation",
+      "purpose": "Describes the root App.vue layout, the AppSidebar component, the two navigation modes (User vs Settings), MenuItem data structure, context-switching logic, and the global router setup in src/router/index.ts.",
+      "parent": "AutoCodeForge Overview",
+      "page_notes": [
+        {
+          "content": "App.vue composes global layout and AppSidebar, switching between user and settings contexts by route prefix. Router-view hosts module screens while menu data drives navigation state."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "application-shell-navigation",
+      "menu": {
+        "group": "AutoCodeForge Overview",
+        "order": 3
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Module Architecture",
+      "purpose": "Overview of the module-first architecture pattern used across all feature modules. Introduces the standard directory layout, naming conventions, data-flow layers (API -> Mapper -> Store -> View), and the GitHub Copilot skill system. Links to child pages for each architectural layer.",
+      "page_notes": [
+        {
+          "content": "The codebase follows a module-first pattern where each feature owns API calls, store, routes, and views, enabling clear boundaries and scalable extension."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "parent": "根目录",
+      "slug": "module-architecture",
+      "menu": {
+        "group": "根目录",
+        "order": 4
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Module Directory Layout & Naming Conventions",
+      "purpose": "Detailed reference for the enforced module-first folder structure: api/, models/, store/, views/, routes.ts, index.ts. Covers DTO vs Model naming, mapper functions (dtoToModel/modelToDto), and the barrel-export pattern via index.ts.",
+      "parent": "Module Architecture",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Detailed reference for the enforced module-first folder structure: api/, models/, store/, views/, routes.ts, index.ts. Covers DTO vs Model naming, mapper functions (dtoToModel/modelToDto), and the barrel-export pattern via index.ts."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "module-directory-layout-naming-conventions",
+      "menu": {
+        "group": "Module Architecture",
+        "order": 5
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "State Management Pattern (Pinia Setup Stores)",
+      "purpose": "Explains the Pinia setup-store pattern used in every module: loading/error/data state lifecycle, try/catch/finally actions, storeToRefs usage in views, and the hasData guard to prevent redundant fetches. References useTaskCenterStore, usePipelineCenterStore, and useRepoManagementStore as concrete examples.",
+      "parent": "Module Architecture",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Explains the Pinia setup-store pattern used in every module: loading/error/data state lifecycle, try/catch/finally actions, storeToRefs usage in views, and the hasData guard to prevent redundant fetches. References useTaskCenterStore, usePipelineCenterStore, and useRepoManagementStore as concrete examples."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "state-management-pattern-pinia-setup-stores",
+      "menu": {
+        "group": "Module Architecture",
+        "order": 6
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "API Layer & Mock System",
+      "purpose": "Covers the shared request.ts Axios wrapper, the USE_MOCK toggle in src/config/runtime.ts, the mock data layer (src/mock/), and how each module's .api.ts file branches between live HTTP calls and mock functions. Explains simulated latency via sleep().",
+      "parent": "Module Architecture",
+      "page_notes": [
+        {
+          "content": "Runtime data access routes through a shared request layer and can branch to src/mock providers when USE_MOCK is enabled, supporting backend-independent demos and development."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "api-layer-mock-system",
+      "menu": {
+        "group": "Module Architecture",
+        "order": 7
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Routing Conventions",
+      "purpose": "Documents the Vue Router setup, route naming pattern (<module>.<action>), lazy-loading with dynamic imports, meta.requiresAuth on every route, and how module route arrays are composed into the global router. Covers all six module route files.",
+      "parent": "Module Architecture",
+      "page_notes": [
+        {
+          "content": "Routes are declared per module and merged centrally, with lazy-loaded views and consistent naming/meta conventions (including auth-related metadata)."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "routing-conventions",
+      "menu": {
+        "group": "Module Architecture",
+        "order": 8
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Console Module (AI Dev Console)",
+      "purpose": "Overview of the console module - the primary entry point for the AI development assistant. Introduces the ConsoleEntryView dashboard and links to child pages covering the chat interface, code review, wiki, and automations sub-views.",
+      "page_notes": [
+        {
+          "content": "Console is the primary AI interaction surface, including chat-first workflows and shortcuts to review/wiki/automation functions."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "parent": "根目录",
+      "slug": "console-module-ai-dev-console",
+      "menu": {
+        "group": "根目录",
+        "order": 9
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Unified Chat Interface (Session & Ask Modes)",
+      "purpose": "Deep dive into ConsoleChatView.vue, the useConsoleChat composable, and the UnifiedChatPanel component. Covers session mode vs ask mode, session lifecycle (create/select/delete), suggested questions, chat option chips, and the getChatOptionsByModule configuration.",
+      "parent": "Console Module (AI Dev Console)",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Deep dive into ConsoleChatView.vue, the useConsoleChat composable, and the UnifiedChatPanel component. Covers session mode vs ask mode, session lifecycle (create/select/delete), suggested questions, chat option chips, and the getChatOptionsByModule configuration."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "unified-chat-interface-session-ask-modes",
+      "menu": {
+        "group": "Console Module (AI Dev Console)",
+        "order": 10
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Console Sub-Views: Review, Wiki & Automations",
+      "purpose": "Covers the three specialized console views: ConsoleReviewView (PR management and code review), ConsoleWikiView (repository documentation browser), and ConsoleAutomationsView (AI automation workflow management). Explains their data structures and UI patterns.",
+      "parent": "Console Module (AI Dev Console)",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Covers the three specialized console views: ConsoleReviewView (PR management and code review), ConsoleWikiView (repository documentation browser), and ConsoleAutomationsView (AI automation workflow management). Explains their data structures and UI patterns."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "console-sub-views-review-wiki-automations",
+      "menu": {
+        "group": "Console Module (AI Dev Console)",
+        "order": 11
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "AI Task Center Module",
+      "purpose": "Overview of the AI Task Center - the core module for creating and monitoring AI-driven coding tasks. Introduces the three-panel layout, task lifecycle states, and links to child pages for the store/API layer and individual views.",
+      "page_notes": [
+        {
+          "content": "Task Center orchestrates task creation, execution tracking, logs, chat, and diff feedback to make AI coding runs observable end-to-end."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "parent": "根目录",
+      "slug": "ai-task-center-module",
+      "menu": {
+        "group": "根目录",
+        "order": 12
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Task Center Views & Lifecycle",
+      "purpose": "Covers TaskCenterListView (tabular task list), TaskCenterCreateView (form-based task creation with validation and redirect), TaskCenterView (three-panel dashboard: task menu, AI chat, execution feedback), and TaskCenterDetailView. Explains task states: running, completed, paused, failed.",
+      "parent": "AI Task Center Module",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Covers TaskCenterListView (tabular task list), TaskCenterCreateView (form-based task creation with validation and redirect), TaskCenterView (three-panel dashboard: task menu, AI chat, execution feedback), and TaskCenterDetailView. Explains task states: running, completed, paused, failed."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "task-center-views-lifecycle",
+      "menu": {
+        "group": "AI Task Center Module",
+        "order": 13
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Task Center Store & API",
+      "purpose": "Documents useTaskCenterStore state properties (tasks, selectedTask, logs, chat, diff), actions (loadTasks, loadTaskDetail with Promise.all, submitTask, sendTaskChat), and the task-center.api.ts endpoints. Covers DTOs: TaskSummaryDto, TaskDetailDto, TaskCreateRequestDto, TaskLogDto, ChatMessageDto, TaskDiffDto.",
+      "parent": "AI Task Center Module",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Documents useTaskCenterStore state properties (tasks, selectedTask, logs, chat, diff), actions (loadTasks, loadTaskDetail with Promise.all, submitTask, sendTaskChat), and the task-center.api.ts endpoints. Covers DTOs: TaskSummaryDto, TaskDetailDto, TaskCreateRequestDto, TaskLogDto, ChatMessageDto, TaskDiffDto."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "task-center-store-api",
+      "menu": {
+        "group": "AI Task Center Module",
+        "order": 14
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Repository Management Module",
+      "purpose": "Overview of the repo-management module: its purpose for managing VCS repositories, branches, and pull requests. Links to child pages for views and the store/API layer.",
+      "page_notes": [
+        {
+          "content": "Repo Management focuses on repository inventory, branch data, and pull-request visibility to support VCS operations alongside AI workflows."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "parent": "根目录",
+      "slug": "repository-management-module",
+      "menu": {
+        "group": "根目录",
+        "order": 15
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Repository Management Views",
+      "purpose": "Covers RepoManagementView (overview dashboard with 17:7 grid layout), RepoManagementListView (repository table), RepoManagementBranchesView (branch details with commit/author data), and RepoManagementPRsView (pull request list). Explains the fetch-on-mount pattern and empty/loading/error state machine.",
+      "parent": "Repository Management Module",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Covers RepoManagementView (overview dashboard with 17:7 grid layout), RepoManagementListView (repository table), RepoManagementBranchesView (branch details with commit/author data), and RepoManagementPRsView (pull request list). Explains the fetch-on-mount pattern and empty/loading/error state machine."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "repository-management-views",
+      "menu": {
+        "group": "Repository Management Module",
+        "order": 16
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Repository Management Store & API",
+      "purpose": "Documents useRepoManagementStore (repositories, branches, loading, error, hasRepositories, hasBranches), repo-management.api.ts endpoints, and the mock data from src/mock/project.ts (RepositoryDto, BranchDto, PullRequestDto).",
+      "parent": "Repository Management Module",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Documents useRepoManagementStore (repositories, branches, loading, error, hasRepositories, hasBranches), repo-management.api.ts endpoints, and the mock data from src/mock/project.ts (RepositoryDto, BranchDto, PullRequestDto)."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "repository-management-store-api",
+      "menu": {
+        "group": "Repository Management Module",
+        "order": 17
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Pipeline Center Module",
+      "purpose": "Overview of the pipeline-center module for CI/CD monitoring. Introduces pipelines vs builds, status indicators, and links to child pages for views and the store/API.",
+      "page_notes": [
+        {
+          "content": "Pipeline Center monitors CI/CD pipelines and build runs with status-centric views for operational transparency."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "parent": "根目录",
+      "slug": "pipeline-center-module",
+      "menu": {
+        "group": "根目录",
+        "order": 18
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Pipeline Center Views",
+      "purpose": "Covers PipelineCenterListView (pipeline table with success rate and rerun actions), PipelineCenterBuildsView (build history with duration and branch data), and PipelineCenterView (real-time execution dashboard with el-steps for Pull/Install/Test/Build stages and log output).",
+      "parent": "Pipeline Center Module",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Covers PipelineCenterListView (pipeline table with success rate and rerun actions), PipelineCenterBuildsView (build history with duration and branch data), and PipelineCenterView (real-time execution dashboard with el-steps for Pull/Install/Test/Build stages and log output)."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "pipeline-center-views",
+      "menu": {
+        "group": "Pipeline Center Module",
+        "order": 19
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Pipeline Center Store & API",
+      "purpose": "Documents usePipelineCenterStore state (pipelines, builds, loading, error, hasPipelines, hasBuilds), pipeline-center.api.ts endpoints (fetchPipelines, fetchBuilds), PipelineDto and BuildDto structures, and the statusColorMap for UI rendering.",
+      "parent": "Pipeline Center Module",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Documents usePipelineCenterStore state (pipelines, builds, loading, error, hasPipelines, hasBuilds), pipeline-center.api.ts endpoints (fetchPipelines, fetchBuilds), PipelineDto and BuildDto structures, and the statusColorMap for UI rendering."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "pipeline-center-store-api",
+      "menu": {
+        "group": "Pipeline Center Module",
+        "order": 20
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Dashboard Module",
+      "purpose": "Covers the DashboardView.vue: ECharts-based task trend visualization (tasks created vs successes), DashboardStatsDto (tasksToday, successRate, runningCount, alertCount), and the overall health alert panel. Explains the getDashboardStats and getRecentTasks mock functions.",
+      "page_notes": [
+        {
+          "content": "Dashboard aggregates high-level health metrics and trend charts for quick system status awareness."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "parent": "根目录",
+      "slug": "dashboard-module",
+      "menu": {
+        "group": "根目录",
+        "order": 21
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "System Configuration Module",
+      "purpose": "Overview of the system-config module and its eleven settings views under /settings/*. Introduces the two categories: operational settings (preferences, schedules, users) and integration settings (repositories, API keys, models, DeepWiki). Links to child pages for each group.",
+      "page_notes": [
+        {
+          "content": "System Config centralizes operational preferences plus integrations such as API keys, model settings, and related governance controls."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "parent": "根目录",
+      "slug": "system-configuration-module",
+      "menu": {
+        "group": "根目录",
+        "order": 22
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Operational Settings Views",
+      "purpose": "Covers SystemConfigPreferencesView (locale, timezone, theme, landingPage, notifications), SystemConfigSchedulesView (cron expressions, retryLimit, alertChannel, timezone validation), SystemConfigUsersView (user management), and SystemConfigReviewView (minApprovals, requiredChecks, SLA, blockOnFailingChecks, enforceCodeOwners).",
+      "parent": "System Configuration Module",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Covers SystemConfigPreferencesView (locale, timezone, theme, landingPage, notifications), SystemConfigSchedulesView (cron expressions, retryLimit, alertChannel, timezone validation), SystemConfigUsersView (user management), and SystemConfigReviewView (minApprovals, requiredChecks, SLA, blockOnFailingChecks, enforceCodeOwners)."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "operational-settings-views",
+      "menu": {
+        "group": "System Configuration Module",
+        "order": 23
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Integration & AI Settings Views",
+      "purpose": "Covers SystemConfigRepositoriesView (provider, owner, authMode, mergeStrategies, requireChecks), SystemConfigApiView (API key management for OpenAI/GitHub/Azure), SystemConfigModelsView (LLM model selection: GPT-4, Claude, Llama), SystemConfigSkillView (execution mode, timeoutSeconds, allowWriteFiles, allowTerminal), SystemConfigDeepWikiView (embedding model, topK, metric, autoReindex), and SystemConfigKnowledgeView.",
+      "parent": "System Configuration Module",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Covers SystemConfigRepositoriesView (provider, owner, authMode, mergeStrategies, requireChecks), SystemConfigApiView (API key management for OpenAI/GitHub/Azure), SystemConfigModelsView (LLM model selection: GPT-4, Claude, Llama), SystemConfigSkillView (execution mode, timeoutSeconds, allowWriteFiles, allowTerminal), SystemConfigDeepWikiView (embedding model, topK, metric, autoReindex), and SystemConfigKnowledgeView."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "integration-ai-settings-views",
+      "menu": {
+        "group": "System Configuration Module",
+        "order": 24
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "UI Component Library & Styling",
+      "purpose": "Overview of shared UI components and the global styling system. Links to child pages for the component catalog and the CSS design token system.",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Overview of shared UI components and the global styling system. Links to child pages for the component catalog and the CSS design token system."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "parent": "根目录",
+      "slug": "ui-component-library-styling",
+      "menu": {
+        "group": "根目录",
+        "order": 25
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Shared Components",
+      "purpose": "Documents the reusable components in src/components/: UnifiedChatPanel (message board, composer, option chips, auto-scroll), AppSidebar (MenuItem interface, active state logic, avatar pulse animation), WelcomeItem (icon/heading/default slots, timeline CSS), TheWelcome, HelloWorld, and the icon components in src/components/icons/.",
+      "parent": "UI Component Library & Styling",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Documents the reusable components in src/components/: UnifiedChatPanel (message board, composer, option chips, auto-scroll), AppSidebar (MenuItem interface, active state logic, avatar pulse animation), WelcomeItem (icon/heading/default slots, timeline CSS), TheWelcome, HelloWorld, and the icon components in src/components/icons/."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "shared-components",
+      "menu": {
+        "group": "UI Component Library & Styling",
+        "order": 26
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "CSS Design Tokens & Theming",
+      "purpose": "Explains the two-tier CSS variable system: palette variables (--vt-c-*) and semantic variables (--color-*). Covers light/dark mode via prefers-color-scheme, the app surface/background tokens in theme.css (--app-bg, --app-surface), Element Plus overrides, and the Inter font stack.",
+      "parent": "UI Component Library & Styling",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Explains the two-tier CSS variable system: palette variables (--vt-c-*) and semantic variables (--color-*). Covers light/dark mode via prefers-color-scheme, the app surface/background tokens in theme.css (--app-bg, --app-surface), Element Plus overrides, and the Inter font stack."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "css-design-tokens-theming",
+      "menu": {
+        "group": "UI Component Library & Styling",
+        "order": 27
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Developer Tooling & Build Infrastructure",
+      "purpose": "Overview of the build and test infrastructure. Links to child pages for TypeScript configuration and the Vite/Vitest setup.",
+      "page_notes": [
+        {
+          "content": "Build/test foundation is Vite + TypeScript + Vitest with project-reference tsconfig structure and workspace scripts for development and validation."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "parent": "根目录",
+      "slug": "developer-tooling-build-infrastructure",
+      "menu": {
+        "group": "根目录",
+        "order": 28
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "TypeScript Configuration",
+      "purpose": "Documents the Project References architecture: tsconfig.json (orchestrator), tsconfig.app.json (production source, @/* alias, noUncheckedIndexedAccess), tsconfig.vitest.json (jsdom+node types, includes __tests__), and tsconfig.node.json (Node 24 tooling isolation). Explains tsBuildInfoFile incremental caching.",
+      "parent": "Developer Tooling & Build Infrastructure",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Documents the Project References architecture: tsconfig.json (orchestrator), tsconfig.app.json (production source, @/* alias, noUncheckedIndexedAccess), tsconfig.vitest.json (jsdom+node types, includes __tests__), and tsconfig.node.json (Node 24 tooling isolation). Explains tsBuildInfoFile incremental caching."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "typescript-configuration",
+      "menu": {
+        "group": "Developer Tooling & Build Infrastructure",
+        "order": 29
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    },
+    {
+      "title": "Vite Build & Vitest Testing",
+      "purpose": "Covers vite.config.ts (plugins: @vitejs/plugin-vue, vite-plugin-vue-devtools; @/* alias resolution), vitest.config.ts setup, npm scripts (dev, build, build-only, type-check, test:unit), and the HelloWorld.spec.ts test as an example of the testing pattern.",
+      "parent": "Developer Tooling & Build Infrastructure",
+      "page_notes": [
+        {
+          "content": "DeepWiki sync note: Covers vite.config.ts (plugins: @vitejs/plugin-vue, vite-plugin-vue-devtools; @/* alias resolution), vitest.config.ts setup, npm scripts (dev, build, build-only, type-check, test:unit), and the HelloWorld.spec.ts test as an example of the testing pattern."
+        }
+      ],
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "slug": "vite-build-vitest-testing",
+      "menu": {
+        "group": "Developer Tooling & Build Infrastructure",
+        "order": 30
+      },
+      "toc": [
+        "页面目的",
+        "页面笔记"
+      ]
+    }
+  ],
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-05-19T09:46:29.497Z",
+  "repoName": "AutoCodeForge",
+  "ref": "main",
+  "author": "DeepWiki Sync",
+  "updatedAt": "2026-05-19T09:46:29.497Z",
+  "repositories": [
+    {
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "author": "DeepWiki Sync",
+      "updatedAt": "2026-05-19T09:46:29.497Z",
+      "pages": [
+        {
+          "title": "AutoCodeForge Overview",
+          "purpose": "High-level introduction to AutoCodeForge: what it is, its purpose as an AI-driven software development console, the MVP scope, and how the major modules fit together. Links to all child sections for deeper coverage.",
+          "page_notes": [
+            {
+              "content": "AutoCodeForge is an AI-driven software development console that converts natural-language requirements into executable coding tasks, with real-time execution visibility and artifact management. MVP scope emphasizes a runnable interactive frontend decoupled from backend via mock data."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "parent": "根目录",
+          "slug": "autocodeforge-overview",
+          "menu": {
+            "group": "根目录",
+            "order": 1
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Getting Started",
+          "purpose": "Setup instructions, development environment, npm scripts (dev, build, test:unit), environment variables (VITE_API_BASE_URL), and the USE_MOCK toggle. Covers the Vite + Vue 3 + TypeScript toolchain.",
+          "parent": "AutoCodeForge Overview",
+          "page_notes": [
+            {
+              "content": "Development uses Vue 3 + TypeScript + Vite with npm scripts dev/build/test:unit and runtime toggles like USE_MOCK and VITE_API_BASE_URL for environment behavior."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "getting-started",
+          "menu": {
+            "group": "AutoCodeForge Overview",
+            "order": 2
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Application Shell & Navigation",
+          "purpose": "Describes the root App.vue layout, the AppSidebar component, the two navigation modes (User vs Settings), MenuItem data structure, context-switching logic, and the global router setup in src/router/index.ts.",
+          "parent": "AutoCodeForge Overview",
+          "page_notes": [
+            {
+              "content": "App.vue composes global layout and AppSidebar, switching between user and settings contexts by route prefix. Router-view hosts module screens while menu data drives navigation state."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "application-shell-navigation",
+          "menu": {
+            "group": "AutoCodeForge Overview",
+            "order": 3
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Module Architecture",
+          "purpose": "Overview of the module-first architecture pattern used across all feature modules. Introduces the standard directory layout, naming conventions, data-flow layers (API -> Mapper -> Store -> View), and the GitHub Copilot skill system. Links to child pages for each architectural layer.",
+          "page_notes": [
+            {
+              "content": "The codebase follows a module-first pattern where each feature owns API calls, store, routes, and views, enabling clear boundaries and scalable extension."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "parent": "根目录",
+          "slug": "module-architecture",
+          "menu": {
+            "group": "根目录",
+            "order": 4
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Module Directory Layout & Naming Conventions",
+          "purpose": "Detailed reference for the enforced module-first folder structure: api/, models/, store/, views/, routes.ts, index.ts. Covers DTO vs Model naming, mapper functions (dtoToModel/modelToDto), and the barrel-export pattern via index.ts.",
+          "parent": "Module Architecture",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Detailed reference for the enforced module-first folder structure: api/, models/, store/, views/, routes.ts, index.ts. Covers DTO vs Model naming, mapper functions (dtoToModel/modelToDto), and the barrel-export pattern via index.ts."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "module-directory-layout-naming-conventions",
+          "menu": {
+            "group": "Module Architecture",
+            "order": 5
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "State Management Pattern (Pinia Setup Stores)",
+          "purpose": "Explains the Pinia setup-store pattern used in every module: loading/error/data state lifecycle, try/catch/finally actions, storeToRefs usage in views, and the hasData guard to prevent redundant fetches. References useTaskCenterStore, usePipelineCenterStore, and useRepoManagementStore as concrete examples.",
+          "parent": "Module Architecture",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Explains the Pinia setup-store pattern used in every module: loading/error/data state lifecycle, try/catch/finally actions, storeToRefs usage in views, and the hasData guard to prevent redundant fetches. References useTaskCenterStore, usePipelineCenterStore, and useRepoManagementStore as concrete examples."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "state-management-pattern-pinia-setup-stores",
+          "menu": {
+            "group": "Module Architecture",
+            "order": 6
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "API Layer & Mock System",
+          "purpose": "Covers the shared request.ts Axios wrapper, the USE_MOCK toggle in src/config/runtime.ts, the mock data layer (src/mock/), and how each module's .api.ts file branches between live HTTP calls and mock functions. Explains simulated latency via sleep().",
+          "parent": "Module Architecture",
+          "page_notes": [
+            {
+              "content": "Runtime data access routes through a shared request layer and can branch to src/mock providers when USE_MOCK is enabled, supporting backend-independent demos and development."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "api-layer-mock-system",
+          "menu": {
+            "group": "Module Architecture",
+            "order": 7
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Routing Conventions",
+          "purpose": "Documents the Vue Router setup, route naming pattern (<module>.<action>), lazy-loading with dynamic imports, meta.requiresAuth on every route, and how module route arrays are composed into the global router. Covers all six module route files.",
+          "parent": "Module Architecture",
+          "page_notes": [
+            {
+              "content": "Routes are declared per module and merged centrally, with lazy-loaded views and consistent naming/meta conventions (including auth-related metadata)."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "routing-conventions",
+          "menu": {
+            "group": "Module Architecture",
+            "order": 8
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Console Module (AI Dev Console)",
+          "purpose": "Overview of the console module - the primary entry point for the AI development assistant. Introduces the ConsoleEntryView dashboard and links to child pages covering the chat interface, code review, wiki, and automations sub-views.",
+          "page_notes": [
+            {
+              "content": "Console is the primary AI interaction surface, including chat-first workflows and shortcuts to review/wiki/automation functions."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "parent": "根目录",
+          "slug": "console-module-ai-dev-console",
+          "menu": {
+            "group": "根目录",
+            "order": 9
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Unified Chat Interface (Session & Ask Modes)",
+          "purpose": "Deep dive into ConsoleChatView.vue, the useConsoleChat composable, and the UnifiedChatPanel component. Covers session mode vs ask mode, session lifecycle (create/select/delete), suggested questions, chat option chips, and the getChatOptionsByModule configuration.",
+          "parent": "Console Module (AI Dev Console)",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Deep dive into ConsoleChatView.vue, the useConsoleChat composable, and the UnifiedChatPanel component. Covers session mode vs ask mode, session lifecycle (create/select/delete), suggested questions, chat option chips, and the getChatOptionsByModule configuration."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "unified-chat-interface-session-ask-modes",
+          "menu": {
+            "group": "Console Module (AI Dev Console)",
+            "order": 10
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Console Sub-Views: Review, Wiki & Automations",
+          "purpose": "Covers the three specialized console views: ConsoleReviewView (PR management and code review), ConsoleWikiView (repository documentation browser), and ConsoleAutomationsView (AI automation workflow management). Explains their data structures and UI patterns.",
+          "parent": "Console Module (AI Dev Console)",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Covers the three specialized console views: ConsoleReviewView (PR management and code review), ConsoleWikiView (repository documentation browser), and ConsoleAutomationsView (AI automation workflow management). Explains their data structures and UI patterns."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "console-sub-views-review-wiki-automations",
+          "menu": {
+            "group": "Console Module (AI Dev Console)",
+            "order": 11
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "AI Task Center Module",
+          "purpose": "Overview of the AI Task Center - the core module for creating and monitoring AI-driven coding tasks. Introduces the three-panel layout, task lifecycle states, and links to child pages for the store/API layer and individual views.",
+          "page_notes": [
+            {
+              "content": "Task Center orchestrates task creation, execution tracking, logs, chat, and diff feedback to make AI coding runs observable end-to-end."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "parent": "根目录",
+          "slug": "ai-task-center-module",
+          "menu": {
+            "group": "根目录",
+            "order": 12
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Task Center Views & Lifecycle",
+          "purpose": "Covers TaskCenterListView (tabular task list), TaskCenterCreateView (form-based task creation with validation and redirect), TaskCenterView (three-panel dashboard: task menu, AI chat, execution feedback), and TaskCenterDetailView. Explains task states: running, completed, paused, failed.",
+          "parent": "AI Task Center Module",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Covers TaskCenterListView (tabular task list), TaskCenterCreateView (form-based task creation with validation and redirect), TaskCenterView (three-panel dashboard: task menu, AI chat, execution feedback), and TaskCenterDetailView. Explains task states: running, completed, paused, failed."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "task-center-views-lifecycle",
+          "menu": {
+            "group": "AI Task Center Module",
+            "order": 13
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Task Center Store & API",
+          "purpose": "Documents useTaskCenterStore state properties (tasks, selectedTask, logs, chat, diff), actions (loadTasks, loadTaskDetail with Promise.all, submitTask, sendTaskChat), and the task-center.api.ts endpoints. Covers DTOs: TaskSummaryDto, TaskDetailDto, TaskCreateRequestDto, TaskLogDto, ChatMessageDto, TaskDiffDto.",
+          "parent": "AI Task Center Module",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Documents useTaskCenterStore state properties (tasks, selectedTask, logs, chat, diff), actions (loadTasks, loadTaskDetail with Promise.all, submitTask, sendTaskChat), and the task-center.api.ts endpoints. Covers DTOs: TaskSummaryDto, TaskDetailDto, TaskCreateRequestDto, TaskLogDto, ChatMessageDto, TaskDiffDto."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "task-center-store-api",
+          "menu": {
+            "group": "AI Task Center Module",
+            "order": 14
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Repository Management Module",
+          "purpose": "Overview of the repo-management module: its purpose for managing VCS repositories, branches, and pull requests. Links to child pages for views and the store/API layer.",
+          "page_notes": [
+            {
+              "content": "Repo Management focuses on repository inventory, branch data, and pull-request visibility to support VCS operations alongside AI workflows."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "parent": "根目录",
+          "slug": "repository-management-module",
+          "menu": {
+            "group": "根目录",
+            "order": 15
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Repository Management Views",
+          "purpose": "Covers RepoManagementView (overview dashboard with 17:7 grid layout), RepoManagementListView (repository table), RepoManagementBranchesView (branch details with commit/author data), and RepoManagementPRsView (pull request list). Explains the fetch-on-mount pattern and empty/loading/error state machine.",
+          "parent": "Repository Management Module",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Covers RepoManagementView (overview dashboard with 17:7 grid layout), RepoManagementListView (repository table), RepoManagementBranchesView (branch details with commit/author data), and RepoManagementPRsView (pull request list). Explains the fetch-on-mount pattern and empty/loading/error state machine."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "repository-management-views",
+          "menu": {
+            "group": "Repository Management Module",
+            "order": 16
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Repository Management Store & API",
+          "purpose": "Documents useRepoManagementStore (repositories, branches, loading, error, hasRepositories, hasBranches), repo-management.api.ts endpoints, and the mock data from src/mock/project.ts (RepositoryDto, BranchDto, PullRequestDto).",
+          "parent": "Repository Management Module",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Documents useRepoManagementStore (repositories, branches, loading, error, hasRepositories, hasBranches), repo-management.api.ts endpoints, and the mock data from src/mock/project.ts (RepositoryDto, BranchDto, PullRequestDto)."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "repository-management-store-api",
+          "menu": {
+            "group": "Repository Management Module",
+            "order": 17
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Pipeline Center Module",
+          "purpose": "Overview of the pipeline-center module for CI/CD monitoring. Introduces pipelines vs builds, status indicators, and links to child pages for views and the store/API.",
+          "page_notes": [
+            {
+              "content": "Pipeline Center monitors CI/CD pipelines and build runs with status-centric views for operational transparency."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "parent": "根目录",
+          "slug": "pipeline-center-module",
+          "menu": {
+            "group": "根目录",
+            "order": 18
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Pipeline Center Views",
+          "purpose": "Covers PipelineCenterListView (pipeline table with success rate and rerun actions), PipelineCenterBuildsView (build history with duration and branch data), and PipelineCenterView (real-time execution dashboard with el-steps for Pull/Install/Test/Build stages and log output).",
+          "parent": "Pipeline Center Module",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Covers PipelineCenterListView (pipeline table with success rate and rerun actions), PipelineCenterBuildsView (build history with duration and branch data), and PipelineCenterView (real-time execution dashboard with el-steps for Pull/Install/Test/Build stages and log output)."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "pipeline-center-views",
+          "menu": {
+            "group": "Pipeline Center Module",
+            "order": 19
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Pipeline Center Store & API",
+          "purpose": "Documents usePipelineCenterStore state (pipelines, builds, loading, error, hasPipelines, hasBuilds), pipeline-center.api.ts endpoints (fetchPipelines, fetchBuilds), PipelineDto and BuildDto structures, and the statusColorMap for UI rendering.",
+          "parent": "Pipeline Center Module",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Documents usePipelineCenterStore state (pipelines, builds, loading, error, hasPipelines, hasBuilds), pipeline-center.api.ts endpoints (fetchPipelines, fetchBuilds), PipelineDto and BuildDto structures, and the statusColorMap for UI rendering."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "pipeline-center-store-api",
+          "menu": {
+            "group": "Pipeline Center Module",
+            "order": 20
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Dashboard Module",
+          "purpose": "Covers the DashboardView.vue: ECharts-based task trend visualization (tasks created vs successes), DashboardStatsDto (tasksToday, successRate, runningCount, alertCount), and the overall health alert panel. Explains the getDashboardStats and getRecentTasks mock functions.",
+          "page_notes": [
+            {
+              "content": "Dashboard aggregates high-level health metrics and trend charts for quick system status awareness."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "parent": "根目录",
+          "slug": "dashboard-module",
+          "menu": {
+            "group": "根目录",
+            "order": 21
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "System Configuration Module",
+          "purpose": "Overview of the system-config module and its eleven settings views under /settings/*. Introduces the two categories: operational settings (preferences, schedules, users) and integration settings (repositories, API keys, models, DeepWiki). Links to child pages for each group.",
+          "page_notes": [
+            {
+              "content": "System Config centralizes operational preferences plus integrations such as API keys, model settings, and related governance controls."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "parent": "根目录",
+          "slug": "system-configuration-module",
+          "menu": {
+            "group": "根目录",
+            "order": 22
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Operational Settings Views",
+          "purpose": "Covers SystemConfigPreferencesView (locale, timezone, theme, landingPage, notifications), SystemConfigSchedulesView (cron expressions, retryLimit, alertChannel, timezone validation), SystemConfigUsersView (user management), and SystemConfigReviewView (minApprovals, requiredChecks, SLA, blockOnFailingChecks, enforceCodeOwners).",
+          "parent": "System Configuration Module",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Covers SystemConfigPreferencesView (locale, timezone, theme, landingPage, notifications), SystemConfigSchedulesView (cron expressions, retryLimit, alertChannel, timezone validation), SystemConfigUsersView (user management), and SystemConfigReviewView (minApprovals, requiredChecks, SLA, blockOnFailingChecks, enforceCodeOwners)."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "operational-settings-views",
+          "menu": {
+            "group": "System Configuration Module",
+            "order": 23
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Integration & AI Settings Views",
+          "purpose": "Covers SystemConfigRepositoriesView (provider, owner, authMode, mergeStrategies, requireChecks), SystemConfigApiView (API key management for OpenAI/GitHub/Azure), SystemConfigModelsView (LLM model selection: GPT-4, Claude, Llama), SystemConfigSkillView (execution mode, timeoutSeconds, allowWriteFiles, allowTerminal), SystemConfigDeepWikiView (embedding model, topK, metric, autoReindex), and SystemConfigKnowledgeView.",
+          "parent": "System Configuration Module",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Covers SystemConfigRepositoriesView (provider, owner, authMode, mergeStrategies, requireChecks), SystemConfigApiView (API key management for OpenAI/GitHub/Azure), SystemConfigModelsView (LLM model selection: GPT-4, Claude, Llama), SystemConfigSkillView (execution mode, timeoutSeconds, allowWriteFiles, allowTerminal), SystemConfigDeepWikiView (embedding model, topK, metric, autoReindex), and SystemConfigKnowledgeView."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "integration-ai-settings-views",
+          "menu": {
+            "group": "System Configuration Module",
+            "order": 24
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "UI Component Library & Styling",
+          "purpose": "Overview of shared UI components and the global styling system. Links to child pages for the component catalog and the CSS design token system.",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Overview of shared UI components and the global styling system. Links to child pages for the component catalog and the CSS design token system."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "parent": "根目录",
+          "slug": "ui-component-library-styling",
+          "menu": {
+            "group": "根目录",
+            "order": 25
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Shared Components",
+          "purpose": "Documents the reusable components in src/components/: UnifiedChatPanel (message board, composer, option chips, auto-scroll), AppSidebar (MenuItem interface, active state logic, avatar pulse animation), WelcomeItem (icon/heading/default slots, timeline CSS), TheWelcome, HelloWorld, and the icon components in src/components/icons/.",
+          "parent": "UI Component Library & Styling",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Documents the reusable components in src/components/: UnifiedChatPanel (message board, composer, option chips, auto-scroll), AppSidebar (MenuItem interface, active state logic, avatar pulse animation), WelcomeItem (icon/heading/default slots, timeline CSS), TheWelcome, HelloWorld, and the icon components in src/components/icons/."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "shared-components",
+          "menu": {
+            "group": "UI Component Library & Styling",
+            "order": 26
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "CSS Design Tokens & Theming",
+          "purpose": "Explains the two-tier CSS variable system: palette variables (--vt-c-*) and semantic variables (--color-*). Covers light/dark mode via prefers-color-scheme, the app surface/background tokens in theme.css (--app-bg, --app-surface), Element Plus overrides, and the Inter font stack.",
+          "parent": "UI Component Library & Styling",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Explains the two-tier CSS variable system: palette variables (--vt-c-*) and semantic variables (--color-*). Covers light/dark mode via prefers-color-scheme, the app surface/background tokens in theme.css (--app-bg, --app-surface), Element Plus overrides, and the Inter font stack."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "css-design-tokens-theming",
+          "menu": {
+            "group": "UI Component Library & Styling",
+            "order": 27
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Developer Tooling & Build Infrastructure",
+          "purpose": "Overview of the build and test infrastructure. Links to child pages for TypeScript configuration and the Vite/Vitest setup.",
+          "page_notes": [
+            {
+              "content": "Build/test foundation is Vite + TypeScript + Vitest with project-reference tsconfig structure and workspace scripts for development and validation."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "parent": "根目录",
+          "slug": "developer-tooling-build-infrastructure",
+          "menu": {
+            "group": "根目录",
+            "order": 28
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "TypeScript Configuration",
+          "purpose": "Documents the Project References architecture: tsconfig.json (orchestrator), tsconfig.app.json (production source, @/* alias, noUncheckedIndexedAccess), tsconfig.vitest.json (jsdom+node types, includes __tests__), and tsconfig.node.json (Node 24 tooling isolation). Explains tsBuildInfoFile incremental caching.",
+          "parent": "Developer Tooling & Build Infrastructure",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Documents the Project References architecture: tsconfig.json (orchestrator), tsconfig.app.json (production source, @/* alias, noUncheckedIndexedAccess), tsconfig.vitest.json (jsdom+node types, includes __tests__), and tsconfig.node.json (Node 24 tooling isolation). Explains tsBuildInfoFile incremental caching."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "typescript-configuration",
+          "menu": {
+            "group": "Developer Tooling & Build Infrastructure",
+            "order": 29
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Vite Build & Vitest Testing",
+          "purpose": "Covers vite.config.ts (plugins: @vitejs/plugin-vue, vite-plugin-vue-devtools; @/* alias resolution), vitest.config.ts setup, npm scripts (dev, build, build-only, type-check, test:unit), and the HelloWorld.spec.ts test as an example of the testing pattern.",
+          "parent": "Developer Tooling & Build Infrastructure",
+          "page_notes": [
+            {
+              "content": "DeepWiki sync note: Covers vite.config.ts (plugins: @vitejs/plugin-vue, vite-plugin-vue-devtools; @/* alias resolution), vitest.config.ts setup, npm scripts (dev, build, build-only, type-check, test:unit), and the HelloWorld.spec.ts test as an example of the testing pattern."
+            }
+          ],
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "author": "DeepWiki Sync",
+          "updatedAt": "2026-05-19T09:46:29.497Z",
+          "slug": "vite-build-vitest-testing",
+          "menu": {
+            "group": "Developer Tooling & Build Infrastructure",
+            "order": 30
+          },
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        }
+      ]
+    }
+  ]
 }

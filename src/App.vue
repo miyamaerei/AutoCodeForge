@@ -36,7 +36,7 @@ const userMenuItems = computed<MenuItem[]>(() => [
       {
         id: 'wiki',
         title: 'Wiki',
-        path: '/wiki',
+        path: '/mdwiki',
       },
       {
         id: 'review',

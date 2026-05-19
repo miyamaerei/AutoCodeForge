@@ -1,0 +1,491 @@
+{
+  "generatedAt": "2026-05-19T10:10:55.185Z",
+  "repos": [
+    {
+      "repoName": "AutoCodeForge",
+      "ref": "main",
+      "pages": [
+        {
+          "title": "AutoCodeForge Overview",
+          "slug": "autocodeforge-overview",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "",
+          "topTitle": "AutoCodeForge Overview",
+          "level": 1,
+          "path": "/autocodeforge-overview",
+          "filePath": "AutoCodeForge/autocodeforge-overview.md",
+          "order": 1,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Getting Started",
+          "slug": "getting-started",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "AutoCodeForge Overview",
+          "topTitle": "AutoCodeForge Overview",
+          "level": 2,
+          "path": "/autocodeforge-overview/getting-started",
+          "filePath": "AutoCodeForge/autocodeforge-overview/getting-started.md",
+          "order": 2,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Application Shell & Navigation",
+          "slug": "application-shell-navigation",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "AutoCodeForge Overview",
+          "topTitle": "AutoCodeForge Overview",
+          "level": 2,
+          "path": "/autocodeforge-overview/application-shell-navigation",
+          "filePath": "AutoCodeForge/autocodeforge-overview/application-shell-navigation.md",
+          "order": 3,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Module Architecture",
+          "slug": "module-architecture",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "",
+          "topTitle": "Module Architecture",
+          "level": 1,
+          "path": "/module-architecture",
+          "filePath": "AutoCodeForge/module-architecture.md",
+          "order": 4,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Module Directory Layout & Naming Conventions",
+          "slug": "module-directory-layout-naming-conventions",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Module Architecture",
+          "topTitle": "Module Architecture",
+          "level": 2,
+          "path": "/module-architecture/module-directory-layout-naming-conventions",
+          "filePath": "AutoCodeForge/module-architecture/module-directory-layout-naming-conventions.md",
+          "order": 5,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "State Management Pattern (Pinia Setup Stores)",
+          "slug": "state-management-pattern-pinia-setup-stores",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Module Architecture",
+          "topTitle": "Module Architecture",
+          "level": 2,
+          "path": "/module-architecture/state-management-pattern-pinia-setup-stores",
+          "filePath": "AutoCodeForge/module-architecture/state-management-pattern-pinia-setup-stores.md",
+          "order": 6,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "API Layer & Mock System",
+          "slug": "api-layer-mock-system",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Module Architecture",
+          "topTitle": "Module Architecture",
+          "level": 2,
+          "path": "/module-architecture/api-layer-mock-system",
+          "filePath": "AutoCodeForge/module-architecture/api-layer-mock-system.md",
+          "order": 7,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Routing Conventions",
+          "slug": "routing-conventions",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Module Architecture",
+          "topTitle": "Module Architecture",
+          "level": 2,
+          "path": "/module-architecture/routing-conventions",
+          "filePath": "AutoCodeForge/module-architecture/routing-conventions.md",
+          "order": 8,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Console Module (AI Dev Console)",
+          "slug": "console-module-ai-dev-console",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "",
+          "topTitle": "Console Module (AI Dev Console)",
+          "level": 1,
+          "path": "/console-module-ai-dev-console",
+          "filePath": "AutoCodeForge/console-module-ai-dev-console.md",
+          "order": 9,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Unified Chat Interface (Session & Ask Modes)",
+          "slug": "unified-chat-interface-session-ask-modes",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Console Module (AI Dev Console)",
+          "topTitle": "Console Module (AI Dev Console)",
+          "level": 2,
+          "path": "/console-module-ai-dev-console/unified-chat-interface-session-ask-modes",
+          "filePath": "AutoCodeForge/console-module-ai-dev-console/unified-chat-interface-session-ask-modes.md",
+          "order": 10,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Console Sub-Views: Review, Wiki & Automations",
+          "slug": "console-sub-views-review-wiki-automations",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Console Module (AI Dev Console)",
+          "topTitle": "Console Module (AI Dev Console)",
+          "level": 2,
+          "path": "/console-module-ai-dev-console/console-sub-views-review-wiki-automations",
+          "filePath": "AutoCodeForge/console-module-ai-dev-console/console-sub-views-review-wiki-automations.md",
+          "order": 11,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "AI Task Center Module",
+          "slug": "ai-task-center-module",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "",
+          "topTitle": "AI Task Center Module",
+          "level": 1,
+          "path": "/ai-task-center-module",
+          "filePath": "AutoCodeForge/ai-task-center-module.md",
+          "order": 12,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Task Center Views & Lifecycle",
+          "slug": "task-center-views-lifecycle",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "AI Task Center Module",
+          "topTitle": "AI Task Center Module",
+          "level": 2,
+          "path": "/ai-task-center-module/task-center-views-lifecycle",
+          "filePath": "AutoCodeForge/ai-task-center-module/task-center-views-lifecycle.md",
+          "order": 13,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Task Center Store & API",
+          "slug": "task-center-store-api",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "AI Task Center Module",
+          "topTitle": "AI Task Center Module",
+          "level": 2,
+          "path": "/ai-task-center-module/task-center-store-api",
+          "filePath": "AutoCodeForge/ai-task-center-module/task-center-store-api.md",
+          "order": 14,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Repository Management Module",
+          "slug": "repository-management-module",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "",
+          "topTitle": "Repository Management Module",
+          "level": 1,
+          "path": "/repository-management-module",
+          "filePath": "AutoCodeForge/repository-management-module.md",
+          "order": 15,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Repository Management Views",
+          "slug": "repository-management-views",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Repository Management Module",
+          "topTitle": "Repository Management Module",
+          "level": 2,
+          "path": "/repository-management-module/repository-management-views",
+          "filePath": "AutoCodeForge/repository-management-module/repository-management-views.md",
+          "order": 16,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Repository Management Store & API",
+          "slug": "repository-management-store-api",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Repository Management Module",
+          "topTitle": "Repository Management Module",
+          "level": 2,
+          "path": "/repository-management-module/repository-management-store-api",
+          "filePath": "AutoCodeForge/repository-management-module/repository-management-store-api.md",
+          "order": 17,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Pipeline Center Module",
+          "slug": "pipeline-center-module",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "",
+          "topTitle": "Pipeline Center Module",
+          "level": 1,
+          "path": "/pipeline-center-module",
+          "filePath": "AutoCodeForge/pipeline-center-module.md",
+          "order": 18,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Pipeline Center Views",
+          "slug": "pipeline-center-views",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Pipeline Center Module",
+          "topTitle": "Pipeline Center Module",
+          "level": 2,
+          "path": "/pipeline-center-module/pipeline-center-views",
+          "filePath": "AutoCodeForge/pipeline-center-module/pipeline-center-views.md",
+          "order": 19,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Pipeline Center Store & API",
+          "slug": "pipeline-center-store-api",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Pipeline Center Module",
+          "topTitle": "Pipeline Center Module",
+          "level": 2,
+          "path": "/pipeline-center-module/pipeline-center-store-api",
+          "filePath": "AutoCodeForge/pipeline-center-module/pipeline-center-store-api.md",
+          "order": 20,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Dashboard Module",
+          "slug": "dashboard-module",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "",
+          "topTitle": "Dashboard Module",
+          "level": 1,
+          "path": "/dashboard-module",
+          "filePath": "AutoCodeForge/dashboard-module.md",
+          "order": 21,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "System Configuration Module",
+          "slug": "system-configuration-module",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "",
+          "topTitle": "System Configuration Module",
+          "level": 1,
+          "path": "/system-configuration-module",
+          "filePath": "AutoCodeForge/system-configuration-module.md",
+          "order": 22,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Operational Settings Views",
+          "slug": "operational-settings-views",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "System Configuration Module",
+          "topTitle": "System Configuration Module",
+          "level": 2,
+          "path": "/system-configuration-module/operational-settings-views",
+          "filePath": "AutoCodeForge/system-configuration-module/operational-settings-views.md",
+          "order": 23,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Integration & AI Settings Views",
+          "slug": "integration-ai-settings-views",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "System Configuration Module",
+          "topTitle": "System Configuration Module",
+          "level": 2,
+          "path": "/system-configuration-module/integration-ai-settings-views",
+          "filePath": "AutoCodeForge/system-configuration-module/integration-ai-settings-views.md",
+          "order": 24,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "UI Component Library & Styling",
+          "slug": "ui-component-library-styling",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "",
+          "topTitle": "UI Component Library & Styling",
+          "level": 1,
+          "path": "/ui-component-library-styling",
+          "filePath": "AutoCodeForge/ui-component-library-styling.md",
+          "order": 25,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Shared Components",
+          "slug": "shared-components",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "UI Component Library & Styling",
+          "topTitle": "UI Component Library & Styling",
+          "level": 2,
+          "path": "/ui-component-library-styling/shared-components",
+          "filePath": "AutoCodeForge/ui-component-library-styling/shared-components.md",
+          "order": 26,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "CSS Design Tokens & Theming",
+          "slug": "css-design-tokens-theming",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "UI Component Library & Styling",
+          "topTitle": "UI Component Library & Styling",
+          "level": 2,
+          "path": "/ui-component-library-styling/css-design-tokens-theming",
+          "filePath": "AutoCodeForge/ui-component-library-styling/css-design-tokens-theming.md",
+          "order": 27,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Developer Tooling & Build Infrastructure",
+          "slug": "developer-tooling-build-infrastructure",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "",
+          "topTitle": "Developer Tooling & Build Infrastructure",
+          "level": 1,
+          "path": "/developer-tooling-build-infrastructure",
+          "filePath": "AutoCodeForge/developer-tooling-build-infrastructure.md",
+          "order": 28,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "TypeScript Configuration",
+          "slug": "typescript-configuration",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Developer Tooling & Build Infrastructure",
+          "topTitle": "Developer Tooling & Build Infrastructure",
+          "level": 2,
+          "path": "/developer-tooling-build-infrastructure/typescript-configuration",
+          "filePath": "AutoCodeForge/developer-tooling-build-infrastructure/typescript-configuration.md",
+          "order": 29,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        },
+        {
+          "title": "Vite Build & Vitest Testing",
+          "slug": "vite-build-vitest-testing",
+          "repoName": "AutoCodeForge",
+          "ref": "main",
+          "parent": "Developer Tooling & Build Infrastructure",
+          "topTitle": "Developer Tooling & Build Infrastructure",
+          "level": 2,
+          "path": "/developer-tooling-build-infrastructure/vite-build-vitest-testing",
+          "filePath": "AutoCodeForge/developer-tooling-build-infrastructure/vite-build-vitest-testing.md",
+          "order": 30,
+          "toc": [
+            "页面目的",
+            "页面笔记"
+          ]
+        }
+      ]
+    }
+  ]
+}

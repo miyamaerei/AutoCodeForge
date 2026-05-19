@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { consoleRoutes } from '../modules/console'
 import { dashboardRoutes } from '../modules/dashboard'
+import { mdWikiRoutes } from '../modules/md-wiki'
 import { pipelineCenterRoutes } from '../modules/pipeline-center'
 import { repoManagementRoutes } from '../modules/repo-management'
 import { systemConfigRoutes } from '../modules/system-config'
@@ -13,6 +14,7 @@ const routes: RouteRecordRaw[] = [
   ...repoManagementRoutes,
   ...dashboardRoutes,
   ...pipelineCenterRoutes,
+  ...mdWikiRoutes,
   ...systemConfigRoutes,
 ]
 

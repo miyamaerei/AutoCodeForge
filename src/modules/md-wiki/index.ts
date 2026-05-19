@@ -1,0 +1,1 @@
+export { mdWikiRoutes } from './routes'
