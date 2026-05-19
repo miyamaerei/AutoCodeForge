@@ -154,6 +154,21 @@ const settingsMenuItems = computed<MenuItem[]>(() => [
         title: 'Review',
         path: '/settings/review',
       },
+      {
+        id: 'settings-integrations',
+        title: 'Integrations',
+        path: '/settings/integrations',
+      },
+      {
+        id: 'settings-notifications',
+        title: 'Notifications',
+        path: '/settings/notifications',
+      },
+      {
+        id: 'settings-sandbox',
+        title: 'Sandbox',
+        path: '/settings/sandbox',
+      },
     ],
   },
 ])

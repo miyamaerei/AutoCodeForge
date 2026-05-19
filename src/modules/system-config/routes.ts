@@ -69,6 +69,33 @@ export const systemConfigRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/settings/integrations',
+    name: 'system-config.integrations',
+    component: () => import('./views/SystemConfigIntegrationsView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Integrations',
+    },
+  },
+  {
+    path: '/settings/notifications',
+    name: 'system-config.notifications',
+    component: () => import('./views/SystemConfigNotificationsView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Notifications',
+    },
+  },
+  {
+    path: '/settings/sandbox',
+    name: 'system-config.sandbox',
+    component: () => import('./views/SystemConfigSandboxView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Sandbox',
+    },
+  },
+  {
     path: '/system-config/api',
     name: 'system-config.api',
     component: () => import('./views/SystemConfigApiView.vue'),
