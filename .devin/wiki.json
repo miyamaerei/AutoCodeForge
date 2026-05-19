@@ -1,0 +1,299 @@
+{
+  "repo_notes": [
+    {
+      "content": ""
+    }
+  ],
+  "pages": [
+    {
+      "title": "AutoCodeForge Overview",
+      "purpose": "High-level introduction to AutoCodeForge: what it is, its purpose as an AI-driven software development console, the MVP scope, and how the major modules fit together. Links to all child sections for deeper coverage.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Getting Started",
+      "purpose": "Setup instructions, development environment, npm scripts (dev, build, test:unit), environment variables (VITE_API_BASE_URL), and the USE_MOCK toggle. Covers the Vite + Vue 3 + TypeScript toolchain.",
+      "parent": "AutoCodeForge Overview",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Application Shell & Navigation",
+      "purpose": "Describes the root App.vue layout, the AppSidebar component, the two navigation modes (User vs Settings), MenuItem data structure, context-switching logic, and the global router setup in src/router/index.ts.",
+      "parent": "AutoCodeForge Overview",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Module Architecture",
+      "purpose": "Overview of the module-first architecture pattern used across all feature modules. Introduces the standard directory layout, naming conventions, data-flow layers (API → Mapper → Store → View), and the GitHub Copilot skill system. Links to child pages for each architectural layer.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Module Directory Layout & Naming Conventions",
+      "purpose": "Detailed reference for the enforced module-first folder structure: api/, models/, store/, views/, routes.ts, index.ts. Covers DTO vs Model naming, mapper functions (dtoToModel/modelToDto), and the barrel-export pattern via index.ts.",
+      "parent": "Module Architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "State Management Pattern (Pinia Setup Stores)",
+      "purpose": "Explains the Pinia setup-store pattern used in every module: loading/error/data state lifecycle, try/catch/finally actions, storeToRefs usage in views, and the hasData guard to prevent redundant fetches. References useTaskCenterStore, usePipelineCenterStore, and useRepoManagementStore as concrete examples.",
+      "parent": "Module Architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "API Layer & Mock System",
+      "purpose": "Covers the shared request.ts Axios wrapper, the USE_MOCK toggle in src/config/runtime.ts, the mock data layer (src/mock/), and how each module's .api.ts file branches between live HTTP calls and mock functions. Explains simulated latency via sleep().",
+      "parent": "Module Architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Routing Conventions",
+      "purpose": "Documents the Vue Router setup, route naming pattern (<module>.<action>), lazy-loading with dynamic imports, meta.requiresAuth on every route, and how module route arrays are composed into the global router. Covers all six module route files.",
+      "parent": "Module Architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Console Module (AI Dev Console)",
+      "purpose": "Overview of the console module — the primary entry point for the AI development assistant. Introduces the ConsoleEntryView dashboard and links to child pages covering the chat interface, code review, wiki, and automations sub-views.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Unified Chat Interface (Session & Ask Modes)",
+      "purpose": "Deep dive into ConsoleChatView.vue, the useConsoleChat composable, and the UnifiedChatPanel component. Covers session mode vs ask mode, session lifecycle (create/select/delete), suggested questions, chat option chips, and the getChatOptionsByModule configuration.",
+      "parent": "Console Module (AI Dev Console)",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Console Sub-Views: Review, Wiki & Automations",
+      "purpose": "Covers the three specialized console views: ConsoleReviewView (PR management and code review), ConsoleWikiView (repository documentation browser), and ConsoleAutomationsView (AI automation workflow management). Explains their data structures and UI patterns.",
+      "parent": "Console Module (AI Dev Console)",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "AI Task Center Module",
+      "purpose": "Overview of the AI Task Center — the core module for creating and monitoring AI-driven coding tasks. Introduces the three-panel layout, task lifecycle states, and links to child pages for the store/API layer and individual views.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Task Center Views & Lifecycle",
+      "purpose": "Covers TaskCenterListView (tabular task list), TaskCenterCreateView (form-based task creation with validation and redirect), TaskCenterView (three-panel dashboard: task menu, AI chat, execution feedback), and TaskCenterDetailView. Explains task states: 运行中, 已完成, 已暂停, 失败.",
+      "parent": "AI Task Center Module",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Task Center Store & API",
+      "purpose": "Documents useTaskCenterStore state properties (tasks, selectedTask, logs, chat, diff), actions (loadTasks, loadTaskDetail with Promise.all, submitTask, sendTaskChat), and the task-center.api.ts endpoints. Covers DTOs: TaskSummaryDto, TaskDetailDto, TaskCreateRequestDto, TaskLogDto, ChatMessageDto, TaskDiffDto.",
+      "parent": "AI Task Center Module",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Repository Management Module",
+      "purpose": "Overview of the repo-management module: its purpose for managing VCS repositories, branches, and pull requests. Links to child pages for views and the store/API layer.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Repository Management Views",
+      "purpose": "Covers RepoManagementView (overview dashboard with 17:7 grid layout), RepoManagementListView (repository table), RepoManagementBranchesView (branch details with commit/author data), and RepoManagementPRsView (pull request list). Explains the fetch-on-mount pattern and empty/loading/error state machine.",
+      "parent": "Repository Management Module",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Repository Management Store & API",
+      "purpose": "Documents useRepoManagementStore (repositories, branches, loading, error, hasRepositories, hasBranches), repo-management.api.ts endpoints, and the mock data from src/mock/project.ts (RepositoryDto, BranchDto, PullRequestDto).",
+      "parent": "Repository Management Module",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Pipeline Center Module",
+      "purpose": "Overview of the pipeline-center module for CI/CD monitoring. Introduces pipelines vs builds, status indicators, and links to child pages for views and the store/API.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Pipeline Center Views",
+      "purpose": "Covers PipelineCenterListView (pipeline table with success rate and rerun actions), PipelineCenterBuildsView (build history with duration and branch data), and PipelineCenterView (real-time execution dashboard with el-steps for Pull/Install/Test/Build stages and log output).",
+      "parent": "Pipeline Center Module",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Pipeline Center Store & API",
+      "purpose": "Documents usePipelineCenterStore state (pipelines, builds, loading, error, hasPipelines, hasBuilds), pipeline-center.api.ts endpoints (fetchPipelines, fetchBuilds), PipelineDto and BuildDto structures, and the statusColorMap for UI rendering.",
+      "parent": "Pipeline Center Module",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Dashboard Module",
+      "purpose": "Covers the DashboardView.vue: ECharts-based task trend visualization (tasks created vs successes), DashboardStatsDto (tasksToday, successRate, runningCount, alertCount), and the overall health alert panel. Explains the getDashboardStats and getRecentTasks mock functions.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "System Configuration Module",
+      "purpose": "Overview of the system-config module and its eleven settings views under /settings/*. Introduces the two categories: operational settings (preferences, schedules, users) and integration settings (repositories, API keys, models, DeepWiki). Links to child pages for each group.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Operational Settings Views",
+      "purpose": "Covers SystemConfigPreferencesView (locale, timezone, theme, landingPage, notifications), SystemConfigSchedulesView (cron expressions, retryLimit, alertChannel, timezone validation), SystemConfigUsersView (user management), and SystemConfigReviewView (minApprovals, requiredChecks, SLA, blockOnFailingChecks, enforceCodeOwners).",
+      "parent": "System Configuration Module",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Integration & AI Settings Views",
+      "purpose": "Covers SystemConfigRepositoriesView (provider, owner, authMode, mergeStrategies, requireChecks), SystemConfigApiView (API key management for OpenAI/GitHub/Azure), SystemConfigModelsView (LLM model selection: GPT-4, Claude, Llama), SystemConfigSkillView (execution mode, timeoutSeconds, allowWriteFiles, allowTerminal), SystemConfigDeepWikiView (embedding model, topK, metric, autoReindex), and SystemConfigKnowledgeView.",
+      "parent": "System Configuration Module",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "UI Component Library & Styling",
+      "purpose": "Overview of shared UI components and the global styling system. Links to child pages for the component catalog and the CSS design token system.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Shared Components",
+      "purpose": "Documents the reusable components in src/components/: UnifiedChatPanel (message board, composer, option chips, auto-scroll), AppSidebar (MenuItem interface, active state logic, avatar pulse animation), WelcomeItem (icon/heading/default slots, timeline CSS), TheWelcome, HelloWorld, and the icon components in src/components/icons/.",
+      "parent": "UI Component Library & Styling",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "CSS Design Tokens & Theming",
+      "purpose": "Explains the two-tier CSS variable system: palette variables (--vt-c-*) and semantic variables (--color-*). Covers light/dark mode via prefers-color-scheme, the app surface/background tokens in theme.css (--app-bg, --app-surface), Element Plus overrides, and the Inter font stack.",
+      "parent": "UI Component Library & Styling",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Developer Tooling & Build Infrastructure",
+      "purpose": "Overview of the build and test infrastructure. Links to child pages for TypeScript configuration and the Vite/Vitest setup.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "TypeScript Configuration",
+      "purpose": "Documents the Project References architecture: tsconfig.json (orchestrator), tsconfig.app.json (production source, @/* alias, noUncheckedIndexedAccess), tsconfig.vitest.json (jsdom+node types, includes __tests__), and tsconfig.node.json (Node 24 tooling isolation). Explains tsBuildInfoFile incremental caching.",
+      "parent": "Developer Tooling & Build Infrastructure",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Vite Build & Vitest Testing",
+      "purpose": "Covers vite.config.ts (plugins: @vitejs/plugin-vue, vite-plugin-vue-devtools; @/* alias resolution), vitest.config.ts setup, npm scripts (dev, build, build-only, type-check, test:unit), and the HelloWorld.spec.ts test as an example of the testing pattern.",
+      "parent": "Developer Tooling & Build Infrastructure",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    }
+  ]
+}
