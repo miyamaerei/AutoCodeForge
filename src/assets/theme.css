@@ -1,0 +1,18 @@
+:root {
+  --app-bg: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
+  --app-surface: rgba(255, 255, 255, 0.86);
+  --app-border: #d4e2ff;
+}
+
+body {
+  background: var(--app-bg);
+}
+
+.el-menu {
+  border-bottom: none;
+  background: transparent;
+}
+
+.el-card {
+  border: 1px solid var(--app-border);
+}
