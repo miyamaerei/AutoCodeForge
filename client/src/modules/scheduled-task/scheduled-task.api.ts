@@ -400,10 +400,12 @@ export async function updateScheduledTask(dto: UpdateScheduledTaskDto): Promise<
   await wait(300)
   const index = tasksData.findIndex((t) => t.id === dto.id)
   if (index === -1) return null
+  const existing = tasksData[index]
+  if (!existing) return null
   const updated: ScheduledTaskDto = {
-    ...tasksData[index],
+    ...existing,
     ...dto,
-    agentName: dto.agentId ? getAgentName(dto.agentId) : tasksData[index].agentName,
+    agentName: dto.agentId ? getAgentName(dto.agentId) : existing.agentName,
     updatedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
   }
   if (dto.triggerType || dto.cronExpression || dto.intervalMs || dto.onceTime) {

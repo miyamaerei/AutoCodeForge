@@ -13,6 +13,7 @@ const userProfile = {
 }
 
 const route = useRoute()
+const isLoginRoute = computed(() => route.path === '/login')
 
 const userMenuItems = computed<MenuItem[]>(() => [
   {
@@ -213,7 +214,8 @@ function handleOnboardingSkip(): void {
 </script>
 
 <template>
-  <el-container class="app-shell">
+  <RouterView v-if="isLoginRoute" />
+  <el-container v-else class="app-shell">
     <AppSidebar
       :menu-items="menuItems"
       :user-initials="userProfile.initials"

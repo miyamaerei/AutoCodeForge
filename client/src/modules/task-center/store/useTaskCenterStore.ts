@@ -2,20 +2,27 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
   createTask,
+  deleteTask,
   fetchTaskDetail,
+  fetchTaskLogs,
   fetchTaskSummaries,
-  type TaskCreateRequestDto,
-  type TaskDetailDto,
-  type TaskSummaryDto,
+  pauseTask,
+  resumeTask,
+  updateTask,
 } from '../task-center.api'
+import type {
+  CreateTaskRequestDto,
+  TaskDetailDto,
+  TaskLogDto,
+  TaskSummaryDto,
+  UpdateTaskRequestDto,
+} from '../task-center.types'
 import {
   getTaskChat,
   getTaskDiff,
-  getTaskLogs,
   sendTaskChatMessage,
   type ChatMessageDto,
   type TaskDiffDto,
-  type TaskLogDto,
 } from '../../../mock'
 
 export const useTaskCenterStore = defineStore('module.task-center', () => {
@@ -52,7 +59,7 @@ export const useTaskCenterStore = defineStore('module.task-center', () => {
     try {
       const [detail, nextLogs, nextChat, nextDiff] = await Promise.all([
         fetchTaskDetail(taskId),
-        getTaskLogs(taskId),
+        fetchTaskLogs(taskId),
         getTaskChat(taskId),
         getTaskDiff(taskId),
       ])
@@ -71,7 +78,7 @@ export const useTaskCenterStore = defineStore('module.task-center', () => {
     }
   }
 
-  async function submitTask(payload: TaskCreateRequestDto): Promise<TaskSummaryDto | null> {
+  async function submitTask(payload: CreateTaskRequestDto): Promise<TaskSummaryDto | null> {
     creating.value = true
     error.value = null
     try {
@@ -103,6 +110,75 @@ export const useTaskCenterStore = defineStore('module.task-center', () => {
     }
   }
 
+  async function submitUpdate(taskId: string, payload: UpdateTaskRequestDto): Promise<void> {
+    error.value = null
+    try {
+      const updated = await updateTask(taskId, payload)
+      selectedTask.value = updated
+      const index = tasks.value.findIndex((task) => task.id === taskId)
+      if (index !== -1) {
+        const existing = tasks.value[index]
+        if (!existing) return
+        tasks.value[index] = {
+          ...existing,
+          title: updated.title,
+          state: updated.state,
+        }
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '更新任务失败'
+      throw err
+    }
+  }
+
+  async function submitPause(taskId: string): Promise<void> {
+    error.value = null
+    try {
+      const paused = await pauseTask(taskId)
+      selectedTask.value = paused
+      const index = tasks.value.findIndex((task) => task.id === taskId)
+      if (index !== -1) {
+        const existing = tasks.value[index]
+        if (!existing) return
+        tasks.value[index] = { ...existing, state: paused.state }
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '暂停任务失败'
+      throw err
+    }
+  }
+
+  async function submitResume(taskId: string): Promise<void> {
+    error.value = null
+    try {
+      const resumed = await resumeTask(taskId)
+      selectedTask.value = resumed
+      const index = tasks.value.findIndex((task) => task.id === taskId)
+      if (index !== -1) {
+        const existing = tasks.value[index]
+        if (!existing) return
+        tasks.value[index] = { ...existing, state: resumed.state }
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '恢复任务失败'
+      throw err
+    }
+  }
+
+  async function submitDelete(taskId: string): Promise<void> {
+    error.value = null
+    try {
+      await deleteTask(taskId)
+      tasks.value = tasks.value.filter((task) => task.id !== taskId)
+      if (selectedTask.value?.id === taskId) {
+        selectedTask.value = null
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '删除任务失败'
+      throw err
+    }
+  }
+
   return {
     tasks,
     selectedTask,
@@ -119,6 +195,10 @@ export const useTaskCenterStore = defineStore('module.task-center', () => {
     loadTasks,
     loadTaskDetail,
     submitTask,
+    submitUpdate,
+    submitPause,
+    submitResume,
+    submitDelete,
     sendTaskChat,
   }
 })

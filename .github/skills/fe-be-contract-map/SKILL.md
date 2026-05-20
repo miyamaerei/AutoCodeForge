@@ -36,12 +36,12 @@ argument-hint: 'Specify scope filter if needed (e.g. "task-center only" or "all 
 ### Module: Auth
 | Frontend Route | Backend Canonical | Status | Notes |
 |---------------|-------------------|--------|-------|
-| — | `POST /api/v1/auth/windows-login` | ❌ | Preferred login path. Backend resolves Windows identity (or `X-Windows-User` / `X-NtId`) and auto-provisions user when missing |
-| — | `POST /api/v1/auth/login` | ❌ | Passwordless fallback path (ntId-based), no password required |
-| — | `POST /api/v1/auth/register` | ❌ | Optional manual bootstrap path, no password required |
-| — | `GET /api/v1/auth/me` | ❌ | No current-user fetch wired |
+| `/login` (auth.login) | `POST /api/v1/auth/windows-login` | ✅ | Implemented as `login()` primary branch; frontend calls `/v1/auth/windows-login` with axios `baseURL=/api` |
+| `/login` (fallback action) | `POST /api/v1/auth/login` | ✅ | Implemented fallback in `login(payload)` when `ntId` is provided |
+| `/login` (register path) | `POST /api/v1/auth/register` | ✅ | Implemented `register(payload)` |
+| app bootstrap / guarded routes | `GET /api/v1/auth/me` | ✅ | Implemented `getMe()` and Pinia auth store `fetchMe()` |
 
-**Gap**: No auth module exists in frontend. JWT token handling (store, attach to requests, redirect on 401) must be built. Login UI should call `windows-login` first, then use `login` only as fallback when Windows identity is unavailable.
+**Status**: Auth module exists in frontend (`api/types/store/routes/index` + login view). JWT token is stored as `auth_token`, attached in request interceptor, and cleared with redirect to `/login` on 401.
 
 ---
 
@@ -50,16 +50,16 @@ Frontend module path: `client/src/modules/task-center/`
 
 | Function | Frontend Path Used | Backend Canonical | Status |
 |----------|--------------------|-------------------|--------|
-| `fetchTaskSummaries()` | `GET /task-center/tasks` | `GET /api/v1/tasks` | ⚠️ Path mismatch |
-| `fetchTaskDetail(id)` | `GET /task-center/tasks/{id}` | `GET /api/v1/tasks/{id}` | ⚠️ Path mismatch |
-| `createTask(payload)` | `POST /task-center/tasks` | `POST /api/v1/tasks` | ⚠️ Path mismatch |
-| `fetchTaskLogs(id)` | — | `GET /api/v1/tasks/{id}/logs` | ❌ Not wired |
-| `updateTask(id)` | — | `PUT /api/v1/tasks/{id}` | ❌ Not wired |
-| `pauseTask(id)` | — | `POST /api/v1/tasks/{id}/pause` | ❌ Not wired |
-| `resumeTask(id)` | — | `POST /api/v1/tasks/{id}/resume` | ❌ Not wired |
-| `deleteTask(id)` | — | `DELETE /api/v1/tasks/{id}` | ❌ Not wired |
+| `fetchTaskSummaries(page, pageSize)` | `GET /api/v1/tasks?page=&pageSize=` | `GET /api/v1/tasks` | ✅ |
+| `fetchTaskDetail(id)` | `GET /api/v1/tasks/{id}` | `GET /api/v1/tasks/{id}` | ✅ |
+| `createTask(payload)` | `POST /api/v1/tasks` | `POST /api/v1/tasks` | ✅ |
+| `fetchTaskLogs(id)` | `GET /api/v1/tasks/{id}/logs` | `GET /api/v1/tasks/{id}/logs` | ✅ |
+| `updateTask(id, payload)` | `PUT /api/v1/tasks/{id}` | `PUT /api/v1/tasks/{id}` | ✅ |
+| `pauseTask(id)` | `POST /api/v1/tasks/{id}/pause` | `POST /api/v1/tasks/{id}/pause` | ✅ |
+| `resumeTask(id)` | `POST /api/v1/tasks/{id}/resume` | `POST /api/v1/tasks/{id}/resume` | ✅ |
+| `deleteTask(id)` | `DELETE /api/v1/tasks/{id}` | `DELETE /api/v1/tasks/{id}` | ✅ |
 
-**Priority**: HIGH — Core feature. Fix paths, add missing functions.
+**Status**: Task Center API 已完成路径对齐与能力补齐。Store 已改为通过 API 加载任务详情与日志；聊天与 diff 暂保留 mock。
 
 ---
 

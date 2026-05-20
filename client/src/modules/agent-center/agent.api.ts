@@ -168,8 +168,10 @@ export async function updateAgent(dto: UpdateAgentDto): Promise<AgentDto | null>
   await wait(300)
   const index = agentsData.findIndex((a) => a.id === dto.id)
   if (index === -1) return null
+  const existing = agentsData[index]
+  if (!existing) return null
   const updated: AgentDto = {
-    ...agentsData[index],
+    ...existing,
     ...dto,
     updatedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
   }
