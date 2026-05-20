@@ -15,6 +15,7 @@ public class JwtAuthMiddleware
         "/swagger/index.html",
         "/api/v1/auth/login",
         "/api/v1/auth/register",
+        "/api/v1/auth/windows-login",
     };
 
     private readonly RequestDelegate _next;
@@ -71,6 +72,9 @@ public class JwtAuthMiddleware
         {
             context.Items["NtId"] = ntId;
         }
+
+        var isAdminClaim = principal.FindFirst("IsAdmin")?.Value;
+        context.Items["IsAdmin"] = string.Equals(isAdminClaim, "true", StringComparison.OrdinalIgnoreCase);
 
         await _next(context);
     }

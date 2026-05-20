@@ -42,7 +42,21 @@ public class AgentEntity : UserOwnedEntity
     /// <summary>
     /// Gets or sets the selected model config identifier.
     /// </summary>
+    [SugarColumn(IsNullable = true)]
     public Guid? LlmModelConfigId { get; set; }
+
+    /// <summary>
+    /// Gets or sets comma-separated tool names supported by this agent.
+    /// Used for filtering available tools in tool execution pipeline.
+    /// </summary>
+    [SugarColumn(Length = 500, IsNullable = true)]
+    public string? ToolNames { get; set; }
+
+    /// <summary>
+    /// Gets or sets the agent skill profile (ReadOnly, Collaborator, Reviewer).
+    /// </summary>
+    [SugarColumn(Length = 64, IsNullable = true)]
+    public string? SkillProfile { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the agent is enabled.

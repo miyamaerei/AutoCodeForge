@@ -10,14 +10,19 @@ public class LoginRequest
     /// <summary>
     /// Gets or sets the ntid.
     /// </summary>
-    [Required]
     [StringLength(128, MinimumLength = 3)]
-    public string NtId { get; set; } = string.Empty;
+    public string? NtId { get; set; }
 
     /// <summary>
-    /// Gets or sets plain password.
+    /// Gets or sets the optional display name.
     /// </summary>
-    [Required]
-    [StringLength(100, MinimumLength = 6)]
-    public string Password { get; set; } = string.Empty;
+    [StringLength(128, MinimumLength = 2)]
+    public string? UserName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional email.
+    /// </summary>
+    [EmailAddress]
+    [StringLength(256)]
+    public string? Email { get; set; }
 }

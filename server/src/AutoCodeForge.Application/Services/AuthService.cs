@@ -1,7 +1,6 @@
 using AutoCodeForge.Core.DTOs.Auth;
 using AutoCodeForge.Core.Entities;
 using AutoCodeForge.Core.Exceptions;
-using AutoCodeForge.Infrastructure.Helpers;
 using AutoCodeForge.Infrastructure.Repositories;
 
 namespace AutoCodeForge.Application.Services;
@@ -11,20 +10,19 @@ namespace AutoCodeForge.Application.Services;
 /// </summary>
 public class AuthService
 {
+    private const string WindowsAuthPasswordPlaceholder = "__WINDOWS_AUTH__";
+
     private readonly UserRepository _userRepository;
-    private readonly PasswordHelper _passwordHelper;
     private readonly JwtService _jwtService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AuthService"/> class.
     /// </summary>
     /// <param name="userRepository">The user repository.</param>
-    /// <param name="passwordHelper">The password helper.</param>
     /// <param name="jwtService">The JWT service.</param>
-    public AuthService(UserRepository userRepository, PasswordHelper passwordHelper, JwtService jwtService)
+    public AuthService(UserRepository userRepository, JwtService jwtService)
     {
         _userRepository = userRepository;
-        _passwordHelper = passwordHelper;
         _jwtService = jwtService;
     }
 
@@ -49,7 +47,7 @@ public class AuthService
             NtId = request.NtId.Trim(),
             UserName = request.UserName.Trim(),
             Email = request.Email?.Trim(),
-            PasswordHash = _passwordHelper.HashPassword(request.Password),
+            PasswordHash = WindowsAuthPasswordPlaceholder,
             IsDeleted = false,
         };
 
@@ -58,22 +56,34 @@ public class AuthService
     }
 
     /// <summary>
-    /// Authenticates one user.
+    /// Signs in with a Windows identity and auto-creates the user when missing.
     /// </summary>
-    /// <param name="request">The login request.</param>
+    /// <param name="request">The login request resolved from Windows identity context.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>Authentication result.</returns>
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(request.NtId) || string.IsNullOrWhiteSpace(request.Password))
+        if (string.IsNullOrWhiteSpace(request.NtId))
         {
-            throw new ValidationException("NtId and password are required");
+            throw new ValidationException("NtId is required");
         }
 
-        var user = await _userRepository.GetByNtIdAsync(request.NtId.Trim(), cancellationToken);
-        if (user is null || !_passwordHelper.VerifyPassword(request.Password, user.PasswordHash))
+        var normalizedNtId = request.NtId.Trim();
+        var user = await _userRepository.GetByNtIdAsync(normalizedNtId, cancellationToken);
+        if (user is null)
         {
-            throw new UnauthorizedException("Invalid credentials");
+            var resolvedUserName = ResolveUserName(request.UserName, normalizedNtId);
+
+            user = new UserEntity
+            {
+                NtId = normalizedNtId,
+                UserName = resolvedUserName,
+                Email = request.Email?.Trim(),
+                PasswordHash = WindowsAuthPasswordPlaceholder,
+                IsDeleted = false,
+            };
+
+            await _userRepository.CreateAsync(user, cancellationToken);
         }
 
         return BuildAuthResponse(user);
@@ -112,9 +122,37 @@ public class AuthService
     {
         if (string.IsNullOrWhiteSpace(request.NtId)
             || string.IsNullOrWhiteSpace(request.UserName)
-            || string.IsNullOrWhiteSpace(request.Password))
+            )
         {
-            throw new ValidationException("NtId, UserName and password are required");
+            throw new ValidationException("NtId and UserName are required");
         }
+    }
+
+    private static string ResolveUserName(string? requestedUserName, string ntId)
+    {
+        if (!string.IsNullOrWhiteSpace(requestedUserName))
+        {
+            return requestedUserName.Trim();
+        }
+
+        if (ntId.Contains('\\'))
+        {
+            var parts = ntId.Split('\\', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Length > 0)
+            {
+                return parts[^1];
+            }
+        }
+
+        if (ntId.Contains('@'))
+        {
+            var parts = ntId.Split('@', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Length > 0)
+            {
+                return parts[0];
+            }
+        }
+
+        return ntId;
     }
 }

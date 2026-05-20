@@ -54,4 +54,26 @@ public sealed class CurrentUser : ICurrentUser
 
         return null;
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the current user has administrator privileges.
+    /// </summary>
+    /// <returns><see langword="true"/> when the current principal carries the IsAdmin claim; otherwise <see langword="false"/>.</returns>
+    public bool IsAdmin()
+    {
+        var context = _httpContextAccessor.HttpContext;
+        if (context is null)
+        {
+            return false;
+        }
+
+        if (context.Items.TryGetValue("IsAdmin", out var fromItems)
+            && fromItems is bool isAdminFromItems)
+        {
+            return isAdminFromItems;
+        }
+
+        var claim = context.User?.FindFirst("IsAdmin")?.Value;
+        return string.Equals(claim, "true", StringComparison.OrdinalIgnoreCase);
+    }
 }

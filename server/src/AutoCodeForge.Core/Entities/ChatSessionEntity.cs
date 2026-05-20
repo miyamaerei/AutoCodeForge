@@ -24,15 +24,18 @@ public class ChatSessionEntity : UserOwnedEntity
     /// <summary>
     /// Gets or sets bound agent identifier.
     /// </summary>
+    [SugarColumn(IsNullable = true)]
     public Guid? AgentId { get; set; }
 
     /// <summary>
     /// Gets or sets the related task identifier.
     /// </summary>
+    [SugarColumn(IsNullable = true)]
     public Guid? TaskId { get; set; }
 
     /// <summary>
     /// Gets or sets the latest message timestamp in UTC.
     /// </summary>
+    [SugarColumn(IsNullable = true)]
     public DateTime? LastMessageAtUtc { get; set; }
 }

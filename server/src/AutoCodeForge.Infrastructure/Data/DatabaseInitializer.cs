@@ -37,6 +37,10 @@ public class DatabaseInitializer
             typeof(ChatMessageEntity),
             typeof(AgentEntity),
             typeof(RepositoryEntity),
+            typeof(ReviewRuleSetEntity),
+            typeof(ReviewTaskEntity),
+            typeof(ReviewFindingEntity),
+            typeof(RepoSandboxWorkspaceEntity),
             typeof(ScheduledTaskEntity),
             typeof(ScheduledTaskExecutionEntity),
             typeof(PipelineEntity),
@@ -45,7 +49,10 @@ public class DatabaseInitializer
             typeof(UserConfigEntity),
             typeof(LLMModelConfigEntity),
             typeof(AISessionConfigEntity),
-            typeof(WikiPageEntity));
+            typeof(WikiPageEntity),
+            typeof(AdminAuditLogEntity),
+            typeof(GitSkillGrantEntity),
+            typeof(AgentToolInvocationEntity));
 
         if (isDevelopment)
         {

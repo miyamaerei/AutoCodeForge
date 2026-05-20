@@ -28,10 +28,4 @@ public class RegisterRequest
     [StringLength(256)]
     public string? Email { get; set; }
 
-    /// <summary>
-    /// Gets or sets plain password.
-    /// </summary>
-    [Required]
-    [StringLength(100, MinimumLength = 6)]
-    public string Password { get; set; } = string.Empty;
 }

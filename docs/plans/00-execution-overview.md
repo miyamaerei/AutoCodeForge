@@ -68,14 +68,18 @@
 | 00 | 执行计划总览 | `docs/plans/00-execution-overview.md` | ✅ | - |
 | 01 | 阶段一：项目初始化 & 基础设施 | `docs/plans/01-phase-one-infrastructure.md` | ✅ (已增强) | 创建 12 个可复用组件，避免 3000+ 行重复代码 |
 | 02 | 阶段二：数据层 & 认证系统 | `docs/plans/02-phase-two-data-auth.md` | ✅ (已增强) | 复用阶段一，新增 8 个可复用组件 |
-| 03 | 阶段三：AI 核心模块 | `docs/plans/03-phase-three-ai-core.md` | ⏳ (待增强) | 复用阶段一、二，新增 AI 相关复用组件 |
-| 04 | 阶段四：任务中心模块 | `docs/plans/04-phase-four-task-center.md` | ⏳ (待增强) | 复用阶段一、二，新增任务相关复用组件 |
-| 05 | 阶段五：定时任务调度 | `docs/plans/05-phase-five-scheduler.md` | ⏳ (待增强) | 复用阶段一、二、四，新增调度相关复用组件 |
-| 06 | 阶段六：Git 仓库集成 | `docs/plans/06-phase-six-git-integration.md` | ⏳ (待增强) | 复用阶段一、二，新增 Git 相关复用组件 |
-| 07 | 阶段七：流水线模块 | `docs/plans/07-phase-seven-pipeline.md` | ⏳ (待增强) | 复用阶段一、二、六，新增流水线相关复用组件 |
-| 08 | 阶段八：Wiki 模块 | `docs/plans/08-phase-eight-wiki.md` | ⏳ (待增强) | 复用阶段一、二，新增 Wiki 相关复用组件 |
-| 09 | 阶段九：系统配置 & 健康检查 | `docs/plans/09-phase-nine-config-health.md` | ⏳ (待增强) | 复用阶段一、二，新增配置相关复用组件 |
+| 03 | 阶段三：AI 核心模块 | `docs/plans/03-phase-three-ai-core.md` | ✅ (完成) | 复用阶段一、二，新增 AI 相关复用组件 |
+| 04 | 阶段四：任务中心模块 | `docs/plans/04-phase-four-task-center.md` | ✅ (完成) | 复用阶段一、二，新增任务相关复用组件 |
+| 05 | 阶段五：定时任务调度 | `docs/plans/05-phase-five-scheduler.md` | ✅ (完成) | 复用阶段一、二、四，新增调度相关复用组件 |
+| 06 | 阶段六：Git 仓库集成 | `docs/plans/06-phase-six-git-integration.md` | ✅ (完成) | 复用阶段一、二，新增 Git 相关复用组件 |
+| 07 | 阶段七：流水线模块 | `docs/plans/07-phase-seven-pipeline.md` | ✅ (完成) | 复用阶段一、二、六，新增流水线相关复用组件 |
+| 08 | 阶段八：Wiki 模块 | `docs/plans/08-phase-eight-wiki.md` | ⏳ (下一轮) | 复用阶段一、二，新增 Wiki 相关复用组件 |
+| 09 | 阶段九：系统配置 & 健康检查 | `docs/plans/09-phase-nine-config-health.md` | ⏳ (下一轮) | 复用阶段一、二，新增配置相关复用组件 |
 | 10 | 阶段十：测试 & 优化 | `docs/plans/10-phase-ten-testing.md` | ⏳ (待增强) | 复用所有阶段，新增测试相关复用组件 |
+| 11 | Plan 对齐治理：Issue 模板 | `docs/plans/11-plan-sync-issue-template.md` | ✅ | 固化 live plan 与 masterplan/report 对齐派单模板 |
+| 12 | 阶段十二：Sandbox 继承与 Repo 同步 | `docs/plans/12-phase-twelve-sandbox-repo-sync.md` | ✅ (新增) | 本地 Sandbox + 按用户隔离目录 + 任务拉取仓库 |
+| 13 | 阶段十三：Repo 与审查模块管理 | `docs/plans/13-phase-thirteen-repo-review-management.md` | ✅ (新增) | Repo 管理与审查任务闭环，规则分层与审查报告可追溯 |
+| 14 | 阶段十四：Agent 增强 Git 技能 | `docs/plans/14-phase-fourteen-agent-git-skills.md` | ✅ (新增) | Agent 接入 Git 只读/变更技能，权限管控与审计追踪 |
 
 ---
 
@@ -98,6 +102,10 @@
 8. **08-phase-eight-wiki** - Wiki
 9. **09-phase-nine-config-health** - 配置 & 健康检查
 10. **10-phase-ten-testing** - 测试 & 优化
+
+### 第五优先级（扩展治理能力）
+11. **13-phase-thirteen-repo-review-management** - Repo 与审查模块管理
+12. **14-phase-fourteen-agent-git-skills** - Agent 增强 Git 技能
 
 ---
 

@@ -32,4 +32,10 @@ public class WikiPageEntity : UserOwnedEntity
     /// </summary>
     [SugarColumn(ColumnDataType = "TEXT", IsNullable = false)]
     public string Content { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets associated repository identifier.
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public Guid? RepositoryId { get; set; }
 }

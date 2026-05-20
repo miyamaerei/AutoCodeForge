@@ -43,4 +43,9 @@ public class UserEntity : AuditableEntity
     /// Gets or sets a value indicating whether the user is soft deleted.
     /// </summary>
     public bool IsDeleted { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the user has administrator privileges.
+    /// </summary>
+    public bool IsAdmin { get; set; }
 }

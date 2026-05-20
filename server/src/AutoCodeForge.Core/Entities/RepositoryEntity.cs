@@ -1,4 +1,4 @@
-using AutoCodeForge.Core.Entities.Base;
+﻿using AutoCodeForge.Core.Entities.Base;
 using SqlSugar;
 
 namespace AutoCodeForge.Core.Entities;
@@ -41,6 +41,30 @@ public class RepositoryEntity : UserOwnedEntity
     /// Gets or sets merge strategy.
     /// </summary>
     public MergeStrategy MergeStrategy { get; set; } = MergeStrategy.Squash;
+
+    /// <summary>
+    /// Gets or sets the encrypted authentication token.
+    /// </summary>
+    [SugarColumn(Length = 1000, IsNullable = false)]
+    public string EncryptedToken { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the platform-assigned webhook identifier, when registered.
+    /// </summary>
+    [SugarColumn(Length = 200, IsNullable = true)]
+    public string? WebhookId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default review rule set identifier for new review tasks.
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public Guid? DefaultReviewRuleSetId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the HMAC signing secret used to verify incoming webhook payloads.
+    /// </summary>
+    [SugarColumn(Length = 512, IsNullable = true)]
+    public string? WebhookSecret { get; set; }
 }
 
 /// <summary>

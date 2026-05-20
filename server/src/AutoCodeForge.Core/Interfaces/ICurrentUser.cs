@@ -10,4 +10,10 @@ public interface ICurrentUser
     /// </summary>
     /// <returns>The current NtId, if available.</returns>
     string? GetCurrentNtId();
+
+    /// <summary>
+    /// Gets a value indicating whether the current user has administrator privileges.
+    /// </summary>
+    /// <returns><see langword="true"/> when the current user is an admin; otherwise <see langword="false"/>.</returns>
+    bool IsAdmin();
 }

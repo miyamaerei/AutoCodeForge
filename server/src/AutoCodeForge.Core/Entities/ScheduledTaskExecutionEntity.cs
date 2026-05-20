@@ -33,6 +33,7 @@ public class ScheduledTaskExecutionEntity : UserOwnedEntity
     /// <summary>
     /// Gets or sets finish time in UTC.
     /// </summary>
+    [SugarColumn(IsNullable = true)]
     public DateTime? CompletedAtUtc { get; set; }
 
     /// <summary>

@@ -55,9 +55,29 @@ public class AgentExecutor
             Messages = messages,
         };
 
-        _logger.LogInformation("Executing agent {AgentId} ({AgentName})", agent.Id, agent.Name);
-        var response = await _llmGateway.ChatWithToolsAsync(request, _tools, cancellationToken);
+        var tools = FilterToolsByAgent(agent).ToList();
+        _logger.LogInformation(
+            "Executing agent {AgentId} ({AgentName}) with {ToolCount} tools",
+            agent.Id,
+            agent.Name,
+            tools.Count);
+
+        var response = await _llmGateway.ChatWithToolsAsync(request, tools, cancellationToken);
         return response.Content;
+    }
+
+    private IEnumerable<IAgentTool> FilterToolsByAgent(AgentEntity agent)
+    {
+        if (string.IsNullOrWhiteSpace(agent.ToolNames))
+        {
+            return _tools;
+        }
+
+        var allowed = agent.ToolNames
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return _tools.Where(tool => allowed.Contains(tool.Name));
     }
 
     private static ChatMessage ToDto(ChatMessageEntity message)

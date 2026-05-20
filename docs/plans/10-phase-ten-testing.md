@@ -7,6 +7,27 @@
 
 ---
 
+## 当前状态快照（2026-05-20）
+
+### 已验证现状
+
+- `server/tests/AutoCodeForge.Tests/AutoCodeForge.Tests.csproj` 已存在，测试工程可编译。
+- 已落地测试 48 个：`48` 通过，`0` 失败，`0` 跳过。
+- 已补齐共享测试基础设施：`TestBase.cs`、`TestDataFactory.cs`、`TestWebApplicationFactory.cs`。
+- 已修复的阻断项：
+	1. `RepositoryServiceTests` 改为使用真实 `GitProviderFactory` + fake `HttpMessageHandler`，不再 mock 不可覆写成员。
+	2. `GitProviderTests` 改为使用可控 fake `HttpClient`，不再依赖真实外网行为。
+	3. `AgentChatSmokeTests` 已解除 skip，并切换到隔离 SQLite + 移除后台服务的测试宿主。
+	4. `AgentEntity.LlmModelConfigId` 与 `ChatSessionEntity` 可空字段映射已修正，消除集成测试中的 SQLite `NOT NULL` 约束错误。
+- 已新增轻量性能基线测试：`server/tests/AutoCodeForge.Tests/Performance/LlmGatewayPerformanceTests.cs`。
+- 已补齐后端文档：`server/docs/API.md`、`server/docs/DEPLOYMENT.md`，并同步更新 `server/README.md`。
+
+### 阶段判断
+
+第 10 阶段的回归阻断已经清除，`10.14` 最终验证已通过；本轮又补齐了 `BaseRepositoryTests`、`LlmGatewayTests`、`AgentServiceTests` 和正式 code review 记录，因此原始计划中剩余的核心缺口已经收口。
+
+---
+
 ## 我是如何考虑的
 
 ### 设计思路
@@ -84,6 +105,27 @@
 
 ---
 
+## 任务状态对照（2026-05-20）
+
+| 编号 | 当前状态 | 证据/备注 |
+|------|---------|-----------|
+| **10.1** | ✅ 已完成 | 测试项目 `server/tests/AutoCodeForge.Tests/AutoCodeForge.Tests.csproj` 已存在，`dotnet test` 可完成发现与执行。 |
+| **10.2** | ✅ 已完成 | 已新增 `TestBase.cs`、`TestDataFactory.cs`、`TestWebApplicationFactory.cs`，集成测试宿主支持独立 SQLite 和关闭后台服务。 |
+| **10.3** | ✅ 已完成 | 已新增 `server/tests/AutoCodeForge.Tests/BaseRepositoryTests.cs`，覆盖审计字段、用户隔离和软删除行为。 |
+| **10.4** | ✅ 已完成 | `AuthServiceTests.cs` 已存在，且纳入本次 `dotnet test` 通过集合。 |
+| **10.5** | ✅ 已完成 | 已新增 `server/tests/AutoCodeForge.Tests/LlmGatewayTests.cs`，覆盖请求校验、模型选择、工具结果拼接和错误拼接。 |
+| **10.6** | ✅ 已完成 | 已新增 `server/tests/AutoCodeForge.Tests/AgentServiceTests.cs`，覆盖创建、未命中更新和关键词匹配逻辑。 |
+| **10.7** | ✅ 已完成 | `TaskServiceTests.cs` 已存在，基础任务状态流转已覆盖。 |
+| **10.8** | ✅ 已完成 | `AuthEndpointsTests.cs` 已存在，当前 smoke 也已在主计划中登记通过。 |
+| **10.9** | ✅ 已完成 | 仍未使用 `ChatEndpointsTests.cs` 命名，但 `AgentChatSmokeTests.cs` 已解除 skip 并覆盖聊天与流式集成路径。 |
+| **10.10** | ✅ 已完成 | 已归档 code review 记录 `docs/reports/CODE_REVIEW_20260520_PHASE10.md`，当前未发现新的阻断级问题。 |
+| **10.11** | ✅ 已完成 | 已新增 `server/tests/AutoCodeForge.Tests/Performance/LlmGatewayPerformanceTests.cs`，验证 mock LLM 关键路径 < 500ms。 |
+| **10.12** | ✅ 已完成 | 已新增 `server/docs/API.md` 并同步更新 `server/README.md`。 |
+| **10.13** | ✅ 已完成 | 已新增 `server/docs/DEPLOYMENT.md`。 |
+| **10.14** | ✅ 已完成 | 已执行完整测试验证，结果为 `48` 总数中 `48` 通过、`0` 失败、`0` 跳过。 |
+
+---
+
 ## 注意事项
 
 ⚠️ **重要提醒**
@@ -104,9 +146,14 @@
 
 ---
 
-## 🎉 完成
+## 当前结论
 
-恭喜！所有阶段已完成，AutoCodeForge 后端 MVP 已准备就绪！
+阶段十的关键阻断项和原始计划缺口都已收口，当前测试基线、性能基线、后端文档和 review 记录都已可用，`10.14` 最终验证已跑通。按当前计划口径，本阶段可以视为完成。
+
+### 当前优先收口项
+
+1. 后续若继续增强阶段十，可再补更细的故障注入测试，例如 `LlmGateway` 的熔断与重试边界。
+2. 若进入长期维护阶段，建议把 SQLite 并发边界验证从测试宿主扩展到接近生产的环境验证。
 
 ### 复用收益总览
 

@@ -38,6 +38,7 @@ public class JwtService
             new("NtId", user.NtId),
             new(ClaimTypes.NameIdentifier, user.NtId),
             new(ClaimTypes.Name, user.UserName),
+            new("IsAdmin", user.IsAdmin ? "true" : "false"),
         };
 
         var credentials = new SigningCredentials(GetSecurityKey(), SecurityAlgorithms.HmacSha256);

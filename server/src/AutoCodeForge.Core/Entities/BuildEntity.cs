@@ -27,6 +27,12 @@ public class BuildEntity : UserOwnedEntity
     public string BuildNumber { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets external build identifier from CI/CD provider.
+    /// </summary>
+    [SugarColumn(Length = 200, IsNullable = true)]
+    public string? ExternalBuildId { get; set; }
+
+    /// <summary>
     /// Gets or sets current build status.
     /// </summary>
     public BuildStatus Status { get; set; } = BuildStatus.Queued;
@@ -35,6 +41,17 @@ public class BuildEntity : UserOwnedEntity
     /// Gets or sets triggered timestamp in UTC.
     /// </summary>
     public DateTime TriggeredAtUtc { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Gets or sets completion timestamp in UTC.
+    /// </summary>
+    public DateTime? CompletedAtUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional build log content.
+    /// </summary>
+    [SugarColumn(ColumnDataType = "TEXT", IsNullable = true)]
+    public string? LogContent { get; set; }
 }
 
 /// <summary>

@@ -3,7 +3,6 @@ using AutoCodeForge.Core.DTOs.Auth;
 using AutoCodeForge.Core.Exceptions;
 using AutoCodeForge.Core.Interfaces;
 using AutoCodeForge.Core.Models;
-using AutoCodeForge.Infrastructure.Helpers;
 using AutoCodeForge.Infrastructure.Repositories;
 using Microsoft.Extensions.Options;
 using SqlSugar;
@@ -38,9 +37,8 @@ public sealed class AuthServiceTests : IDisposable
         });
 
         var userRepository = new UserRepository(_db, new TestCurrentUser(null));
-        var passwordHelper = new PasswordHelper();
         var jwtService = new JwtService(jwtOptions);
-        _authService = new AuthService(userRepository, passwordHelper, jwtService);
+        _authService = new AuthService(userRepository, jwtService);
     }
 
     [Fact]
@@ -52,14 +50,12 @@ public sealed class AuthServiceTests : IDisposable
             NtId = $"user.{suffix}",
             UserName = "Test User",
             Email = "test.user@example.com",
-            Password = "P@ssw0rd123",
         };
 
         var register = await _authService.RegisterAsync(request);
         var login = await _authService.LoginAsync(new LoginRequest
         {
             NtId = request.NtId,
-            Password = request.Password,
         });
 
         Assert.False(string.IsNullOrWhiteSpace(register.AccessToken));
@@ -70,21 +66,19 @@ public sealed class AuthServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Login_WithWrongPassword_ShouldThrowUnauthorized()
+    public async Task Login_WhenUserMissing_ShouldAutoProvision()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        await _authService.RegisterAsync(new RegisterRequest
+        var login = await _authService.LoginAsync(new LoginRequest
         {
             NtId = $"user.{suffix}",
-            UserName = "Test User",
-            Password = "P@ssw0rd123",
+            UserName = "Auto Provisioned",
+            Email = "auto.provisioned@example.com",
         });
 
-        await Assert.ThrowsAsync<UnauthorizedException>(() => _authService.LoginAsync(new LoginRequest
-        {
-            NtId = $"user.{suffix}",
-            Password = "wrong-password",
-        }));
+        Assert.Equal($"user.{suffix}", login.NtId);
+        Assert.Equal("Auto Provisioned", login.UserName);
+        Assert.False(string.IsNullOrWhiteSpace(login.AccessToken));
     }
 
     [Fact]
@@ -127,6 +121,11 @@ public sealed class AuthServiceTests : IDisposable
         public string? GetCurrentNtId()
         {
             return _ntId;
+        }
+
+        public bool IsAdmin()
+        {
+            return false;
         }
     }
 }

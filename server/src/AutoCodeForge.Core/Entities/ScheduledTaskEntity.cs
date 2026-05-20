@@ -38,6 +38,24 @@ public class ScheduledTaskEntity : UserOwnedEntity
     public ScheduleStatus Status { get; set; } = ScheduleStatus.Active;
 
     /// <summary>
+    /// Gets or sets optional bound agent identifier used when spawning tasks.
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public Guid? AgentId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the input payload forwarded to every spawned task.
+    /// </summary>
+    [SugarColumn(ColumnDataType = "TEXT", IsNullable = false)]
+    public string Input { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the title template for spawned tasks.
+    /// </summary>
+    [SugarColumn(Length = 200, IsNullable = false)]
+    public string TaskTitle { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets or sets next execution timestamp in UTC.
     /// </summary>
     public DateTime? NextRunAtUtc { get; set; }

@@ -61,28 +61,177 @@ public class LlmGateway : ILlmGateway
         IEnumerable<IAgentTool> tools,
         CancellationToken cancellationToken = default)
     {
-        var response = await ChatAsync(request, cancellationToken);
+        // Validate tools collection
+        var toolList = tools.ToList();
+        if (!toolList.Any())
+        {
+            _logger.LogWarning("No tools available for agent execution");
+            return await ChatAsync(request, cancellationToken);
+        }
 
+        // Build tool registry for lookup
+        var toolRegistry = toolList.ToDictionary(
+            t => t.Name,
+            t => t,
+            StringComparer.OrdinalIgnoreCase);
+
+        // Get last user message for tool selection
         var userInput = request.Messages.LastOrDefault(message =>
             string.Equals(message.Role, "user", StringComparison.OrdinalIgnoreCase))?.Content ?? string.Empty;
 
-        var matchedTool = tools.FirstOrDefault(tool =>
-            userInput.Contains(tool.Name, StringComparison.OrdinalIgnoreCase));
-
-        if (matchedTool is null)
+        if (string.IsNullOrWhiteSpace(userInput))
         {
-            return response;
+            return await ChatAsync(request, cancellationToken);
         }
 
-        var toolResult = await matchedTool.ExecuteAsync(
-            new Dictionary<string, string>
-            {
-                ["query"] = userInput,
-            },
-            cancellationToken);
+        // Attempt to match and execute a tool
+        var matchedTool = MatchToolByName(userInput, toolRegistry);
+        if (matchedTool is null)
+        {
+            _logger.LogDebug("No matching tool found for user input: {UserInput}", userInput);
+            return await ChatAsync(request, cancellationToken);
+        }
 
-        response.Content = $"{response.Content}\n\n[Tool:{matchedTool.Name}] {toolResult}";
-        return response;
+        _logger.LogInformation("Matched tool '{ToolName}' for user input", matchedTool.Name);
+
+        try
+        {
+            // Execute the matched tool with structured input
+            var toolInput = ExtractToolInput(userInput, matchedTool.Name);
+            var toolResult = await ExecuteToolAsync(matchedTool, toolInput, cancellationToken);
+
+            // Get base LLM response first
+            var response = await ChatAsync(request, cancellationToken);
+
+            // Append tool result to response
+            response.Content = FormatToolExecutionResult(response.Content, matchedTool.Name, toolResult);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Tool execution failed for tool '{ToolName}'", matchedTool.Name);
+
+            // Get base response and append error
+            var response = await ChatAsync(request, cancellationToken);
+            response.Content = FormatToolExecutionError(response.Content, matchedTool.Name, ex.Message);
+            return response;
+        }
+    }
+
+    /// <summary>
+    /// Matches a tool by name from the registry, handling case-insensitive lookup.
+    /// Supports both exact name match and prefix match (e.g., "GetUserInfo query:alice" matches "GetUserInfo" tool).
+    /// </summary>
+    private static IAgentTool? MatchToolByName(string userInput, Dictionary<string, IAgentTool> toolRegistry)
+    {
+        // Try exact match first (case-insensitive)
+        foreach (var toolName in toolRegistry.Keys)
+        {
+            if (userInput.Contains(toolName, StringComparison.OrdinalIgnoreCase))
+            {
+                return toolRegistry[toolName];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Extracts tool input parameters from user message.
+    /// Returns a dictionary with "query" key containing the user message.
+    /// Can be extended for structured parameter extraction in future versions.
+    /// </summary>
+    private static Dictionary<string, string> ExtractToolInput(string userInput, string toolName)
+    {
+        var query = userInput.Replace(toolName, string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
+        var effectiveQuery = string.IsNullOrWhiteSpace(query) ? userInput : query;
+
+        var input = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["query"] = effectiveQuery,
+        };
+
+        // Parse lightweight key-value tokens, e.g. operation=create-pull-request repositoryId=... branch=main.
+        var knownKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "operation",
+            "repositoryId",
+            "sessionId",
+            "taskId",
+            "branch",
+            "limit",
+            "state",
+            "title",
+            "sourceBranch",
+            "targetBranch",
+            "description",
+            "localPath",
+        };
+
+        var parts = effectiveQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var part in parts)
+        {
+            var separatorIndex = part.IndexOf('=');
+            if (separatorIndex <= 0)
+            {
+                separatorIndex = part.IndexOf(':');
+            }
+
+            if (separatorIndex <= 0 || separatorIndex >= part.Length - 1)
+            {
+                continue;
+            }
+
+            var key = part[..separatorIndex].Trim();
+            var value = part[(separatorIndex + 1)..].Trim();
+            if (!knownKeys.Contains(key) || string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            input[key] = value.Trim('"', '\'', ',');
+        }
+
+        return input;
+    }
+
+    /// <summary>
+    /// Executes a tool with the provided input, applying timeout and error handling.
+    /// </summary>
+    private async Task<string> ExecuteToolAsync(
+        IAgentTool tool,
+        IReadOnlyDictionary<string, string> input,
+        CancellationToken cancellationToken)
+    {
+        // Apply timeout wrapper (5 seconds default)
+        using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+        {
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+            try
+            {
+                return await tool.ExecuteAsync(input, timeoutCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                throw new CustomException($"Tool '{tool.Name}' execution timeout after 5 seconds", 504);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Formats the tool execution result as structured output in the response.
+    /// </summary>
+    private static string FormatToolExecutionResult(string baseContent, string toolName, string toolResult)
+    {
+        return $"{baseContent}\n\n[Tool:{toolName}]\n{toolResult}";
+    }
+
+    /// <summary>
+    /// Formats tool execution error as structured output in the response.
+    /// </summary>
+    private static string FormatToolExecutionError(string baseContent, string toolName, string errorMessage)
+    {
+        return $"{baseContent}\n\n[Tool:{toolName}:ERROR]\n{errorMessage}";
     }
 
     private static void EnsureRequest(LlmRequest request)

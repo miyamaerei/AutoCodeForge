@@ -27,6 +27,12 @@ public class PipelineEntity : UserOwnedEntity
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets third-party pipeline identifier.
+    /// </summary>
+    [SugarColumn(Length = 200, IsNullable = true)]
+    public string? ExternalPipelineId { get; set; }
+
+    /// <summary>
     /// Gets or sets status.
     /// </summary>
     public PipelineStatus Status { get; set; } = PipelineStatus.Active;
@@ -36,6 +42,11 @@ public class PipelineEntity : UserOwnedEntity
     /// </summary>
     [SugarColumn(ColumnDataType = "TEXT", IsNullable = true)]
     public string? DefinitionYaml { get; set; }
+
+    /// <summary>
+    /// Gets or sets last synchronization timestamp in UTC.
+    /// </summary>
+    public DateTime? LastSyncedAtUtc { get; set; }
 }
 
 /// <summary>
