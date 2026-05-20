@@ -2,9 +2,15 @@
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRepoManagementStore } from '../store/useRepoManagementStore'
+import { useRepoStore } from '@/stores/useRepoStore'
 
 const store = useRepoManagementStore()
+const repoGlobal = useRepoStore()
 const { repositories, loading, error, hasRepositories } = storeToRefs(store)
+
+function rowClassName({ row }: { row: any }) {
+  return row.id === repoGlobal.selectedRepositoryId ? 'is-selected-repo' : ''
+}
 
 onMounted(async () => {
   if (!hasRepositories.value) {
@@ -29,7 +35,7 @@ onMounted(async () => {
 
       <el-empty v-else-if="!hasRepositories" description="暂无仓库数据" />
 
-      <el-table v-else :data="repositories" stripe>
+  <el-table v-else :data="repositories" stripe :row-class-name="rowClassName">
         <el-table-column prop="name" label="仓库名称" width="200" />
         <el-table-column prop="url" label="仓库地址" min-width="300" />
         <el-table-column prop="branch" label="默认分支" width="120" />
@@ -37,7 +43,7 @@ onMounted(async () => {
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button link type="primary" size="small">查看</el-button>
-            <el-button link type="primary" size="small">设置</el-button>
+            <el-button link type="primary" size="small" @click="repoGlobal.selectRepository(row.id)">设为当前仓库</el-button>
             <el-button link type="danger" size="small">删除</el-button>
           </template>
         </el-table-column>
@@ -59,5 +65,9 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.is-selected-repo {
+  background: rgba(59, 130, 246, 0.06) !important;
 }
 </style>

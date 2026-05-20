@@ -1,13 +1,28 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRepoManagementStore } from '../store/useRepoManagementStore'
+import { useRepoStore } from '@/stores/useRepoStore'
 
 const store = useRepoManagementStore()
-const { branches, loading, error, hasBranches } = storeToRefs(store)
+const repoGlobal = useRepoStore()
+const { branches, loading, error, hasBranches, repositories } = storeToRefs(store)
+
+// bind to global selected repo id from useRepoStore
+const { selectedRepositoryId } = repoGlobal
 
 onMounted(async () => {
+  if (!repositories.value || repositories.value.length === 0) {
+    await store.loadRepositories()
+  }
   if (!hasBranches.value) {
+    await store.loadBranches()
+  }
+})
+
+// reload branches when selected repository changes
+watch(() => repoGlobal.selectedRepositoryId, async (newId, oldId) => {
+  if (newId && newId !== oldId) {
     await store.loadBranches()
   }
 })
@@ -18,7 +33,12 @@ onMounted(async () => {
     <el-card class="content-card">
       <template #header>
         <div class="card-header">
-          <span>分支管理</span>
+          <div style="display:flex; align-items:center; gap:12px">
+            <span>分支管理</span>
+            <el-select v-model="selectedRepositoryId" placeholder="选择仓库" style="min-width:240px">
+              <el-option v-for="repo in repositories" :key="repo.id" :label="repo.name" :value="repo.id" />
+            </el-select>
+          </div>
           <el-button type="primary">+ 新建分支</el-button>
         </div>
       </template>
