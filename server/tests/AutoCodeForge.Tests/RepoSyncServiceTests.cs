@@ -34,7 +34,9 @@ public sealed class RepoSyncServiceTests : IDisposable
             typeof(UserConfigEntity),
             typeof(RepositoryEntity),
             typeof(RepoSandboxWorkspaceEntity),
-            typeof(GlobalConfigEntity));
+            typeof(GlobalConfigEntity),
+            typeof(ConfigurationEntry),
+            typeof(ConfigHistoryEntity));
 
         var currentUser = new TestCurrentUser("repo.sync.user");
         var taskRepository = new TaskRepository(_db, currentUser);
@@ -42,9 +44,10 @@ public sealed class RepoSyncServiceTests : IDisposable
         var repositoryRepository = new RepositoryRepository(_db, currentUser);
         var workspaceRepository = new RepoSandboxWorkspaceRepository(_db, currentUser);
         var configService = new ConfigService(
-            new GlobalConfigRepository(_db, currentUser),
-            new UserConfigRepository(_db, currentUser),
-            new SandboxConfigValidator());
+            new ConfigRepository(_db, currentUser),
+            new ConfigHistoryRepository(_db, currentUser),
+            new EncryptionService("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+            currentUser);
 
         _taskRepository = taskRepository;
         _service = new RepoSyncService(taskRepository, taskLogRepository, repositoryRepository, workspaceRepository, configService);

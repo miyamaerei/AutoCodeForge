@@ -135,14 +135,16 @@ Frontend module path: `client/src/modules/scheduled-task/`
 
 | Function | Frontend Path Used | Backend Canonical | Status |
 |----------|--------------------|-------------------|--------|
-| `fetchScheduledTasks()` | mock only | `GET /api/v1/scheduled-tasks` | 🔒 Mock-only |
-| `fetchScheduledTask(id)` | mock only | `GET /api/v1/scheduled-tasks/{id}` | 🔒 Mock-only |
-| `fetchExecutions(id)` | mock only | `GET /api/v1/scheduled-tasks/{id}/executions` | 🔒 Mock-only |
-| `createScheduledTask(payload)` | mock only | `POST /api/v1/scheduled-tasks` | 🔒 Mock-only |
-| `updateScheduledTask(id)` | mock only | `PUT /api/v1/scheduled-tasks/{id}` | 🔒 Mock-only |
-| `pauseScheduledTask(id)` | mock only | `POST /api/v1/scheduled-tasks/{id}/pause` | 🔒 Mock-only |
-| `resumeScheduledTask(id)` | mock only | `POST /api/v1/scheduled-tasks/{id}/resume` | 🔒 Mock-only |
-| `deleteScheduledTask(id)` | mock only | `DELETE /api/v1/scheduled-tasks/{id}` | 🔒 Mock-only |
+| `fetchScheduledTasks(page, pageSize)` | `GET /api/v1/scheduled-tasks?page=&pageSize=` | `GET /api/v1/scheduled-tasks` | ✅ |
+| `fetchScheduledTask(id)` | `GET /api/v1/scheduled-tasks/{id}` | `GET /api/v1/scheduled-tasks/{id}` | ✅ |
+| `fetchExecutions(id)` | `GET /api/v1/scheduled-tasks/{id}/executions` | `GET /api/v1/scheduled-tasks/{id}/executions` | ✅ |
+| `createScheduledTask(payload)` | `POST /api/v1/scheduled-tasks` | `POST /api/v1/scheduled-tasks` | ✅ |
+| `updateScheduledTask(id, payload)` | `PUT /api/v1/scheduled-tasks/{id}` | `PUT /api/v1/scheduled-tasks/{id}` | ✅ |
+| `triggerScheduledTask(id)` | `POST /api/v1/scheduled-tasks/{id}/trigger` | `POST /api/v1/scheduled-tasks/{id}/trigger` | ✅ |
+| `deleteScheduledTask(id)` | `DELETE /api/v1/scheduled-tasks/{id}` | `DELETE /api/v1/scheduled-tasks/{id}` | ✅ |
+| `fetchTemplates()` | `GET /api/v1/scheduled-tasks/templates` | `GET /api/v1/scheduled-tasks/templates` | ✅ |
+
+**Status**: ✅ Scheduled Task API 已完成集成。所有函数支持真实 API 调用和 Mock 切换（USE_MOCK=true 时使用 mock）。Store (`useScheduledTaskStore`) 已创建，Composable (`useScheduledTask`) 已更新使用 Store。DTO 已对齐后端字段（`nextRunAtUtc`, `input` 等）。
 
 **Priority**: MEDIUM
 
