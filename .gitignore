@@ -44,4 +44,4 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 # Trae IDE
-.trae/
+# .trae/
