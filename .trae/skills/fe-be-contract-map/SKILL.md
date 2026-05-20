@@ -192,16 +192,75 @@ Frontend module path: `client/src/modules/console/` (review tab) or dedicated mo
 ### Module: System Config / Settings (`/settings`, `/system-config`)
 Frontend module path: `client/src/modules/system-config/`
 
+#### 配置类型枚举（ConfigType）
+后端支持 16 种配置类型：`Global`, `User`, `Preferences`, `Repository`, `Knowledge`, `Skill`, `Schedule`, `DeepWiki`, `Review`, `Integration`, `Notification`, `Sandbox`, `Workflow`, `ApiKey`, `Model`, `System`
+
+#### 通用 CRUD 端点（所有配置类型共享）
+
 | Function | Frontend Path Used | Backend Canonical | Status |
 |----------|--------------------|-------------------|--------|
-| — | — | `GET /api/v1/configs/global` | ❌ Not wired (Admin only) |
-| — | — | `POST/PUT /api/v1/configs/global/{key}` | ❌ Not wired |
-| — | — | `GET /api/v1/configs/user` | ❌ Not wired |
-| — | — | `POST/PUT /api/v1/configs/user/{key}` | ❌ Not wired |
-| — | — | `GET /api/v1/configs/user/sandbox` | ❌ Not wired |
-| — | — | `PUT /api/v1/configs/user/sandbox` | ❌ Not wired |
+| `fetchConfigs(configType)` | `GET /api/v1/configs/{configType}` | `GET /api/v1/configs/{configType}` | ✅ |
+| `getConfig(configType, configKey)` | `GET /api/v1/configs/{configType}/{configKey}` | `GET /api/v1/configs/{configType}/{configKey}` | ✅ |
+| `upsertConfig(configType, payload)` | `POST /api/v1/configs/{configType}` | `POST /api/v1/configs/{configType}` | ✅ |
+| `deleteConfig(configType, configKey)` | `DELETE /api/v1/configs/{configType}/{configKey}` | `DELETE /api/v1/configs/{configType}/{configKey}` | ✅ |
 
-**Priority**: LOW
+#### 初始化与重置端点
+
+| Function | Frontend Path Used | Backend Canonical | Status |
+|----------|--------------------|-------------------|--------|
+| `initConfig(configType)` | `POST /api/v1/configs/{configType}/init` | `POST /api/v1/configs/{configType}/init` | ✅ |
+| `resetConfig(configType)` | `POST /api/v1/configs/{configType}/reset` | `POST /api/v1/configs/{configType}/reset` | ✅ |
+| `getConfigDefaults(configType)` | `GET /api/v1/configs/{configType}/defaults` | `GET /api/v1/configs/{configType}/defaults` | ✅ |
+
+#### 高级功能端点
+
+| Function | Frontend Path Used | Backend Canonical | Status |
+|----------|--------------------|-------------------|--------|
+| `fetchConfigHistory()` | `GET /api/v1/configs/history` | `GET /api/v1/configs/history` | ✅ (Admin) |
+| `rollbackConfig(historyId)` | `POST /api/v1/configs/history/{id}/rollback` | `POST /api/v1/configs/history/{id}/rollback` | ✅ (Admin) |
+| `exportConfig(configType)` | `GET /api/v1/configs/{configType}/export` | `GET /api/v1/configs/{configType}/export` | ✅ (Admin) |
+| `importConfig(configType, payload)` | `POST /api/v1/configs/{configType}/import` | `POST /api/v1/configs/{configType}/import` | ✅ (Admin) |
+| `batchUpdateConfigs(payload)` | `POST /api/v1/configs/batch` | `POST /api/v1/configs/batch` | ✅ (Admin) |
+
+#### Sandbox 专用端点
+
+| Function | Frontend Path Used | Backend Canonical | Status |
+|----------|--------------------|-------------------|--------|
+| `getSandboxConfig()` | `GET /api/v1/configs/user/sandbox` | `GET /api/v1/configs/user/sandbox` | ✅ |
+| `updateSandboxConfig(payload)` | `PUT /api/v1/configs/user/sandbox` | `PUT /api/v1/configs/user/sandbox` | ✅ |
+
+#### 健康检查与系统信息
+
+| Function | Frontend Path Used | Backend Canonical | Status |
+|----------|--------------------|-------------------|--------|
+| `healthCheck()` | — | `GET /health` | ❌ Not wired (Public) |
+| `livenessCheck()` | — | `GET /health/live` | ❌ Not wired (Public) |
+| `readinessCheck()` | — | `GET /health/ready` | ❌ Not wired (Public) |
+| `getSystemInfo()` | — | `GET /system/info` | ❌ Not wired (Public) |
+
+#### 前端模块与配置类型映射
+
+| 前端路由 | 配置类型 | 存储方式 | 说明 |
+|----------|----------|----------|------|
+| `/settings/preferences` | `Preferences` | localStorage | 用户偏好（语言、主题、时区） |
+| `/settings/repositories` | `Repository` | localStorage | 仓库集成配置 |
+| `/settings/knowledge` | `Knowledge` | localStorage | 知识库管理 |
+| `/settings/skill` | `Skill` | localStorage | 技能配置 |
+| `/settings/schedules` | `Schedule` | localStorage | 定时任务 |
+| `/settings/deepwiki` | `DeepWiki` | localStorage | 向量索引配置 |
+| `/settings/review` | `Review` | localStorage | 代码评审 |
+| `/settings/integrations` | `Integration` | localStorage | 第三方集成 |
+| `/settings/notifications` | `Notification` | localStorage | 通知策略 |
+| `/settings/sandbox` | `Sandbox` | localStorage | 沙盒执行配置 |
+| `/settings/workflow` | `Workflow` | localStorage | 流程编排 |
+| `/system-config/api` | `ApiKey` | 内存(Mock) | API密钥管理 |
+| `/system-config/models` | `Model` | 内存(Mock) | 模型选择 |
+| `/system-config/users` | `User` | 内存(Mock) | 用户管理配置 |
+| `/system-config` | `System` | 无 | 全局系统配置（旧版） |
+
+**Status**: ✅ System Config API 层已完成集成。前端已创建 `api/config.api.ts`（含所有 CRUD 函数）、`api/config.types.ts`（DTO 类型）、`api/config.mock.ts`（Mock 数据）、`store/useSystemConfigStore.ts`（Pinia store）。所有函数支持 USE_MOCK 切换。注：Views 层仍使用 localStorage/composables 模式，待后续迁移到使用 store。
+
+**Priority**: MEDIUM - 依赖 Auth 完成后进行集成
 
 ---
 
@@ -218,7 +277,7 @@ Frontend module path: `client/src/modules/system-config/`
 | 7 | **Pipeline Center** | Depends on Repo wiring |
 | 8 | **Wiki** | Stand-alone; lower urgency |
 | 9 | **Review** | Depends on Repo and Rule Sets |
-| 10 | **System Config** | Admin surface; lowest urgency |
+| 10 | **System Config** | ✅ API layer done; Views need store integration |
 
 ---
 

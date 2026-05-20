@@ -1,3 +1,49 @@
+<script setup lang="ts">
+import { reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { useSystemConfigStore } from './store/useSystemConfigStore'
+import type { ConfigType } from './api/config.types'
+
+const store = useSystemConfigStore()
+
+const saving = ref(false)
+const form = reactive({
+  apiKey: '',
+  model: 'gpt-4o',
+  maxConcurrentTasks: 5,
+})
+
+const handleSave = async () => {
+  saving.value = true
+  try {
+    // Save to Global config (admin only)
+    await store.saveConfig('Global' as ConfigType, {
+      configKey: 'apiKey',
+      configValue: form.apiKey,
+      isEncrypted: true,
+      description: 'API Key for model access',
+    })
+    await store.saveConfig('Model' as ConfigType, {
+      configKey: 'defaultModel',
+      configValue: form.model,
+      isEncrypted: false,
+      description: 'Default model selection',
+    })
+    await store.saveConfig('Global' as ConfigType, {
+      configKey: 'maxConcurrentTasks',
+      configValue: String(form.maxConcurrentTasks),
+      isEncrypted: false,
+      description: 'Maximum concurrent tasks',
+    })
+    ElMessage.success('配置已保存')
+  } catch (err) {
+    ElMessage.error(err instanceof Error ? err.message : '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+</script>
+
 <template>
   <section class="desktop-page">
     <el-page-header content="系统配置" />
@@ -9,20 +55,20 @@
           </template>
           <el-form label-position="top">
             <el-form-item label="API Key">
-              <el-input placeholder="请输入 API Key" show-password />
+              <el-input v-model="form.apiKey" placeholder="请输入 API Key" show-password />
             </el-form-item>
             <el-form-item label="模型选择">
-              <el-select placeholder="请选择模型">
+              <el-select v-model="form.model" placeholder="请选择模型">
                 <el-option label="gpt-4o" value="gpt-4o" />
                 <el-option label="gpt-4.1" value="gpt-4.1" />
                 <el-option label="o4-mini" value="o4-mini" />
               </el-select>
             </el-form-item>
             <el-form-item label="并发任务上限">
-              <el-input-number :min="1" :max="20" :step="1" />
+              <el-input-number v-model="form.maxConcurrentTasks" :min="1" :max="20" :step="1" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary">保存配置</el-button>
+              <el-button type="primary" :loading="saving" @click="handleSave">保存配置</el-button>
             </el-form-item>
           </el-form>
         </el-card>

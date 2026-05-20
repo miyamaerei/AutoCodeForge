@@ -15,6 +15,41 @@ import {
   type UpdateRepositoryRequest,
 } from '../api/repo-management.api'
 
+/**
+ * 适配仓库数据，添加 UI 需要的字段
+ */
+function adaptRepositoryData(repo: RepositoryDto) {
+  return {
+    ...repo,
+    branch: 'main', // 默认分支，可从其他接口获取
+    lastUpdate: new Date(repo.updatedAtUtc).toLocaleString(),
+  }
+}
+
+/**
+ * 适配分支数据，添加 UI 需要的字段
+ */
+function adaptBranchData(branch: GitBranchDto) {
+  return {
+    ...branch,
+    commit: branch.commitSha.substring(0, 7),
+    author: '未知',
+    lastUpdate: '-',
+  }
+}
+
+/**
+ * 适配 PR 数据，添加 UI 需要的字段
+ */
+function adaptPullRequestData(pr: GitPullRequestDto) {
+  return {
+    ...pr,
+    status: pr.state,
+    createdAt: new Date(pr.createdAtUtc).toLocaleString(),
+    updatedAt: new Date(pr.updatedAtUtc).toLocaleString(),
+  }
+}
+
 export const useRepoManagementStore = defineStore('module.repo-management', () => {
   const repositories = ref<RepositoryDto[]>([])
   const branches = ref<GitBranchDto[]>([])
@@ -35,9 +70,9 @@ export const useRepoManagementStore = defineStore('module.repo-management', () =
     error.value = null
     try {
       const result = await fetchRepositories(page)
-      repositories.value = result.items
-      totalCount.value = result.totalCount
-      currentPage.value = result.page
+      repositories.value = (result.items || []).map(adaptRepositoryData)
+      totalCount.value = result.totalCount || 0
+      currentPage.value = result.page || page
       if (!repoGlobal.selectedRepositoryId && repositories.value.length > 0 && repositories.value[0]?.id) {
         repoGlobal.selectRepository(repositories.value[0].id)
       }
@@ -53,7 +88,8 @@ export const useRepoManagementStore = defineStore('module.repo-management', () =
     error.value = null
     try {
       const repoId = repoGlobal.selectedRepositoryId ?? repositories.value[0]?.id ?? ''
-      branches.value = await fetchBranches(repoId)
+      const rawBranches = await fetchBranches(repoId)
+      branches.value = (rawBranches || []).map(adaptBranchData)
     } catch (err) {
       error.value = err instanceof Error ? err.message : '加载分支失败'
     } finally {
@@ -66,7 +102,8 @@ export const useRepoManagementStore = defineStore('module.repo-management', () =
     error.value = null
     try {
       const repoId = repoGlobal.selectedRepositoryId ?? repositories.value[0]?.id ?? ''
-      pullRequests.value = await fetchPullRequests(repoId)
+      const rawPRs = await fetchPullRequests(repoId)
+      pullRequests.value = (rawPRs || []).map(adaptPullRequestData)
     } catch (err) {
       error.value = err instanceof Error ? err.message : '加载 PR 失败'
     } finally {

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { useSystemConfigStore } from '../store/useSystemConfigStore'
+import type { ConfigType } from '../api/config.types'
 
 interface ScheduleForm {
   scheduleName: string
@@ -12,6 +14,7 @@ interface ScheduleForm {
   alertChannel: string
 }
 
+const store = useSystemConfigStore()
 const loading = ref(false)
 const error = ref('')
 const saving = ref(false)
@@ -48,6 +51,27 @@ const rules: FormRules<ScheduleForm> = {
   alertChannel: [{ required: true, message: '请选择告警通道', trigger: 'change' }],
 }
 
+const configKey = 'schedules-config'
+
+// Load configs on mount
+onMounted(async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    await store.loadConfigs('Schedule' as ConfigType)
+    const configs = store.getConfigs('Schedule' as ConfigType)
+    const savedForm = configs.find((c) => c.configKey === configKey)
+    if (savedForm) {
+      const parsed = JSON.parse(savedForm.configValue)
+      Object.assign(form, parsed)
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '加载配置失败'
+  } finally {
+    loading.value = false
+  }
+})
+
 const handleSave = async () => {
   if (!formRef.value) {
     return
@@ -57,9 +81,18 @@ const handleSave = async () => {
       return
     }
     saving.value = true
+    error.value = ''
     try {
-      await new Promise((resolve) => setTimeout(resolve, 350))
+      await store.saveConfig('Schedule' as ConfigType, {
+        configKey,
+        configValue: JSON.stringify(form),
+        isEncrypted: false,
+        description: 'Schedule configuration',
+      })
       ElMessage.success('Schedules 配置已保存')
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '保存配置失败'
+      ElMessage.error(error.value)
     } finally {
       saving.value = false
     }

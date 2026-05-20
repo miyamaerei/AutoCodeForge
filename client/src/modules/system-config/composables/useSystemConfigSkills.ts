@@ -1,6 +1,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useRepoManagementStore } from '../../repo-management/store/useRepoManagementStore'
+import { useSystemConfigStore } from '../store/useSystemConfigStore'
 import type { RepositoryDto } from '../../repo-management/api/repo-management.api'
+import type { ConfigType } from '../api/config.types'
 
 export type SkillStatus = 'active' | 'inactive' | 'beta'
 
@@ -35,6 +37,7 @@ export interface SkillConfigForm {
 }
 
 export function useSystemConfigSkills() {
+  const store = useSystemConfigStore()
   const storageKey = 'system-config.skills.v1'
 
   const loading = ref(false)
@@ -204,6 +207,18 @@ export function useSystemConfigSkills() {
       lastSavedAt.value = new Date().toLocaleString('zh-CN')
       saveSuccess.value = true
       persistConfig()
+
+      // 保存到后端 store
+      try {
+        await store.saveConfig('Skill' as ConfigType, {
+          configKey: 'skill-settings',
+          configValue: JSON.stringify(skills.value),
+          isEncrypted: false,
+          description: '技能配置',
+        })
+      } catch (backendErr) {
+        console.warn('Failed to save to backend, localStorage preserved:', backendErr)
+      }
     } catch {
       saveError.value = '保存失败，请稍后重试。'
     } finally {

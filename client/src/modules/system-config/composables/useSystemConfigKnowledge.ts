@@ -1,6 +1,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useRepoManagementStore } from '../../repo-management/store/useRepoManagementStore'
+import { useSystemConfigStore } from '../store/useSystemConfigStore'
 import type { RepositoryDto } from '../../repo-management/api/repo-management.api'
+import type { ConfigType } from '../api/config.types'
 
 export type KnowledgeSourceType = 'markdown' | 'remote-wiki' | 'repository' | 'url'
 
@@ -40,6 +42,7 @@ export interface NewKnowledgeSourceForm {
 }
 
 export function useSystemConfigKnowledge() {
+  const store = useSystemConfigStore()
   const storageKey = 'system-config.knowledge.v1'
 
   const loading = ref(false)
@@ -213,6 +216,18 @@ export function useSystemConfigKnowledge() {
       lastSavedAt.value = new Date().toLocaleString('zh-CN')
       saveSuccess.value = true
       persistConfig()
+
+      // 保存到后端 store
+      try {
+        await store.saveConfig('Knowledge' as ConfigType, {
+          configKey: 'knowledge-sources',
+          configValue: JSON.stringify(sources.value),
+          isEncrypted: false,
+          description: '知识源配置',
+        })
+      } catch (backendErr) {
+        console.warn('Failed to save to backend, localStorage preserved:', backendErr)
+      }
     } catch {
       saveError.value = '保存失败，请稍后重试。'
     } finally {

@@ -1,4 +1,4 @@
-import { request } from '../../lib/request'
+﻿import { request } from '../../lib/request'
 import { USE_MOCK } from '../../config/runtime'
 import {
   createTask as createTaskMock,
@@ -38,7 +38,7 @@ function normalizeState(status: string): TaskSummaryDto['state'] {
   if (normalized.includes('fail') || normalized.includes('error')) {
     return '失败'
   }
-  return '运行中'
+  return '进行中'
 }
 
 function toLocaleDateTime(iso?: string | null): string {

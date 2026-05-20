@@ -5,12 +5,30 @@ import AppSidebar from './components/AppSidebar.vue'
 import OnboardingGuide from './components/OnboardingGuide.vue'
 import type { MenuItem } from './components/AppSidebar.vue'
 import { useOnboarding } from './composables/useOnboarding'
+import { useAuthStore } from './modules/auth/store/useAuthStore'
 
-const userProfile = {
-  initials: 'MI',
-  name: 'miyamaerei',
-  role: 'Repo Owner',
-}
+const authStore = useAuthStore()
+
+// 从 authStore 获取用户信息
+const userProfile = computed(() => {
+  if (authStore.user) {
+    return {
+      initials: authStore.user.userName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2),
+      name: authStore.user.userName,
+      role: 'Repo Owner',
+    }
+  }
+  return {
+    initials: 'GU',
+    name: 'Guest User',
+    role: 'Member',
+  }
+})
 
 const route = useRoute()
 const isLoginRoute = computed(() => route.path === '/login')
@@ -195,7 +213,16 @@ const menuItems = computed<MenuItem[]>(() =>
 const onboarding = useOnboarding()
 const showOnboarding = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
+  // 如果有 token，尝试获取用户信息
+  if (authStore.token) {
+    try {
+      await authStore.fetchMe()
+    } catch (error) {
+      console.error('Failed to fetch user info:', error)
+    }
+  }
+
   if (onboarding.shouldShowOnboarding()) {
     setTimeout(() => {
       showOnboarding.value = true

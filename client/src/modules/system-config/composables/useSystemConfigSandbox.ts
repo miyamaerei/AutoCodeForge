@@ -1,4 +1,6 @@
 import { computed, reactive, ref } from 'vue'
+import { useSystemConfigStore } from '../store/useSystemConfigStore'
+import type { SandboxConfigDto } from '../api/config.types'
 
 type SandboxScenarioId = 'balanced' | 'strict' | 'debug'
 type SandboxExecutionMode = 'dry-run' | 'sandbox-live'
@@ -66,6 +68,7 @@ const cloneForm = (value: SandboxFormModel): SandboxFormModel => ({
 })
 
 export function useSystemConfigSandbox() {
+  const store = useSystemConfigStore()
   const storageKey = 'system-config.sandbox.v1'
 
   const loading = ref(false)
@@ -257,6 +260,19 @@ export function useSystemConfigSandbox() {
       lastSavedAt.value = new Date().toLocaleString('zh-CN')
       saveSuccess.value = true
       persistConfig()
+
+      // 保存到后端 store
+      const sandboxDto: SandboxConfigDto = {
+        workspaceRootPath: form.workspaceRootPath,
+        allowedWritePaths: form.allowedWritePaths.split('\n').filter(Boolean),
+        timeoutSeconds: form.commandTimeoutSec,
+        userIsolationEnabled: true,
+      }
+      try {
+        await store.saveSandboxConfig(sandboxDto)
+      } catch (backendErr) {
+        console.warn('Failed to save to backend, localStorage preserved:', backendErr)
+      }
     } catch {
       saveError.value = '保存沙盒配置失败，请稍后重试。'
     } finally {

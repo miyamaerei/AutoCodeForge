@@ -1,4 +1,6 @@
 import { computed, reactive, ref } from 'vue'
+import { useSystemConfigStore } from '../store/useSystemConfigStore'
+import type { ConfigType } from '../api/config.types'
 
 type DigestMode = 'immediate' | 'hourly' | 'daily'
 type FocusMode = 'balanced' | 'quiet' | 'critical-only'
@@ -85,6 +87,7 @@ const cloneForm = (value: NotificationFormModel): NotificationFormModel => ({
 })
 
 export function useSystemConfigNotifications() {
+  const store = useSystemConfigStore()
   const storageKey = 'system-config.notifications.v1'
 
   const loading = ref(false)
@@ -289,6 +292,18 @@ export function useSystemConfigNotifications() {
       lastSavedAt.value = new Date().toLocaleString('zh-CN')
       saveSuccess.value = true
       persistConfig()
+
+      // 保存到后端 store
+      try {
+        await store.saveConfig('Notification' as ConfigType, {
+          configKey: 'notification-settings',
+          configValue: JSON.stringify(form),
+          isEncrypted: false,
+          description: '通知配置',
+        })
+      } catch (backendErr) {
+        console.warn('Failed to save to backend, localStorage preserved:', backendErr)
+      }
     } catch (e) {
       const message = e instanceof Error ? e.message : '保存通知配置失败，请稍后重试。'
       saveError.value = message

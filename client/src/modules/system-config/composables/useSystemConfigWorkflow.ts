@@ -1,4 +1,6 @@
 import { computed, reactive, ref } from 'vue'
+import { useSystemConfigStore } from '../store/useSystemConfigStore'
+import type { ConfigType } from '../api/config.types'
 
 type WorkflowScenarioId = 'safe' | 'balanced' | 'delivery'
 type AgentMode = 'default' | 'explore' | 'mixed'
@@ -115,6 +117,7 @@ const cloneForm = (value: WorkflowFormModel): WorkflowFormModel => ({
 })
 
 export function useSystemConfigWorkflow() {
+  const store = useSystemConfigStore()
   const storageKey = 'system-config.workflow.v1'
 
   const loading = ref(false)
@@ -396,6 +399,18 @@ export function useSystemConfigWorkflow() {
       lastSavedAt.value = new Date().toLocaleString('zh-CN')
       saveSuccess.value = true
       persistConfig()
+
+      // 保存到后端 store
+      try {
+        await store.saveConfig('Workflow' as ConfigType, {
+          configKey: 'workflow-settings',
+          configValue: JSON.stringify(form),
+          isEncrypted: false,
+          description: '工作流配置',
+        })
+      } catch (backendErr) {
+        console.warn('Failed to save to backend, localStorage preserved:', backendErr)
+      }
     } catch (e) {
       const message = e instanceof Error ? e.message : '保存流程配置失败，请稍后重试。'
       saveError.value = message

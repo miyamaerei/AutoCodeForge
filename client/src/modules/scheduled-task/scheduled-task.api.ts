@@ -1,66 +1,66 @@
-/**
- * 定时任务 API 模块 - 提供定时任务的 CRUD 操作 Mock 实现
+﻿/**
+ * 瀹氭椂浠诲姟 API 妯″潡 - 鎻愪緵瀹氭椂浠诲姟鐨?CRUD 鎿嶄綔 Mock 瀹炵幇
  */
 
 export type TaskStatus = 'pending' | 'running' | 'success' | 'failed' | 'disabled'
 export type TriggerType = 'cron' | 'interval' | 'once'
 
-/** 关联的仓库信息 */
+/** 鍏宠仈鐨勪粨搴撲俊鎭?*/
 export interface TaskRepoRef {
-  /** 仓库 ID */
+  /** 浠撳簱 ID */
   repoId: string
-  /** 仓库名称 */
+  /** 浠撳簱鍚嶇О */
   repoName: string
-  /** 仓库 URL */
+  /** 浠撳簱 URL */
   repoUrl: string
-  /** 目标分支 */
+  /** 鐩爣鍒嗘敮 */
   branch: string
-  /** 目标路径（可选，如 src/utils） */
+  /** 鐩爣璺緞锛堝彲閫夛紝濡?src/utils锛?*/
   path?: string
 }
 
 export interface ScheduledTaskDto {
-  /** 任务 ID */
+  /** 浠诲姟 ID */
   id: string
-  /** 任务名称 */
+  /** 浠诲姟鍚嶇О */
   name: string
-  /** 任务描述 */
+  /** 浠诲姟鎻忚堪 */
   description: string
-  /** 关联的模板 ID（可选） */
+  /** 鍏宠仈鐨勬ā鏉?ID锛堝彲閫夛級 */
   templateId?: string
-  /** 触发类型 */
+  /** 瑙﹀彂绫诲瀷 */
   triggerType: TriggerType
-  /** Cron 表达式（triggerType 为 cron 时） */
+  /** Cron 琛ㄨ揪寮忥紙triggerType 涓?cron 鏃讹級 */
   cronExpression: string
-  /** 间隔毫秒（triggerType 为 interval 时） */
+  /** 闂撮殧姣锛坱riggerType 涓?interval 鏃讹級 */
   intervalMs: number
-  /** 一次性执行时间（triggerType 为 once 时） */
+  /** 涓€娆℃€ф墽琛屾椂闂达紙triggerType 涓?once 鏃讹級 */
   onceTime: string
-  /** 关联的 Agent ID */
+  /** 鍏宠仈鐨?Agent ID */
   agentId: string
-  /** 关联的 Agent 名称 */
+  /** 鍏宠仈鐨?Agent 鍚嶇О */
   agentName: string
-  /** 关联的仓库 */
+  /** 鍏宠仈鐨勪粨搴?*/
   repo?: TaskRepoRef
-  /** 任务参数（JSON 字符串） */
+  /** 浠诲姟鍙傛暟锛圝SON 瀛楃涓诧級 */
   params: string
-  /** 任务状态 */
+  /** 浠诲姟鐘舵€?*/
   status: TaskStatus
-  /** 下次执行时间 */
+  /** 涓嬫鎵ц鏃堕棿 */
   nextRunTime: string
-  /** 上次执行时间 */
+  /** 涓婃鎵ц鏃堕棿 */
   lastRunTime: string
-  /** 总执行次数 */
+  /** 鎬绘墽琛屾鏁?*/
   totalRuns: number
-  /** 成功次数 */
+  /** 鎴愬姛娆℃暟 */
   successRuns: number
-  /** 失败次数 */
+  /** 澶辫触娆℃暟 */
   failedRuns: number
-  /** 是否启用 */
+  /** 鏄惁鍚敤 */
   enabled: boolean
-  /** 创建时间 */
+  /** 鍒涘缓鏃堕棿 */
   createdAt: string
-  /** 更新时间 */
+  /** 鏇存柊鏃堕棿 */
   updatedAt: string
 }
 
@@ -82,59 +82,59 @@ export interface UpdateScheduledTaskDto extends Partial<CreateScheduledTaskDto> 
   id: string
 }
 
-/** 任务模板 */
+/** 浠诲姟妯℃澘 */
 export interface TaskTemplateDto {
-  /** 模板 ID */
+  /** 妯℃澘 ID */
   id: string
-  /** 模板名称 */
+  /** 妯℃澘鍚嶇О */
   name: string
-  /** 模板描述 */
+  /** 妯℃澘鎻忚堪 */
   description: string
-  /** 预设的 Agent ID */
+  /** 棰勮鐨?Agent ID */
   agentId: string
-  /** 预设的系统提示词（部分覆盖） */
+  /** 棰勮鐨勭郴缁熸彁绀鸿瘝锛堥儴鍒嗚鐩栵級 */
   systemPromptOverride?: string
-  /** 预设的触发类型 */
+  /** 棰勮鐨勮Е鍙戠被鍨?*/
   triggerType: TriggerType
-  /** 预设的 Cron 表达式 */
+  /** 棰勮鐨?Cron 琛ㄨ揪寮?*/
   cronExpression?: string
-  /** 预设的间隔（毫秒） */
+  /** 棰勮鐨勯棿闅旓紙姣锛?*/
   intervalMs?: number
-  /** 预设参数 */
+  /** 棰勮鍙傛暟 */
   defaultParams: string
-  /** 是否为系统内置模板 */
+  /** 鏄惁涓虹郴缁熷唴缃ā鏉?*/
   isBuiltIn: boolean
 }
 
 export interface ExecutionRecordDto {
-  /** 执行记录 ID */
+  /** 鎵ц璁板綍 ID */
   id: string
-  /** 任务 ID */
+  /** 浠诲姟 ID */
   taskId: string
-  /** 执行开始时间 */
+  /** 鎵ц寮€濮嬫椂闂?*/
   startTime: string
-  /** 执行结束时间 */
+  /** 鎵ц缁撴潫鏃堕棿 */
   endTime: string
-  /** 执行状态 */
+  /** 鎵ц鐘舵€?*/
   status: TaskStatus
-  /** 执行耗时（毫秒） */
+  /** 鎵ц鑰楁椂锛堟绉掞級 */
   duration: number
-  /** 执行结果/错误信息 */
+  /** 鎵ц缁撴灉/閿欒淇℃伅 */
   result: string
 }
 
 const defaultTasks: ScheduledTaskDto[] = [
   {
     id: 'st-1',
-    name: '每日代码质量检查',
-    description: '每天早上9点自动执行代码质量检查，生成报告',
+    name: '姣忔棩浠ｇ爜璐ㄩ噺妫€鏌?,
+    description: '姣忓ぉ鏃╀笂9鐐硅嚜鍔ㄦ墽琛屼唬鐮佽川閲忔鏌ワ紝鐢熸垚鎶ュ憡',
     templateId: 'tpl-code-review',
     triggerType: 'cron',
     cronExpression: '0 9 * * *',
     intervalMs: 0,
     onceTime: '',
     agentId: 'agent-1',
-    agentName: '代码审查助手',
+    agentName: '浠ｇ爜瀹℃煡鍔╂墜',
     repo: {
       repoId: 'repo-1',
       repoName: 'AutoCodeForge',
@@ -154,15 +154,15 @@ const defaultTasks: ScheduledTaskDto[] = [
   },
   {
     id: 'st-2',
-    name: '数据库备份',
-    description: '每6小时执行一次数据库全量备份',
+    name: '鏁版嵁搴撳浠?,
+    description: '姣?灏忔椂鎵ц涓€娆℃暟鎹簱鍏ㄩ噺澶囦唤',
     templateId: 'tpl-db-backup',
     triggerType: 'interval',
     cronExpression: '',
     intervalMs: 6 * 60 * 60 * 1000,
     onceTime: '',
     agentId: 'agent-3',
-    agentName: '数据库专家',
+    agentName: '鏁版嵁搴撲笓瀹?,
     repo: {
       repoId: 'repo-2',
       repoName: 'backend-service',
@@ -182,15 +182,15 @@ const defaultTasks: ScheduledTaskDto[] = [
   },
   {
     id: 'st-3',
-    name: '周报自动生成',
-    description: '每周五下午6点自动生成项目周报',
+    name: '鍛ㄦ姤鑷姩鐢熸垚',
+    description: '姣忓懆浜斾笅鍗?鐐硅嚜鍔ㄧ敓鎴愰」鐩懆鎶?,
     templateId: 'tpl-doc-gen',
     triggerType: 'cron',
     cronExpression: '0 18 * * 5',
     intervalMs: 0,
     onceTime: '',
     agentId: 'agent-5',
-    agentName: '文档撰写助手',
+    agentName: '鏂囨。鎾板啓鍔╂墜',
     repo: {
       repoId: 'repo-1',
       repoName: 'AutoCodeForge',
@@ -211,15 +211,15 @@ const defaultTasks: ScheduledTaskDto[] = [
   },
   {
     id: 'st-4',
-    name: '性能监控报告',
-    description: '每小时检查系统性能指标，异常时告警',
+    name: '鎬ц兘鐩戞帶鎶ュ憡',
+    description: '姣忓皬鏃舵鏌ョ郴缁熸€ц兘鎸囨爣锛屽紓甯告椂鍛婅',
     templateId: 'tpl-monitor',
     triggerType: 'interval',
     cronExpression: '',
     intervalMs: 60 * 60 * 1000,
     onceTime: '',
     agentId: 'agent-2',
-    agentName: '架构设计专家',
+    agentName: '鏋舵瀯璁捐涓撳',
     repo: {
       repoId: 'repo-2',
       repoName: 'backend-service',
@@ -239,14 +239,14 @@ const defaultTasks: ScheduledTaskDto[] = [
   },
   {
     id: 'st-5',
-    name: '临时数据清理',
-    description: '一次性任务：清理30天前的临时文件',
+    name: '涓存椂鏁版嵁娓呯悊',
+    description: '涓€娆℃€т换鍔★細娓呯悊30澶╁墠鐨勪复鏃舵枃浠?,
     triggerType: 'once',
     cronExpression: '',
     intervalMs: 0,
     onceTime: '2026-05-25 02:00:00',
     agentId: 'agent-3',
-    agentName: '数据库专家',
+    agentName: '鏁版嵁搴撲笓瀹?,
     repo: {
       repoId: 'repo-2',
       repoName: 'backend-service',
@@ -267,14 +267,14 @@ const defaultTasks: ScheduledTaskDto[] = [
   },
 ]
 
-/** 默认任务模板 */
+/** 榛樿浠诲姟妯℃澘 */
 const defaultTemplates: TaskTemplateDto[] = [
   {
     id: 'tpl-code-review',
-    name: '代码审查任务',
-    description: '自动化代码质量检查和安全扫描',
+    name: '浠ｇ爜瀹℃煡浠诲姟',
+    description: '鑷姩鍖栦唬鐮佽川閲忔鏌ュ拰瀹夊叏鎵弿',
     agentId: 'agent-1',
-    systemPromptOverride: '你是一个专业的代码审查助手，负责分析代码质量、发现潜在问题并提供改进建议。',
+    systemPromptOverride: '浣犳槸涓€涓笓涓氱殑浠ｇ爜瀹℃煡鍔╂墜锛岃礋璐ｅ垎鏋愪唬鐮佽川閲忋€佸彂鐜版綔鍦ㄩ棶棰樺苟鎻愪緵鏀硅繘寤鸿銆?,
     triggerType: 'cron',
     cronExpression: '0 9 * * *',
     defaultParams: '{"reportLevel":"detailed","checkSecurity":true}',
@@ -282,8 +282,8 @@ const defaultTemplates: TaskTemplateDto[] = [
   },
   {
     id: 'tpl-db-backup',
-    name: '数据库备份任务',
-    description: '定期执行数据库全量或增量备份',
+    name: '鏁版嵁搴撳浠戒换鍔?,
+    description: '瀹氭湡鎵ц鏁版嵁搴撳叏閲忔垨澧為噺澶囦唤',
     agentId: 'agent-3',
     triggerType: 'interval',
     intervalMs: 6 * 60 * 60 * 1000,
@@ -292,10 +292,10 @@ const defaultTemplates: TaskTemplateDto[] = [
   },
   {
     id: 'tpl-doc-gen',
-    name: '文档生成任务',
-    description: '自动生成技术文档、周报、API 文档等',
+    name: '鏂囨。鐢熸垚浠诲姟',
+    description: '鑷姩鐢熸垚鎶€鏈枃妗ｃ€佸懆鎶ャ€丄PI 鏂囨。绛?,
     agentId: 'agent-5',
-    systemPromptOverride: '你是一个技术文档专家，擅长撰写清晰、准确的技术文档。',
+    systemPromptOverride: '浣犳槸涓€涓妧鏈枃妗ｄ笓瀹讹紝鎿呴暱鎾板啓娓呮櫚銆佸噯纭殑鎶€鏈枃妗ｃ€?,
     triggerType: 'cron',
     cronExpression: '0 18 * * 5',
     defaultParams: '{"template":"weekly","format":"markdown"}',
@@ -303,8 +303,8 @@ const defaultTemplates: TaskTemplateDto[] = [
   },
   {
     id: 'tpl-monitor',
-    name: '系统监控任务',
-    description: '监控系统性能指标，异常时发送告警',
+    name: '绯荤粺鐩戞帶浠诲姟',
+    description: '鐩戞帶绯荤粺鎬ц兘鎸囨爣锛屽紓甯告椂鍙戦€佸憡璀?,
     agentId: 'agent-2',
     triggerType: 'interval',
     intervalMs: 60 * 60 * 1000,
@@ -313,10 +313,10 @@ const defaultTemplates: TaskTemplateDto[] = [
   },
   {
     id: 'tpl-refactor',
-    name: '代码重构任务',
-    description: '对指定代码进行重构优化',
+    name: '浠ｇ爜閲嶆瀯浠诲姟',
+    description: '瀵规寚瀹氫唬鐮佽繘琛岄噸鏋勪紭鍖?,
     agentId: 'agent-4',
-    systemPromptOverride: '你是一个重构专家，负责优化代码结构，提高可维护性和性能。',
+    systemPromptOverride: '浣犳槸涓€涓噸鏋勪笓瀹讹紝璐熻矗浼樺寲浠ｇ爜缁撴瀯锛屾彁楂樺彲缁存姢鎬у拰鎬ц兘銆?,
     triggerType: 'once',
     defaultParams: '{"scope":"incremental","safetyLevel":"high"}',
     isBuiltIn: true,
@@ -331,7 +331,7 @@ const defaultExecutions: ExecutionRecordDto[] = [
     endTime: '2026-05-19 09:02:35',
     status: 'success',
     duration: 155000,
-    result: '代码质量检查完成，发现 3 个建议改进点，0 个严重问题',
+    result: '浠ｇ爜璐ㄩ噺妫€鏌ュ畬鎴愶紝鍙戠幇 3 涓缓璁敼杩涚偣锛? 涓弗閲嶉棶棰?,
   },
   {
     id: 'ex-2',
@@ -340,7 +340,7 @@ const defaultExecutions: ExecutionRecordDto[] = [
     endTime: '2026-05-18 09:01:48',
     status: 'success',
     duration: 108000,
-    result: '代码质量检查完成，无问题',
+    result: '浠ｇ爜璐ㄩ噺妫€鏌ュ畬鎴愶紝鏃犻棶棰?,
   },
   {
     id: 'ex-3',
@@ -349,7 +349,7 @@ const defaultExecutions: ExecutionRecordDto[] = [
     endTime: '2026-05-19 20:00:12',
     status: 'failed',
     duration: 12000,
-    result: '监控数据采集失败：连接超时',
+    result: '鐩戞帶鏁版嵁閲囬泦澶辫触锛氳繛鎺ヨ秴鏃?,
   },
 ]
 
@@ -361,19 +361,19 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
-/** 获取所有定时任务 */
+/** 鑾峰彇鎵€鏈夊畾鏃朵换鍔?*/
 export async function getScheduledTasks(): Promise<ScheduledTaskDto[]> {
   await wait(200)
   return [...tasksData]
 }
 
-/** 根据 ID 获取单个定时任务 */
+/** 鏍规嵁 ID 鑾峰彇鍗曚釜瀹氭椂浠诲姟 */
 export async function getScheduledTask(id: string): Promise<ScheduledTaskDto | null> {
   await wait(100)
   return tasksData.find((t) => t.id === id) ?? null
 }
 
-/** 创建新定时任务 */
+/** 鍒涘缓鏂板畾鏃朵换鍔?*/
 export async function createScheduledTask(dto: CreateScheduledTaskDto): Promise<ScheduledTaskDto> {
   await wait(300)
   const now = new Date().toLocaleString('zh-CN', { hour12: false })
@@ -395,7 +395,7 @@ export async function createScheduledTask(dto: CreateScheduledTaskDto): Promise<
   return task
 }
 
-/** 更新定时任务 */
+/** 鏇存柊瀹氭椂浠诲姟 */
 export async function updateScheduledTask(dto: UpdateScheduledTaskDto): Promise<ScheduledTaskDto | null> {
   await wait(300)
   const index = tasksData.findIndex((t) => t.id === dto.id)
@@ -415,7 +415,7 @@ export async function updateScheduledTask(dto: UpdateScheduledTaskDto): Promise<
   return updated
 }
 
-/** 删除定时任务 */
+/** 鍒犻櫎瀹氭椂浠诲姟 */
 export async function deleteScheduledTask(id: string): Promise<boolean> {
   await wait(200)
   const index = tasksData.findIndex((t) => t.id === id)
@@ -425,17 +425,17 @@ export async function deleteScheduledTask(id: string): Promise<boolean> {
   return true
 }
 
-/** 获取任务执行记录 */
+/** 鑾峰彇浠诲姟鎵ц璁板綍 */
 export async function getExecutionRecords(taskId: string): Promise<ExecutionRecordDto[]> {
   await wait(150)
   return executionsData.filter((e) => e.taskId === taskId)
 }
 
-/** 手动触发任务执行 */
+/** 鎵嬪姩瑙﹀彂浠诲姟鎵ц */
 export async function triggerTask(taskId: string): Promise<ExecutionRecordDto> {
   await wait(500)
   const task = tasksData.find((t) => t.id === taskId)
-  if (!task) throw new Error('任务不存在')
+  if (!task) throw new Error('浠诲姟涓嶅瓨鍦?)
 
   const record: ExecutionRecordDto = {
     id: `ex-${Date.now()}`,
@@ -444,13 +444,13 @@ export async function triggerTask(taskId: string): Promise<ExecutionRecordDto> {
     endTime: '',
     status: 'running',
     duration: 0,
-    result: '执行中...',
+    result: '鎵ц涓?..',
   }
   executionsData.unshift(record)
   return record
 }
 
-/** 切换任务启用状态 */
+/** 鍒囨崲浠诲姟鍚敤鐘舵€?*/
 export async function toggleTaskEnabled(id: string): Promise<ScheduledTaskDto | null> {
   await wait(100)
   const task = tasksData.find((t) => t.id === id)
@@ -461,19 +461,19 @@ export async function toggleTaskEnabled(id: string): Promise<ScheduledTaskDto | 
   return { ...task }
 }
 
-/** 根据 Agent ID 获取 Agent 名称 */
+/** 鏍规嵁 Agent ID 鑾峰彇 Agent 鍚嶇О */
 function getAgentName(agentId: string): string {
   const agentNames: Record<string, string> = {
-    'agent-1': '代码审查助手',
-    'agent-2': '架构设计专家',
-    'agent-3': '数据库专家',
-    'agent-4': '前端开发助手',
-    'agent-5': '文档撰写助手',
+    'agent-1': '浠ｇ爜瀹℃煡鍔╂墜',
+    'agent-2': '鏋舵瀯璁捐涓撳',
+    'agent-3': '鏁版嵁搴撲笓瀹?,
+    'agent-4': '鍓嶇寮€鍙戝姪鎵?,
+    'agent-5': '鏂囨。鎾板啓鍔╂墜',
   }
-  return agentNames[agentId] ?? '未知 Agent'
+  return agentNames[agentId] ?? '鏈煡 Agent'
 }
 
-/** 根据触发配置计算下次执行时间 */
+/** 鏍规嵁瑙﹀彂閰嶇疆璁＄畻涓嬫鎵ц鏃堕棿 */
 function calculateNextRunTime(task: CreateScheduledTaskDto | ScheduledTaskDto): string {
   const now = new Date()
   if (task.triggerType === 'once') {
@@ -483,17 +483,17 @@ function calculateNextRunTime(task: CreateScheduledTaskDto | ScheduledTaskDto): 
     const next = new Date(now.getTime() + task.intervalMs)
     return next.toLocaleString('zh-CN', { hour12: false })
   }
-  // 对于 cron 表达式，简单返回"即将执行"
-  return '待计算'
+  // 瀵逛簬 cron 琛ㄨ揪寮忥紝绠€鍗曡繑鍥?鍗冲皢鎵ц"
+  return '寰呰绠?
 }
 
-/** 获取所有任务模板 */
+/** 鑾峰彇鎵€鏈変换鍔℃ā鏉?*/
 export async function getTaskTemplates(): Promise<TaskTemplateDto[]> {
   await wait(100)
   return [...templatesData]
 }
 
-/** 根据 ID 获取单个任务模板 */
+/** 鏍规嵁 ID 鑾峰彇鍗曚釜浠诲姟妯℃澘 */
 export async function getTaskTemplate(id: string): Promise<TaskTemplateDto | null> {
   await wait(50)
   return templatesData.find((t) => t.id === id) ?? null

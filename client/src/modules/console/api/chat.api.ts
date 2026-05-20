@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Chat API 模块
  * 支持真实 API 调用和 Mock 数据切换
  */
@@ -163,7 +163,7 @@ export async function fetchSessions(page = 1, pageSize = 20): Promise<PagedResul
       page: number
       pageSize: number
     }
-  }>('/api/v1/chat/sessions', { params: { page, pageSize } })
+  }>('/v1/chat/sessions', { params: { page, pageSize } })
   return {
     items: data.data.items.map(sessionResponseToRecord),
     totalCount: data.data.totalCount,
@@ -185,7 +185,7 @@ export async function getSessions(): Promise<SessionRecord[]> {
       page: number
       pageSize: number
     }
-  }>('/api/v1/chat/sessions')
+  }>('/v1/chat/sessions')
   return data.data.items.map(sessionResponseToRecord)
 }
 
@@ -207,7 +207,7 @@ export async function createSession(payload: CreateSessionRequest): Promise<Sess
   }
   const { data } = await request.post<{
     data: ChatSessionResponse
-  }>('/api/v1/chat/sessions', payload)
+  }>('/v1/chat/sessions', payload)
   return sessionResponseToRecord(data.data)
 }
 
@@ -220,7 +220,7 @@ export async function getSession(id: string): Promise<SessionRecord | null> {
   try {
     const { data } = await request.get<{
       data: ChatSessionResponse
-    }>(`/api/v1/chat/sessions/${id}`)
+    }>(`/v1/chat/sessions/${id}`)
     return sessionResponseToRecord(data.data)
   } catch {
     return null
@@ -235,7 +235,7 @@ export async function getMessages(id: string): Promise<ChatMessage[]> {
   }
   const { data } = await request.get<{
     data: ChatMessageResponse[]
-  }>(`/api/v1/chat/sessions/${id}/messages`)
+  }>(`/v1/chat/sessions/${id}/messages`)
   return data.data.map(messageResponseToMessage)
 }
 
@@ -288,7 +288,7 @@ export async function sendMessage(sessionId: string, msg: SendMessageRequest): P
   }
   const { data } = await request.post<{
     data: SendMessageResponse
-  }>(`/api/v1/chat/sessions/${sessionId}/messages`, msg)
+  }>(`/v1/chat/sessions/${sessionId}/messages`, msg)
   return data.data
 }
 
@@ -300,5 +300,5 @@ export async function deleteSession(id: string): Promise<void> {
     delete mockSessionMessagesMap[id]
     return
   }
-  await request.delete(`/api/v1/chat/sessions/${id}`)
+  await request.delete(`/v1/chat/sessions/${id}`)
 }

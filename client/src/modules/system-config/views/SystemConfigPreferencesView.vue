@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useOnboarding } from '../../../composables/useOnboarding'
+import { useSystemConfigStore } from '../store/useSystemConfigStore'
+import type { ConfigResponse } from '../api/config.types'
 
 interface PreferencesForm {
   locale: string
@@ -12,6 +14,9 @@ interface PreferencesForm {
   enableInAppNotice: boolean
   enableEmailNotice: boolean
 }
+
+const onboarding = useOnboarding()
+const store = useSystemConfigStore()
 
 const loading = ref(false)
 const error = ref('')
@@ -27,9 +32,50 @@ const form = reactive<PreferencesForm>({
   enableEmailNotice: false,
 })
 
-const hasData = computed(() => true)
+// Map config responses to form
+const syncFormFromConfigs = (configs: ConfigResponse[]) => {
+  configs.forEach((cfg) => {
+    switch (cfg.configKey) {
+      case 'locale':
+        form.locale = cfg.configValue
+        break
+      case 'timezone':
+        form.timezone = cfg.configValue
+        break
+      case 'theme':
+        form.theme = cfg.configValue as 'light' | 'dark' | 'auto'
+        break
+      case 'landingPage':
+        form.landingPage = cfg.configValue
+        break
+      case 'enableInAppNotice':
+        form.enableInAppNotice = cfg.configValue === 'true'
+        break
+      case 'enableEmailNotice':
+        form.enableEmailNotice = cfg.configValue === 'true'
+        break
+    }
+  })
+}
 
-const onboarding = useOnboarding()
+const hasData = computed(() => store.getConfigs('Preferences').length > 0 || true)
+
+// Load configs on mount
+onMounted(async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    await store.loadConfigs('Preferences')
+    const configs = store.getConfigs('Preferences')
+    if (configs.length > 0) {
+      syncFormFromConfigs(configs)
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '加载配置失败'
+  } finally {
+    loading.value = false
+  }
+})
 
 const handleResetOnboarding = async () => {
   try {
@@ -68,9 +114,24 @@ const handleSave = async () => {
       return
     }
     saving.value = true
+    error.value = ''
     try {
-      await new Promise((resolve) => setTimeout(resolve, 350))
+      // Save each preference as individual config entry
+      const configs = [
+        { configKey: 'locale', configValue: form.locale },
+        { configKey: 'timezone', configValue: form.timezone },
+        { configKey: 'theme', configValue: form.theme },
+        { configKey: 'landingPage', configValue: form.landingPage },
+        { configKey: 'enableInAppNotice', configValue: String(form.enableInAppNotice) },
+        { configKey: 'enableEmailNotice', configValue: String(form.enableEmailNotice) },
+      ]
+      for (const cfg of configs) {
+        await store.saveConfig('Preferences', { ...cfg, isEncrypted: false })
+      }
       ElMessage.success('Preferences 已保存')
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '保存配置失败'
+      ElMessage.error(error.value)
     } finally {
       saving.value = false
     }

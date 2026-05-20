@@ -8,6 +8,9 @@ const store = useRepoManagementStore()
 const repoGlobal = useRepoStore()
 const { repositories, loading, error, hasRepositories } = storeToRefs(store)
 
+/**
+ * 获取表格行样式类名
+ */
 function rowClassName({ row }: { row: any }) {
   return row.id === repoGlobal.selectedRepositoryId ? 'is-selected-repo' : ''
 }

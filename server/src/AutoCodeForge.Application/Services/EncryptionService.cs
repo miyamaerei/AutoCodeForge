@@ -117,8 +117,8 @@ public class EncryptionService
 
     private byte[] DeriveKey(byte[] salt)
     {
-        using var pbkdf2 = new Rfc2898DeriveBytes(_encryptionKey, salt, Iterations, HashAlgorithmName.SHA256);
-        return pbkdf2.GetBytes(KeySize / 8);
+        // Use the static Pbkdf2 overload that takes HashAlgorithmName then the desired length
+        return Rfc2898DeriveBytes.Pbkdf2(_encryptionKey, salt, Iterations, HashAlgorithmName.SHA256, KeySize / 8);
     }
 
     /// <summary>

@@ -14,16 +14,22 @@ public class AuthService
 
     private readonly UserRepository _userRepository;
     private readonly JwtService _jwtService;
+    private readonly ConfigInitializationService? _configInitializationService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AuthService"/> class.
     /// </summary>
     /// <param name="userRepository">The user repository.</param>
     /// <param name="jwtService">The JWT service.</param>
-    public AuthService(UserRepository userRepository, JwtService jwtService)
+    /// <param name="configInitializationService">The configuration initialization service (optional).</param>
+    public AuthService(
+        UserRepository userRepository, 
+        JwtService jwtService,
+        ConfigInitializationService? configInitializationService = null)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
+        _configInitializationService = configInitializationService;
     }
 
     /// <summary>
@@ -52,6 +58,9 @@ public class AuthService
         };
 
         await _userRepository.CreateAsync(user, cancellationToken);
+
+        await InitializeUserConfigAsync(request.NtId.Trim(), cancellationToken);
+
         return BuildAuthResponse(user);
     }
 
@@ -70,7 +79,9 @@ public class AuthService
 
         var normalizedNtId = request.NtId.Trim();
         var user = await _userRepository.GetByNtIdAsync(normalizedNtId, cancellationToken);
-        if (user is null)
+        var isNewUser = user is null;
+
+        if (isNewUser)
         {
             var resolvedUserName = ResolveUserName(request.UserName, normalizedNtId);
 
@@ -84,6 +95,8 @@ public class AuthService
             };
 
             await _userRepository.CreateAsync(user, cancellationToken);
+
+            await InitializeUserConfigAsync(normalizedNtId, cancellationToken);
         }
 
         return BuildAuthResponse(user);
@@ -116,6 +129,27 @@ public class AuthService
             NtId = user.NtId,
             UserName = user.UserName,
         };
+    }
+
+    /// <summary>
+    /// Initializes default configurations for a newly created user.
+    /// </summary>
+    /// <param name="ntId">The NTID of the new user.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task InitializeUserConfigAsync(string ntId, CancellationToken cancellationToken)
+    {
+        if (_configInitializationService is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _configInitializationService.InitializeUserDefaultsForNtIdAsync(ntId, cancellationToken);
+        }
+        catch (Exception)
+        {
+        }
     }
 
     private static void ValidateRegisterRequest(RegisterRequest request)

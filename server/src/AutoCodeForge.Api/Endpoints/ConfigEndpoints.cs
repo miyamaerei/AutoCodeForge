@@ -476,7 +476,6 @@ public static class ConfigEndpoints
             ConfigType = entity.ConfigType,
             ConfigKey = entity.ConfigKey,
             ConfigValue = entity.ConfigValue,
-            NtId = entity.NtId,
             IsEncrypted = entity.IsEncrypted,
             IsEnabled = entity.IsEnabled,
             Description = entity.Description,

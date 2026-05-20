@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   ScheduledTaskDto,
   CreateScheduledTaskDto,
   UpdateScheduledTaskDto,
@@ -24,7 +24,7 @@ import {
 
 export async function fetchScheduledTasks(page = 1, pageSize = 20): Promise<PagedResult<ScheduledTaskDto>> {
   if (USE_MOCK) return mockGetScheduledTasks(page, pageSize)
-  const { data } = await request.get<ApiResponse<PagedResult<ScheduledTaskDto>>>('/api/v1/scheduled-tasks', {
+  const { data } = await request.get<ApiResponse<PagedResult<ScheduledTaskDto>>>('/v1/scheduled-tasks', {
     params: { page, pageSize },
   })
   return data.data
@@ -33,7 +33,7 @@ export async function fetchScheduledTasks(page = 1, pageSize = 20): Promise<Page
 export async function fetchScheduledTask(id: string): Promise<ScheduledTaskDto | null> {
   if (USE_MOCK) return mockGetScheduledTask(id)
   try {
-    const { data } = await request.get<ApiResponse<ScheduledTaskDto>>(`/api/v1/scheduled-tasks/${id}`)
+    const { data } = await request.get<ApiResponse<ScheduledTaskDto>>(`/v1/scheduled-tasks/${id}`)
     return data.data
   } catch {
     return null
@@ -42,14 +42,14 @@ export async function fetchScheduledTask(id: string): Promise<ScheduledTaskDto |
 
 export async function createScheduledTask(dto: CreateScheduledTaskDto): Promise<ScheduledTaskDto> {
   if (USE_MOCK) return mockCreateScheduledTask(dto)
-  const { data } = await request.post<ApiResponse<ScheduledTaskDto>>('/api/v1/scheduled-tasks', dto)
+  const { data } = await request.post<ApiResponse<ScheduledTaskDto>>('/v1/scheduled-tasks', dto)
   return data.data
 }
 
 export async function updateScheduledTask(id: string, dto: UpdateScheduledTaskDto): Promise<ScheduledTaskDto | null> {
   if (USE_MOCK) return mockUpdateScheduledTask(id, dto)
   try {
-    const { data } = await request.put<ApiResponse<ScheduledTaskDto>>(`/api/v1/scheduled-tasks/${id}`, dto)
+    const { data } = await request.put<ApiResponse<ScheduledTaskDto>>(`/v1/scheduled-tasks/${id}`, dto)
     return data.data
   } catch {
     return null
@@ -59,7 +59,7 @@ export async function updateScheduledTask(id: string, dto: UpdateScheduledTaskDt
 export async function deleteScheduledTask(id: string): Promise<boolean> {
   if (USE_MOCK) return mockDeleteScheduledTask(id)
   try {
-    await request.delete(`/api/v1/scheduled-tasks/${id}`)
+    await request.delete(`/v1/scheduled-tasks/${id}`)
     return true
   } catch {
     return false
@@ -69,7 +69,7 @@ export async function deleteScheduledTask(id: string): Promise<boolean> {
 export async function pauseScheduledTask(id: string): Promise<ScheduledTaskDto | null> {
   if (USE_MOCK) return mockToggleTaskEnabled(id, false)
   try {
-    const { data } = await request.post<ApiResponse<ScheduledTaskDto>>(`/api/v1/scheduled-tasks/${id}/pause`)
+    const { data } = await request.post<ApiResponse<ScheduledTaskDto>>(`/v1/scheduled-tasks/${id}/pause`)
     return data.data
   } catch {
     return null
@@ -79,7 +79,7 @@ export async function pauseScheduledTask(id: string): Promise<ScheduledTaskDto |
 export async function resumeScheduledTask(id: string): Promise<ScheduledTaskDto | null> {
   if (USE_MOCK) return mockToggleTaskEnabled(id, true)
   try {
-    const { data } = await request.post<ApiResponse<ScheduledTaskDto>>(`/api/v1/scheduled-tasks/${id}/resume`)
+    const { data } = await request.post<ApiResponse<ScheduledTaskDto>>(`/v1/scheduled-tasks/${id}/resume`)
     return data.data
   } catch {
     return null
@@ -88,7 +88,7 @@ export async function resumeScheduledTask(id: string): Promise<ScheduledTaskDto 
 
 export async function fetchExecutions(taskId: string, page = 1, pageSize = 20): Promise<PagedResult<ScheduledTaskExecutionDto>> {
   if (USE_MOCK) return mockGetExecutions(taskId, page, pageSize)
-  const { data } = await request.get<ApiResponse<PagedResult<ScheduledTaskExecutionDto>>>(`/api/v1/scheduled-tasks/${taskId}/executions`, {
+  const { data } = await request.get<ApiResponse<PagedResult<ScheduledTaskExecutionDto>>>(`/v1/scheduled-tasks/${taskId}/executions`, {
     params: { page, pageSize },
   })
   return data.data
@@ -96,7 +96,7 @@ export async function fetchExecutions(taskId: string, page = 1, pageSize = 20): 
 
 export async function triggerTask(taskId: string): Promise<ScheduledTaskExecutionDto> {
   if (USE_MOCK) return mockTriggerTask(taskId)
-  const { data } = await request.post<ApiResponse<ScheduledTaskExecutionDto>>(`/api/v1/scheduled-tasks/${taskId}/trigger`)
+  const { data } = await request.post<ApiResponse<ScheduledTaskExecutionDto>>(`/v1/scheduled-tasks/${taskId}/trigger`)
   return data.data
 }
 

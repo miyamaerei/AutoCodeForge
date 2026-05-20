@@ -30,13 +30,25 @@ public class ConfigInitializationService
     /// <summary>
     /// Initializes default configurations for a new user.
     /// </summary>
-    /// <param name="ntId">The NTID.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The number of initialized configurations.</returns>
-    public async Task<int> InitializeUserDefaultsAsync( CancellationToken cancellationToken = default)
+    public async Task<int> InitializeUserDefaultsAsync(CancellationToken cancellationToken = default)
     {
         var configTypes = ConfigDefaultsProvider.GetUserConfigTypes();
         return await InitializeConfigsAsync(configTypes, cancellationToken);
+    }
+
+    /// <summary>
+    /// Initializes default configurations for a new user with the specified NTID.
+    /// Used during user registration when the user is not yet authenticated.
+    /// </summary>
+    /// <param name="ntId">The NTID of the new user.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The number of initialized configurations.</returns>
+    public async Task<int> InitializeUserDefaultsForNtIdAsync(string ntId, CancellationToken cancellationToken = default)
+    {
+        var configTypes = ConfigDefaultsProvider.GetUserConfigTypes();
+        return await InitializeConfigsForNtIdAsync(configTypes, ntId, cancellationToken);
     }
 
     /// <summary>
@@ -193,6 +205,53 @@ public class ConfigInitializationService
                 ConfigKey = configKey,
                 ConfigValue = ConfigDefaultsProvider.GetDefaultValue(configType),
                 NtId = _currentUser.GetCurrentNtId(),
+                IsEncrypted = false,
+                IsEnabled = true,
+                Description = ConfigDefaultsProvider.GetDescription(configType),
+                Group = configType.ToString(),
+                CreatedBy = currentUserNtId,
+                UpdatedBy = currentUserNtId
+            };
+
+            await _configRepository.CreateAsync(config, cancellationToken);
+            initializedCount++;
+        }
+
+        return initializedCount;
+    }
+
+    /// <summary>
+    /// Initializes configurations for a specific NTID (used during user registration).
+    /// </summary>
+    /// <param name="configTypes">The configuration types to initialize.</param>
+    /// <param name="ntId">The NTID to initialize configurations for.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The number of initialized configurations.</returns>
+    private async Task<int> InitializeConfigsForNtIdAsync(
+        List<ConfigType> configTypes,
+        string ntId,
+        CancellationToken cancellationToken)
+    {
+        var initializedCount = 0;
+        var currentUserNtId = ntId ?? "unknown";
+
+        foreach (var configType in configTypes)
+        {
+            var configKey = ConfigDefaultsProvider.GetDefaultKey(configType);
+            var exists = await _configRepository.ExistsAsync(configType, configKey, ntId, cancellationToken);
+
+            if (exists)
+            {
+                continue;
+            }
+
+            var config = new ConfigurationEntry
+            {
+                Id = Guid.NewGuid(),
+                ConfigType = configType,
+                ConfigKey = configKey,
+                ConfigValue = ConfigDefaultsProvider.GetDefaultValue(configType),
+                NtId = ntId,
                 IsEncrypted = false,
                 IsEnabled = true,
                 Description = ConfigDefaultsProvider.GetDescription(configType),

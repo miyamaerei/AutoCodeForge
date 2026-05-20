@@ -19,6 +19,32 @@ using AutoCodeForge.Infrastructure.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure CORS
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+var isDevelopment = builder.Environment.IsDevelopment();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigins", policy =>
+    {
+        if (isDevelopment || allowedOrigins.Length == 0)
+        {
+            // Development or no origins configured: allow all
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+        else
+        {
+            // Production: allow only configured origins
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .SetIsOriginAllowedToAllowWildcardSubdomains();
+        }
+    });
+});
+
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.PostConfigure<JwtOptions>(options =>
 {
@@ -85,7 +111,18 @@ builder.Services.AddScoped<PipelineService>();
 builder.Services.AddScoped<WikiService>();
 builder.Services.AddScoped<ConfigRepository>();
 builder.Services.AddScoped<ConfigHistoryRepository>();
-builder.Services.AddScoped<EncryptionService>();
+builder.Services.AddScoped<EncryptionService>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var encryptionKey = configuration["Encryption:Key"];
+    
+    if (string.IsNullOrWhiteSpace(encryptionKey) || encryptionKey == "CHANGE_ME_IN_PRODUCTION_WITH_A_32_BYTE_BASE64_KEY")
+    {
+        encryptionKey = EncryptionService.GenerateKey();
+    }
+    
+    return new EncryptionService(encryptionKey);
+});
 builder.Services.AddScoped<ConfigService>();
 builder.Services.AddScoped<ConfigHistoryService>();
 builder.Services.AddScoped<ConfigExportService>();
@@ -118,6 +155,32 @@ builder.Services.AddSwaggerGen(options =>
     {
         options.IncludeXmlComments(xmlPath);
     }
+
+    //// Add JWT authentication support to Swagger
+    //options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    //{
+    //    Name = "Authorization",
+    //    Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+    //    Scheme = "Bearer",
+    //    BearerFormat = "JWT",
+    //    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+    //    Description = "Please enter your JWT token in the format: Bearer {token}"
+    //});
+
+    //options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    //{
+    //    {
+    //        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    //        {
+    //            Reference = new Microsoft.OpenApi.Models.OpenApiReference
+    //            {
+    //                Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+    //                Id = "Bearer"
+    //            }
+    //        },
+    //        Array.Empty<string>()
+    //    }
+    //});
 });
 
 // Configure structured logging with ILogger
@@ -128,6 +191,9 @@ builder.Logging.SetMinimumLevel(LogLevel.Information);
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+// Use CORS
+app.UseCors("AllowSpecificOrigins");
 
 if (app.Environment.IsDevelopment())
 {

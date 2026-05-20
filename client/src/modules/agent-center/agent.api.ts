@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Agent API 模块 - 提供 Agent 的 CRUD 操作
  * 支持真实 API 调用和 Mock 数据切换
  */
@@ -230,7 +230,7 @@ export async function fetchAgents(page = 1, pageSize = 20): Promise<PagedResult<
     totalCount: number
     page: number
     pageSize: number }
-  }>('/api/v1/agents', { params: { page, pageSize } })
+  }>('/v1/agents', { params: { page, pageSize } })
   return {
     items: data.data.items.map(agentResponseToDto),
     totalCount: data.data.totalCount,
@@ -261,7 +261,7 @@ export async function getAgents(): Promise<AgentDto[]> {
       page: number
       pageSize: number
     }
-  }>('/api/v1/agents')
+  }>('/v1/agents')
   return data.data.items.map(agentResponseToDto)
 }
 
@@ -283,7 +283,7 @@ export async function getAgent(id: string): Promise<AgentDto | null> {
         createdAtUtc: string
         updatedAtUtc: string
       }
-    }>(`/api/v1/agents/${id}`)
+    }>(`/v1/agents/${id}`)
     return agentResponseToDto(data.data)
   } catch {
     return null
@@ -315,7 +315,7 @@ export async function createAgent(dto: CreateAgentDto): Promise<AgentDto> {
       createdAtUtc: string
       updatedAtUtc: string
     }
-  }>('/api/v1/agents', dtoToCreateRequest(dto))
+  }>('/v1/agents', dtoToCreateRequest(dto))
   return agentResponseToDto(data.data)
 }
 
@@ -347,7 +347,7 @@ export async function updateAgent(dto: UpdateAgentDto): Promise<AgentDto | null>
         createdAtUtc: string
         updatedAtUtc: string
       }
-    }>(`/api/v1/agents/${dto.id}`, dtoToUpdateRequest(dto))
+    }>(`/v1/agents/${dto.id}`, dtoToUpdateRequest(dto))
     return agentResponseToDto(data.data)
   } catch {
     return null
@@ -363,7 +363,7 @@ export async function deleteAgent(id: string): Promise<boolean> {
     agentsData.splice(index, 1)
     return true
   }
-  await request.delete(`/api/v1/agents/${id}`)
+  await request.delete(`/v1/agents/${id}`)
   return true
 }
 
@@ -404,7 +404,7 @@ export async function selectAgentByMessage(message: string): Promise<AgentDto | 
         createdAtUtc: string
         updatedAtUtc: string
       } | null
-    }>('/api/v1/agents/match', { params: { input: message } })
+    }>('/v1/agents/match', { params: { input: message } })
     return data.data ? agentResponseToDto(data.data) : null
   } catch {
     return null

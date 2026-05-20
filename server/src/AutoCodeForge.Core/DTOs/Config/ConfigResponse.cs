@@ -27,10 +27,7 @@ public class ConfigResponse
     /// </summary>
     public string ConfigValue { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Gets or sets the NTID associated with this configuration.
-    /// </summary>
-    public string? NtId { get; set; }
+
 
     /// <summary>
     /// Gets or sets a value indicating whether the configuration is encrypted.

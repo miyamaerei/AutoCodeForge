@@ -1,4 +1,6 @@
 import { computed, reactive, ref } from 'vue'
+import { useSystemConfigStore } from '../store/useSystemConfigStore'
+import type { ConfigType } from '../api/config.types'
 
 export type IntegrationAuthState = 'unauthenticated' | 'pending' | 'connected'
 type InstallChannel = 'winget' | 'npm'
@@ -67,6 +69,7 @@ export interface IntegrationConfigFormModel {
 }
 
 export function useSystemConfigIntegrations() {
+  const store = useSystemConfigStore()
   const storageKey = 'system-config.integrations.v1'
 
   const loading = ref(false)
@@ -298,6 +301,18 @@ export function useSystemConfigIntegrations() {
       lastSavedAt.value = new Date().toLocaleString('zh-CN')
       saveSuccess.value = true
       persistConfig()
+
+      // 保存到后端 store
+      try {
+        await store.saveConfig('Integration' as ConfigType, {
+          configKey: 'integration-settings',
+          configValue: JSON.stringify(form),
+          isEncrypted: false,
+          description: '集成配置',
+        })
+      } catch (backendErr) {
+        console.warn('Failed to save to backend, localStorage preserved:', backendErr)
+      }
     } catch {
       saveError.value = '保存失败，请稍后重试。'
     } finally {
