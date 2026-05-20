@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
 import { useTaskCenterStore } from '../store/useTaskCenterStore'
+import { useRepoStore } from '@/stores/useRepoStore'
 
 const router = useRouter()
 const store = useTaskCenterStore()
@@ -22,6 +23,19 @@ const form = ref<TaskForm>({
   repository: 'AutoCodeForge',
   branch: 'main',
 })
+
+const repoGlobal = useRepoStore()
+
+onMounted(() => {
+  // initialize form repository from global selection if available
+  if (repoGlobal.selectedRepositoryId) {
+    form.value.repository = repoGlobal.selectedRepositoryId
+  }
+})
+
+function handleRepoChange(val: string) {
+  repoGlobal.selectRepository(val)
+}
 
 const repositories = [
   { label: 'AutoCodeForge', value: 'AutoCodeForge' },
@@ -81,7 +95,7 @@ const handleCancel = () => {
         </el-form-item>
 
         <el-form-item label="选择仓库">
-          <el-select v-model="form.repository" placeholder="选择目标仓库">
+          <el-select v-model="form.repository" placeholder="选择目标仓库" @change="handleRepoChange">
             <el-option v-for="repo in repositories" :key="repo.value" :label="repo.label" :value="repo.value" />
           </el-select>
         </el-form-item>

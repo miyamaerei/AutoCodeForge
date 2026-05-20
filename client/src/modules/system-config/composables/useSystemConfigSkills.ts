@@ -1,6 +1,6 @@
 import { computed, reactive, ref } from 'vue'
 import { useRepoManagementStore } from '../../repo-management/store/useRepoManagementStore'
-import type { RepositoryDto } from '../../repo-management/repo-management.api'
+import type { RepositoryDto } from '../../repo-management/api/repo-management.api'
 
 export type SkillStatus = 'active' | 'inactive' | 'beta'
 
