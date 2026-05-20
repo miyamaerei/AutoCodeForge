@@ -1,19 +1,11 @@
 /**
  * Agent 管理 Composable
- * 提供 Agent 的增删改查和自动选择功能
+ * 提供 Agent 的增删改查和自动选择功能（基于 Store）
  */
-import { computed, ref } from 'vue'
-import {
-  getAgents,
-  getAgent,
-  createAgent,
-  updateAgent,
-  deleteAgent,
-  selectAgentByMessage,
-  type AgentDto,
-  type CreateAgentDto,
-  type UpdateAgentDto,
-} from '../agent.api'
+import { computed, ref, toValue } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAgentStore } from '../store/useAgentStore'
+import type { AgentDto } from '../agent.api'
 
 export interface AgentFormData {
   /** Agent 名称 */
@@ -40,22 +32,25 @@ const defaultFormData: AgentFormData = {
 }
 
 export function useAgent() {
-  // 状态
-  const agents = ref<AgentDto[]>([])
-  const loading = ref(false)
-  const saving = ref(false)
-  const error = ref<string | null>(null)
-  const selectedAgent = ref<AgentDto | null>(null)
-  const autoSelectedAgent = ref<AgentDto | null>(null)
+  // 使用 Store
+  const store = useAgentStore()
+  const {
+    agents,
+    loading,
+    saving,
+    error,
+    selectedAgent,
+    autoSelectedAgent,
+    hasAgents,
+    enabledAgents,
+  } = storeToRefs(store)
 
-  // 弹窗状态
+  // 弹窗状态（保留在 composable 中用于 UI 控制）
   const dialogVisible = ref(false)
   const dialogTitle = ref('新建 Agent')
   const formData = ref<AgentFormData>({ ...defaultFormData })
 
   // 计算属性
-  const hasAgents = computed(() => agents.value.length > 0)
-  const enabledAgents = computed(() => agents.value.filter((a) => a.enabled))
   const canSave = computed(() => {
     const fd = formData.value
     return fd.name.trim() && fd.systemPrompt.trim()
@@ -64,43 +59,26 @@ export function useAgent() {
   // 方法
   /** 加载所有 Agent */
   async function fetchAgents(): Promise<void> {
-    loading.value = true
-    error.value = null
-    try {
-      agents.value = await getAgents()
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '加载 Agent 列表失败'
-    } finally {
-      loading.value = false
-    }
+    await store.loadAgents()
   }
 
   /** 加载单个 Agent */
   async function fetchAgent(id: string): Promise<AgentDto | null> {
-    try {
-      const agent = await getAgent(id)
-      if (agent) {
-        selectedAgent.value = agent
-      }
-      return agent
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '加载 Agent 详情失败'
-      return null
-    }
+    return store.loadAgent(id)
   }
 
   /** 打开新建弹窗 */
   function openCreateDialog(): void {
     dialogTitle.value = '新建 Agent'
     formData.value = { ...defaultFormData }
-    selectedAgent.value = null
+    store.clearSelection()
     dialogVisible.value = true
   }
 
   /** 打开编辑弹窗 */
   function openEditDialog(agent: AgentDto): void {
     dialogTitle.value = '编辑 Agent'
-    selectedAgent.value = agent
+    store.selectedAgent = agent
     formData.value = {
       name: agent.name,
       description: agent.description,
@@ -115,7 +93,7 @@ export function useAgent() {
   /** 关闭弹窗 */
   function closeDialog(): void {
     dialogVisible.value = false
-    selectedAgent.value = null
+    store.clearSelection()
     formData.value = { ...defaultFormData }
   }
 
@@ -132,97 +110,65 @@ export function useAgent() {
   async function saveAgent(): Promise<boolean> {
     if (!canSave.value) return false
 
-    saving.value = true
-    error.value = null
-    try {
-      const fd = formData.value
-      const keywords = parseKeywords(fd.keywordsText)
+    const fd = formData.value
+    const keywords = parseKeywords(fd.keywordsText)
+    const currentSelected = toValue(selectedAgent)
 
-      if (selectedAgent.value) {
-        // 更新
-        const dto: UpdateAgentDto = {
-          id: selectedAgent.value.id,
-          name: fd.name,
-          description: fd.description,
-          icon: fd.icon,
-          systemPrompt: fd.systemPrompt,
-          keywords,
-          enabled: fd.enabled,
-        }
-        const updated = await updateAgent(dto)
-        if (updated) {
-          const index = agents.value.findIndex((a) => a.id === updated.id)
-          if (index !== -1) {
-            agents.value[index] = updated
-          }
-        }
-      } else {
-        // 新建
-        const dto: CreateAgentDto = {
-          name: fd.name,
-          description: fd.description,
-          icon: fd.icon,
-          systemPrompt: fd.systemPrompt,
-          keywords,
-          enabled: fd.enabled,
-        }
-        const created = await createAgent(dto)
-        agents.value.push(created)
+    if (currentSelected) {
+      // 更新
+      const success = await store.submitUpdate({
+        id: currentSelected.id,
+        name: fd.name,
+        description: fd.description,
+        icon: fd.icon,
+        systemPrompt: fd.systemPrompt,
+        keywords,
+        enabled: fd.enabled,
+      })
+      if (success) {
+        closeDialog()
       }
-      closeDialog()
-      return true
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '保存 Agent 失败'
-      return false
-    } finally {
-      saving.value = false
+      return !!success
+    } else {
+      // 新建
+      const success = await store.submitCreate({
+        name: fd.name,
+        description: fd.description,
+        icon: fd.icon,
+        systemPrompt: fd.systemPrompt,
+        keywords,
+        enabled: fd.enabled,
+      })
+      if (success) {
+        closeDialog()
+      }
+      return !!success
     }
   }
 
   /** 删除 Agent */
   async function removeAgent(id: string): Promise<boolean> {
-    error.value = null
-    try {
-      const success = await deleteAgent(id)
-      if (success) {
-        agents.value = agents.value.filter((a) => a.id !== id)
-        if (selectedAgent.value?.id === id) {
-          selectedAgent.value = null
-        }
-      }
-      return success
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '删除 Agent 失败'
-      return false
-    }
+    return store.submitDelete(id)
   }
 
   /** 根据消息内容自动选择 Agent */
   async function selectAgent(message: string): Promise<AgentDto | null> {
-    autoSelectedAgent.value = null
     if (!message.trim()) return null
-
-    try {
-      const agent = await selectAgentByMessage(message)
-      autoSelectedAgent.value = agent
-      return agent
-    } catch (err) {
-      return null
-    }
+    return store.matchAgent(message)
   }
 
   /** 清除自动选择的 Agent */
   function clearAutoSelected(): void {
-    autoSelectedAgent.value = null
+    store.clearAutoSelected()
   }
 
   /** 手动设置当前会话使用的 Agent */
   function setSessionAgent(agent: AgentDto | null): void {
-    selectedAgent.value = agent
+    store.selectedAgent = agent
   }
 
   return {
-    // 状态
+    // 状态（来自 store）
     agents,
     loading,
     saving,

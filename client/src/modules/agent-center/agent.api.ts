@@ -1,7 +1,15 @@
 /**
- * Agent API 模块 - 提供 Agent 的 CRUD 操作 Mock 实现
+ * Agent API 模块 - 提供 Agent 的 CRUD 操作
+ * 支持真实 API 调用和 Mock 数据切换
  */
 
+import { request } from '@/lib/request'
+import { USE_MOCK } from '@/config/runtime'
+import type { PagedResult } from '@/modules/agent-center/api/agent.types'
+
+// ==================== 类型定义 ====================
+
+/** 关键词权重 */
 export interface AgentKeyword {
   /** 关键词 */
   keyword: string
@@ -9,6 +17,7 @@ export interface AgentKeyword {
   weight: number
 }
 
+/** Agent 响应 DTO（对应后端 AgentResponse） */
 export interface AgentDto {
   /** Agent ID */
   id: string
@@ -16,7 +25,7 @@ export interface AgentDto {
   name: string
   /** Agent 描述 */
   description: string
-  /** 头像/图标 */
+  /** 头像/图标（仅前端使用，后端不支持） */
   icon: string
   /** 系统提示词 */
   systemPrompt: string
@@ -30,6 +39,7 @@ export interface AgentDto {
   updatedAt: string
 }
 
+/** 创建 Agent 请求 */
 export interface CreateAgentDto {
   name: string
   description: string
@@ -39,9 +49,12 @@ export interface CreateAgentDto {
   enabled: boolean
 }
 
+/** 更新 Agent 请求 */
 export interface UpdateAgentDto extends Partial<CreateAgentDto> {
   id: string
 }
+
+// ==================== Mock 数据 ====================
 
 const defaultAgents: AgentDto[] = [
   {
@@ -131,86 +144,269 @@ const defaultAgents: AgentDto[] = [
   },
 ]
 
+// ==================== Mock 辅助函数 ====================
+
 let agentsData: AgentDto[] = [...defaultAgents]
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
+// ==================== 类型转换函数 ====================
+
+/** 后端 AgentResponse 转前端 AgentDto */
+function agentResponseToDto(res: {
+  id: string
+  name: string
+  description?: string | null
+  keywords?: string | null
+  systemPrompt?: string | null
+  isEnabled: boolean
+  createdAtUtc: string
+  updatedAtUtc: string
+}): AgentDto {
+  return {
+    id: res.id,
+    name: res.name,
+    description: res.description ?? '',
+    icon: '🤖', // 后端不支持，前端默认
+    systemPrompt: res.systemPrompt ?? '',
+    keywords: res.keywords
+      ? res.keywords.split(',').map((k) => ({ keyword: k.trim(), weight: 1.0 }))
+      : [],
+    enabled: res.isEnabled,
+    createdAt: res.createdAtUtc,
+    updatedAt: res.updatedAtUtc,
+  }
+}
+
+/** 前端 CreateAgentDto 转后端 CreateAgentRequest */
+function dtoToCreateRequest(dto: CreateAgentDto): Record<string, unknown> {
+  return {
+    name: dto.name,
+    description: dto.description,
+    keywords: dto.keywords.map((k) => k.keyword).join(','),
+    systemPrompt: dto.systemPrompt,
+    isEnabled: dto.enabled,
+  }
+}
+
+/** 前端 UpdateAgentDto 转后端 UpdateAgentRequest */
+function dtoToUpdateRequest(dto: UpdateAgentDto): Record<string, unknown> {
+  const req: Record<string, unknown> = {
+    name: dto.name,
+    isEnabled: dto.enabled,
+  }
+  if (dto.description !== undefined) req.description = dto.description
+  if (dto.keywords !== undefined) req.keywords = dto.keywords.map((k) => k.keyword).join(',')
+  if (dto.systemPrompt !== undefined) req.systemPrompt = dto.systemPrompt
+  return req
+}
+
+// ==================== API 函数 ====================
+
+/** 获取 Agent 分页列表 */
+export async function fetchAgents(page = 1, pageSize = 20): Promise<PagedResult<AgentDto>> {
+  if (USE_MOCK) {
+    await wait(200)
+    return {
+      items: [...agentsData],
+      totalCount: agentsData.length,
+      page: 1,
+      pageSize,
+    }
+  }
+  const { data } = await request.get<{
+    data: { items: Array<{
+      id: string
+      name: string
+      description?: string | null
+      keywords?: string | null
+      systemPrompt?: string | null
+      isEnabled: boolean
+      createdAtUtc: string
+      updatedAtUtc: string
+    }>
+    totalCount: number
+    page: number
+    pageSize: number }
+  }>('/api/v1/agents', { params: { page, pageSize } })
+  return {
+    items: data.data.items.map(agentResponseToDto),
+    totalCount: data.data.totalCount,
+    page: data.data.page,
+    pageSize: data.data.pageSize,
+  }
+}
+
 /** 获取所有 Agent 列表 */
 export async function getAgents(): Promise<AgentDto[]> {
-  await wait(200)
-  return [...agentsData]
+  if (USE_MOCK) {
+    await wait(200)
+    return [...agentsData]
+  }
+  const { data } = await request.get<{
+    data: {
+      items: Array<{
+        id: string
+        name: string
+        description?: string | null
+        keywords?: string | null
+        systemPrompt?: string | null
+        isEnabled: boolean
+        createdAtUtc: string
+        updatedAtUtc: string
+      }>
+      totalCount: number
+      page: number
+      pageSize: number
+    }
+  }>('/api/v1/agents')
+  return data.data.items.map(agentResponseToDto)
 }
 
 /** 根据 ID 获取单个 Agent */
 export async function getAgent(id: string): Promise<AgentDto | null> {
-  await wait(100)
-  return agentsData.find((a) => a.id === id) ?? null
+  if (USE_MOCK) {
+    await wait(100)
+    return agentsData.find((a) => a.id === id) ?? null
+  }
+  try {
+    const { data } = await request.get<{
+      data: {
+        id: string
+        name: string
+        description?: string | null
+        keywords?: string | null
+        systemPrompt?: string | null
+        isEnabled: boolean
+        createdAtUtc: string
+        updatedAtUtc: string
+      }
+    }>(`/api/v1/agents/${id}`)
+    return agentResponseToDto(data.data)
+  } catch {
+    return null
+  }
 }
 
 /** 创建新 Agent */
 export async function createAgent(dto: CreateAgentDto): Promise<AgentDto> {
-  await wait(300)
-  const now = new Date().toLocaleString('zh-CN', { hour12: false })
-  const agent: AgentDto = {
-    id: `agent-${Date.now()}`,
-    ...dto,
-    createdAt: now,
-    updatedAt: now,
+  if (USE_MOCK) {
+    await wait(300)
+    const now = new Date().toLocaleString('zh-CN', { hour12: false })
+    const agent: AgentDto = {
+      id: `agent-${Date.now()}`,
+      ...dto,
+      createdAt: now,
+      updatedAt: now,
+    }
+    agentsData.push(agent)
+    return agent
   }
-  agentsData.push(agent)
-  return agent
+  const { data } = await request.post<{
+    data: {
+      id: string
+      name: string
+      description?: string | null
+      keywords?: string | null
+      systemPrompt?: string | null
+      isEnabled: boolean
+      createdAtUtc: string
+      updatedAtUtc: string
+    }
+  }>('/api/v1/agents', dtoToCreateRequest(dto))
+  return agentResponseToDto(data.data)
 }
 
 /** 更新 Agent */
 export async function updateAgent(dto: UpdateAgentDto): Promise<AgentDto | null> {
-  await wait(300)
-  const index = agentsData.findIndex((a) => a.id === dto.id)
-  if (index === -1) return null
-  const existing = agentsData[index]
-  if (!existing) return null
-  const updated: AgentDto = {
-    ...existing,
-    ...dto,
-    updatedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
+  if (USE_MOCK) {
+    await wait(300)
+    const index = agentsData.findIndex((a) => a.id === dto.id)
+    if (index === -1) return null
+    const existing = agentsData[index]
+    if (!existing) return null
+    const updated: AgentDto = {
+      ...existing,
+      ...dto,
+      updatedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
+    }
+    agentsData[index] = updated
+    return updated
   }
-  agentsData[index] = updated
-  return updated
+  try {
+    const { data } = await request.put<{
+      data: {
+        id: string
+        name: string
+        description?: string | null
+        keywords?: string | null
+        systemPrompt?: string | null
+        isEnabled: boolean
+        createdAtUtc: string
+        updatedAtUtc: string
+      }
+    }>(`/api/v1/agents/${dto.id}`, dtoToUpdateRequest(dto))
+    return agentResponseToDto(data.data)
+  } catch {
+    return null
+  }
 }
 
 /** 删除 Agent */
 export async function deleteAgent(id: string): Promise<boolean> {
-  await wait(200)
-  const index = agentsData.findIndex((a) => a.id === id)
-  if (index === -1) return false
-  agentsData.splice(index, 1)
+  if (USE_MOCK) {
+    await wait(200)
+    const index = agentsData.findIndex((a) => a.id === id)
+    if (index === -1) return false
+    agentsData.splice(index, 1)
+    return true
+  }
+  await request.delete(`/api/v1/agents/${id}`)
   return true
 }
 
 /** 根据消息内容自动选择最合适的 Agent */
 export async function selectAgentByMessage(message: string): Promise<AgentDto | null> {
-  await wait(50)
-  const enabledAgents = agentsData.filter((a) => a.enabled)
-  if (enabledAgents.length === 0) return null
+  if (USE_MOCK) {
+    await wait(50)
+    const enabledAgents = agentsData.filter((a) => a.enabled)
+    if (enabledAgents.length === 0) return null
 
-  const lowerMessage = message.toLowerCase()
-  let bestAgent: AgentDto | null = null
-  let bestScore = 0
+    const lowerMessage = message.toLowerCase()
+    let bestAgent: AgentDto | null = null
+    let bestScore = 0
 
-  for (const agent of enabledAgents) {
-    let score = 0
-    for (const kw of agent.keywords) {
-      if (lowerMessage.includes(kw.keyword.toLowerCase())) {
-        score += kw.weight
+    for (const agent of enabledAgents) {
+      let score = 0
+      for (const kw of agent.keywords) {
+        if (lowerMessage.includes(kw.keyword.toLowerCase())) {
+          score += kw.weight
+        }
+      }
+      if (score > bestScore) {
+        bestScore = score
+        bestAgent = agent
       }
     }
-    if (score > bestScore) {
-      bestScore = score
-      bestAgent = agent
-    }
+    return bestScore >= 0.5 ? bestAgent : null
   }
-
-  // 只有得分超过阈值才返回，否则返回 null
-  return bestScore >= 0.5 ? bestAgent : null
+  try {
+    const { data } = await request.get<{
+      data: {
+        id: string
+        name: string
+        description?: string | null
+        keywords?: string | null
+        systemPrompt?: string | null
+        isEnabled: boolean
+        createdAtUtc: string
+        updatedAtUtc: string
+      } | null
+    }>('/api/v1/agents/match', { params: { input: message } })
+    return data.data ? agentResponseToDto(data.data) : null
+  } catch {
+    return null
+  }
 }
