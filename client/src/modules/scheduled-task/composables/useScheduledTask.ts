@@ -1,55 +1,21 @@
-/**
- * 定时任务管理 Composable
- * 提供定时任务的增删改查、触发执行和执行记录查询功能
- */
 import { computed, ref } from 'vue'
-import {
-  getScheduledTasks,
-  getScheduledTask,
-  createScheduledTask,
-  updateScheduledTask,
-  deleteScheduledTask,
-  getExecutionRecords,
-  triggerTask,
-  toggleTaskEnabled,
-  getTaskTemplates,
-  type ScheduledTaskDto,
-  type CreateScheduledTaskDto,
-  type UpdateScheduledTaskDto,
-  type ExecutionRecordDto,
-  type TaskTemplateDto,
-  type TaskRepoRef,
-  type TriggerType,
-} from '../scheduled-task.api'
+import { useScheduledTaskStore } from '../store/useScheduledTaskStore'
+import type { TaskTemplateDto, TriggerType } from '../api/scheduled-task.types'
 
 export interface ScheduledTaskFormData {
-  /** 任务名称 */
   name: string
-  /** 任务描述 */
   description: string
-  /** 关联的模板 ID */
   templateId: string
-  /** 触发类型 */
   triggerType: TriggerType
-  /** Cron 表达式 */
   cronExpression: string
-  /** 间隔（小时） */
   intervalHours: number
-  /** 间隔（分钟） */
   intervalMinutes: number
-  /** 一次性执行时间 */
   onceTime: string
-  /** 关联的 Agent ID */
   agentId: string
-  /** 关联的仓库 ID */
   repoId: string
-  /** 目标分支 */
   branch: string
-  /** 目标路径 */
   path: string
-  /** 任务参数 */
   params: string
-  /** 是否启用 */
   enabled: boolean
 }
 
@@ -70,7 +36,6 @@ const defaultFormData: ScheduledTaskFormData = {
   enabled: true,
 }
 
-// 可选的 Agent 列表（用于下拉选择）
 const availableAgents = [
   { id: 'agent-1', name: '代码审查助手' },
   { id: 'agent-2', name: '架构设计专家' },
@@ -79,82 +44,48 @@ const availableAgents = [
   { id: 'agent-5', name: '文档撰写助手' },
 ]
 
-// 可选的仓库列表（用于下拉选择）
 const availableRepos = [
   { id: 'repo-1', name: 'AutoCodeForge', url: 'https://github.com/org/AutoCodeForge' },
   { id: 'repo-2', name: 'backend-service', url: 'https://github.com/org/backend-service' },
 ]
 
 export function useScheduledTask() {
-  // 状态
-  const tasks = ref<ScheduledTaskDto[]>([])
-  const selectedTask = ref<ScheduledTaskDto | null>(null)
-  const executions = ref<ExecutionRecordDto[]>([])
-  const templates = ref<TaskTemplateDto[]>([])
-  const loading = ref(false)
-  const saving = ref(false)
-  const triggering = ref(false)
-  const error = ref<string | null>(null)
+  const store = useScheduledTaskStore()
 
-  // 弹窗状态
   const dialogVisible = ref(false)
   const dialogTitle = ref('新建定时任务')
   const formData = ref<ScheduledTaskFormData>({ ...defaultFormData })
+  const selectedTaskId = ref<string | null>(null)
 
-  // 计算属性
-  const hasTasks = computed(() => tasks.value.length > 0)
-  const enabledTasks = computed(() => tasks.value.filter((t) => t.enabled))
+  const selectedTask = computed(() => {
+    if (!selectedTaskId.value) return null
+    return store.tasks.find((t) => t.id === selectedTaskId.value) || null
+  })
+
+  const hasTasks = computed(() => store.tasks.length > 0)
+  const enabledTasks = computed(() => store.tasks.filter((t) => t.status !== 'disabled'))
+
   const canSave = computed(() => {
     const fd = formData.value
     return fd.name.trim() && fd.agentId && fd.repoId
   })
 
-  /** 加载所有定时任务 */
   async function fetchTasks(): Promise<void> {
-    loading.value = true
-    error.value = null
-    try {
-      tasks.value = await getScheduledTasks()
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '加载定时任务列表失败'
-    } finally {
-      loading.value = false
-    }
+    await store.loadTasks()
   }
 
-  /** 加载单个任务 */
-  async function fetchTask(id: string): Promise<ScheduledTaskDto | null> {
-    try {
-      const task = await getScheduledTask(id)
-      if (task) {
-        selectedTask.value = task
-      }
-      return task
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '加载任务详情失败'
-      return null
-    }
+  async function fetchTask(id: string): Promise<void> {
+    await store.loadTask(id)
   }
 
-  /** 加载任务模板 */
   async function fetchTemplates(): Promise<void> {
-    try {
-      templates.value = await getTaskTemplates()
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '加载任务模板失败'
-    }
+    await store.loadTemplates()
   }
 
-  /** 加载任务的执行记录 */
   async function fetchExecutions(taskId: string): Promise<void> {
-    try {
-      executions.value = await getExecutionRecords(taskId)
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '加载执行记录失败'
-    }
+    await store.loadExecutions(taskId)
   }
 
-  /** 根据模板填充表单 */
   function applyTemplate(template: TaskTemplateDto): void {
     formData.value.templateId = template.id
     formData.value.agentId = template.agentId
@@ -171,205 +102,136 @@ export function useScheduledTask() {
     }
   }
 
-  /** 打开新建弹窗 */
   function openCreateDialog(): void {
     dialogTitle.value = '新建定时任务'
     formData.value = { ...defaultFormData }
-    selectedTask.value = null
+    selectedTaskId.value = null
     dialogVisible.value = true
   }
 
-  /** 打开编辑弹窗 */
-  function openEditDialog(task: ScheduledTaskDto): void {
+  function openEditDialog(task: typeof store.tasks[0]): void {
     dialogTitle.value = '编辑定时任务'
-    selectedTask.value = task
-    const intervalMs = task.intervalMs
+    selectedTaskId.value = task.id
+    const intervalMs = 0
     formData.value = {
       name: task.name,
-      description: task.description,
-      templateId: task.templateId || '',
+      description: '',
+      templateId: '',
       triggerType: task.triggerType,
       cronExpression: task.cronExpression,
       intervalHours: Math.floor(intervalMs / (1000 * 60 * 60)),
       intervalMinutes: Math.floor((intervalMs % (1000 * 60 * 60)) / (1000 * 60)),
-      onceTime: task.onceTime,
-      agentId: task.agentId,
-      repoId: task.repo?.repoId || '',
-      branch: task.repo?.branch || 'main',
-      path: task.repo?.path || '',
-      params: task.params,
-      enabled: task.enabled,
+      onceTime: '',
+      agentId: task.agentId || '',
+      repoId: '',
+      branch: 'main',
+      path: '',
+      params: task.input,
+      enabled: task.status !== 'disabled',
     }
     dialogVisible.value = true
   }
 
-  /** 关闭弹窗 */
   function closeDialog(): void {
     dialogVisible.value = false
-    selectedTask.value = null
+    selectedTaskId.value = null
     formData.value = { ...defaultFormData }
   }
 
-  /** 保存任务 */
   async function saveTask(): Promise<boolean> {
     if (!canSave.value) return false
 
-    saving.value = true
-    error.value = null
     try {
       const fd = formData.value
-      const intervalMs =
-        fd.triggerType === 'interval'
-          ? fd.intervalHours * 60 * 60 * 1000 + fd.intervalMinutes * 60 * 1000
-          : 0
 
-      // 构建仓库信息
-      const repo: TaskRepoRef | undefined = fd.repoId
-        ? {
-            repoId: fd.repoId,
-            repoName: availableRepos.find((r) => r.id === fd.repoId)?.name || fd.repoId,
-            repoUrl: availableRepos.find((r) => r.id === fd.repoId)?.url || '',
-            branch: fd.branch,
-            path: fd.path || undefined,
-          }
-        : undefined
-
-      if (selectedTask.value) {
-        // 更新
-        const dto: UpdateScheduledTaskDto = {
-          id: selectedTask.value.id,
+      if (selectedTaskId.value) {
+        await store.submitUpdate(selectedTaskId.value, {
           name: fd.name,
-          description: fd.description,
-          templateId: fd.templateId || undefined,
-          triggerType: fd.triggerType,
           cronExpression: fd.cronExpression,
-          intervalMs,
-          onceTime: fd.onceTime,
-          agentId: fd.agentId,
-          repo,
-          params: fd.params,
-          enabled: fd.enabled,
-        }
-        const updated = await updateScheduledTask(dto)
-        if (updated) {
-          const index = tasks.value.findIndex((t) => t.id === updated.id)
-          if (index !== -1) {
-            tasks.value[index] = updated
-          }
-        }
+          agentId: fd.agentId || undefined,
+          input: fd.params,
+          taskTitle: fd.name,
+          status: fd.enabled ? 'pending' : 'disabled',
+        })
       } else {
-        // 新建
-        const dto: CreateScheduledTaskDto = {
+        await store.submitCreate({
           name: fd.name,
-          description: fd.description,
-          templateId: fd.templateId || undefined,
-          triggerType: fd.triggerType,
           cronExpression: fd.cronExpression,
-          intervalMs,
-          onceTime: fd.onceTime,
-          agentId: fd.agentId,
-          repo,
-          params: fd.params,
-          enabled: fd.enabled,
-        }
-        const created = await createScheduledTask(dto)
-        tasks.value.push(created)
+          triggerType: fd.triggerType,
+          agentId: fd.agentId || undefined,
+          input: fd.params,
+          taskTitle: fd.name,
+        })
       }
       closeDialog()
       return true
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '保存任务失败'
+    } catch {
       return false
-    } finally {
-      saving.value = false
     }
   }
 
-  /** 删除任务 */
   async function removeTask(id: string): Promise<boolean> {
-    error.value = null
     try {
-      const success = await deleteScheduledTask(id)
-      if (success) {
-        tasks.value = tasks.value.filter((t) => t.id !== id)
-        if (selectedTask.value?.id === id) {
-          selectedTask.value = null
-        }
-      }
-      return success
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '删除任务失败'
-      return false
-    }
-  }
-
-  /** 切换启用状态 */
-  async function toggleEnabled(task: ScheduledTaskDto): Promise<boolean> {
-    try {
-      const updated = await toggleTaskEnabled(task.id)
-      if (updated) {
-        const index = tasks.value.findIndex((t) => t.id === updated.id)
-        if (index !== -1) {
-          tasks.value[index] = updated
-        }
+      await store.submitDelete(id)
+      if (selectedTaskId.value === id) {
+        selectedTaskId.value = null
       }
       return true
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '切换状态失败'
+    } catch {
       return false
     }
   }
 
-  /** 手动触发任务 */
-  async function runTask(task: ScheduledTaskDto): Promise<boolean> {
-    triggering.value = true
-    error.value = null
+  async function toggleEnabled(task: typeof store.tasks[0]): Promise<boolean> {
     try {
-      await triggerTask(task.id)
+      if (task.status === 'disabled') {
+        await store.submitResume(task.id)
+      } else {
+        await store.submitPause(task.id)
+      }
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function runTask(task: typeof store.tasks[0]): Promise<boolean> {
+    try {
+      await store.submitTrigger(task.id)
       await fetchExecutions(task.id)
       return true
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '触发任务失败'
+    } catch {
       return false
-    } finally {
-      triggering.value = false
     }
   }
 
-  /** 选择任务并加载执行记录 */
-  async function selectTask(task: ScheduledTaskDto): Promise<void> {
-    selectedTask.value = task
+  async function selectTask(task: typeof store.tasks[0]): Promise<void> {
+    selectedTaskId.value = task.id
     await fetchExecutions(task.id)
   }
 
-  /** 清除选择 */
   function clearSelection(): void {
-    selectedTask.value = null
-    executions.value = []
+    selectedTaskId.value = null
+    store.executions = []
   }
 
   return {
-    // 状态
-    tasks,
+    tasks: computed(() => store.tasks),
     selectedTask,
-    executions,
-    templates,
-    loading,
-    saving,
-    triggering,
-    error,
-    // 计算属性
+    executions: computed(() => store.executions),
+    templates: computed(() => store.templates),
+    loading: computed(() => store.loading),
+    saving: computed(() => store.saving),
+    triggering: computed(() => store.triggering),
+    error: computed(() => store.error),
     hasTasks,
     enabledTasks,
     canSave,
-    // 弹窗状态
     dialogVisible,
     dialogTitle,
     formData,
-    // 常量
     availableAgents,
     availableRepos,
-    // 方法
     fetchTasks,
     fetchTask,
     fetchTemplates,

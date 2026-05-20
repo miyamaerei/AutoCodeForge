@@ -2,7 +2,7 @@
 import { onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useScheduledTask } from '../composables/useScheduledTask'
-import type { ScheduledTaskDto, TaskTemplateDto } from '../scheduled-task.api'
+import type { TaskTemplateDto } from '../api/scheduled-task.types'
 
 const {
   tasks,
@@ -33,19 +33,16 @@ const {
   applyTemplate,
 } = useScheduledTask()
 
-/** 初始化加载 */
 onMounted(() => {
   fetchTasks()
   fetchTemplates()
 })
 
-/** 处理选择模板 */
 function handleSelectTemplate(template: TaskTemplateDto) {
   applyTemplate(template)
   ElMessage.success(`已应用模板：${template.name}`)
 }
 
-/** 处理保存 */
 async function handleSave() {
   const success = await saveTask()
   if (success) {
@@ -53,8 +50,7 @@ async function handleSave() {
   }
 }
 
-/** 处理删除 */
-async function handleDelete(task: ScheduledTaskDto) {
+async function handleDelete(task: typeof tasks.value[0]) {
   try {
     await ElMessageBox.confirm(`确定要删除任务「${task.name}」吗？`, '删除确认', {
       confirmButtonText: '删除',
@@ -73,16 +69,14 @@ async function handleDelete(task: ScheduledTaskDto) {
   }
 }
 
-/** 处理启用/禁用 */
-async function handleToggle(task: ScheduledTaskDto) {
+async function handleToggle(task: typeof tasks.value[0]) {
   const success = await toggleEnabled(task)
   if (success) {
-    ElMessage.success(task.enabled ? '已禁用' : '已启用')
+    ElMessage.success(task.status === 'disabled' ? '已启用' : '已禁用')
   }
 }
 
-/** 处理手动触发 */
-async function handleTrigger(task: ScheduledTaskDto) {
+async function handleTrigger(task: typeof tasks.value[0]) {
   try {
     await ElMessageBox.confirm(`确定要立即执行任务「${task.name}」吗？`, '执行确认', {
       confirmButtonText: '执行',
@@ -98,7 +92,6 @@ async function handleTrigger(task: ScheduledTaskDto) {
   }
 }
 
-/** 获取状态标签类型 */
 function getStatusType(status: string): '' | 'success' | 'warning' | 'danger' | 'info' {
   const map: Record<string, '' | 'success' | 'warning' | 'danger' | 'info'> = {
     pending: 'info',
@@ -110,7 +103,6 @@ function getStatusType(status: string): '' | 'success' | 'warning' | 'danger' | 
   return map[status] ?? 'info'
 }
 
-/** 获取状态文本 */
 function getStatusText(status: string): string {
   const map: Record<string, string> = {
     pending: '待执行',
@@ -122,7 +114,6 @@ function getStatusText(status: string): string {
   return map[status] ?? status
 }
 
-/** 获取触发类型文本 */
 function getTriggerTypeText(type: string): string {
   const map: Record<string, string> = {
     cron: 'Cron 表达式',
@@ -132,34 +123,25 @@ function getTriggerTypeText(type: string): string {
   return map[type] ?? type
 }
 
-/** 格式化触发配置 */
-function formatTrigger(task: ScheduledTaskDto): string {
+function formatTrigger(task: typeof tasks.value[0]): string {
   if (task.triggerType === 'cron') {
-    return task.cronExpression
-  }
-  if (task.triggerType === 'interval') {
-    const hours = Math.floor(task.intervalMs / (1000 * 60 * 60))
-    const minutes = Math.floor((task.intervalMs % (1000 * 60 * 60)) / (1000 * 60))
-    const parts: string[] = []
-    if (hours > 0) parts.push(`${hours} 小时`)
-    if (minutes > 0) parts.push(`${minutes} 分钟`)
-    return parts.join(' ') || '未知'
-  }
-  if (task.triggerType === 'once') {
-    return task.onceTime || '未设置'
+    return task.cronExpression || '未设置'
   }
   return '未知'
 }
 
-/** 计算执行成功率 */
-function getSuccessRate(task: ScheduledTaskDto): string {
-  if (task.totalRuns === 0) return '-'
-  const rate = ((task.successRuns / task.totalRuns) * 100).toFixed(1)
-  return `${rate}%`
+function formatDateTime(dateStr?: string): string {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', { hour12: false })
 }
 
-/** 选中任务 */
-function handleSelectTask(task: ScheduledTaskDto) {
+function getAgentName(agentId?: string): string {
+  if (!agentId) return '-'
+  return availableAgents.find((a) => a.id === agentId)?.name || '未知 Agent'
+}
+
+function handleSelectTask(task: typeof tasks.value[0]) {
   selectTask(task)
 }
 </script>
@@ -168,18 +150,14 @@ function handleSelectTask(task: ScheduledTaskDto) {
   <section class="scheduled-task-page">
     <el-page-header content="定时任务" />
 
-    <!-- 顶部操作栏 -->
     <div class="toolbar">
       <el-button type="primary" @click="openCreateDialog">新建定时任务</el-button>
       <el-button @click="fetchTasks">刷新列表</el-button>
     </div>
 
-    <!-- 错误提示 -->
     <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" class="error-alert" />
 
-    <!-- 主体内容 -->
     <el-row :gutter="16" class="content-row">
-      <!-- 左侧：任务列表 -->
       <el-col :span="selectedTask ? 10 : 24">
         <div v-loading="loading" class="task-list">
           <el-table :data="tasks" stripe style="width: 100%" @row-click="handleSelectTask">
@@ -187,14 +165,13 @@ function handleSelectTask(task: ScheduledTaskDto) {
               <template #default="{ row }">
                 <div class="task-name-cell">
                   <span>{{ row.name }}</span>
-                  <el-tag v-if="!row.enabled" size="small" type="info">已禁用</el-tag>
+                  <el-tag v-if="row.status === 'disabled'" size="small" type="info">已禁用</el-tag>
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="agentName" label="关联 Agent" width="120" />
-            <el-table-column prop="repo" label="关联仓库" width="140">
+            <el-table-column label="关联 Agent" width="120">
               <template #default="{ row }">
-                {{ row.repo?.repoName || '-' }}
+                {{ getAgentName(row.agentId) }}
               </template>
             </el-table-column>
             <el-table-column prop="triggerType" label="触发方式" width="100">
@@ -213,7 +190,7 @@ function handleSelectTask(task: ScheduledTaskDto) {
               <template #default="{ row }">
                 <el-button size="small" link type="primary" @click.stop="openEditDialog(row)">编辑</el-button>
                 <el-button size="small" link type="primary" @click.stop="handleToggle(row)">
-                  {{ row.enabled ? '禁用' : '启用' }}
+                  {{ row.status === 'disabled' ? '启用' : '禁用' }}
                 </el-button>
                 <el-button size="small" link type="success" @click.stop="handleTrigger(row)">执行</el-button>
                 <el-button size="small" link type="danger" @click.stop="handleDelete(row)">删除</el-button>
@@ -221,14 +198,12 @@ function handleSelectTask(task: ScheduledTaskDto) {
             </el-table-column>
           </el-table>
 
-          <!-- 空状态 -->
           <el-empty v-if="!loading && tasks.length === 0" description="暂无定时任务，请点击新建">
             <el-button type="primary" @click="openCreateDialog">新建定时任务</el-button>
           </el-empty>
         </div>
       </el-col>
 
-      <!-- 右侧：任务详情和执行记录 -->
       <el-col v-if="selectedTask" :span="14">
         <el-card class="detail-card" shadow="never">
           <template #header>
@@ -240,14 +215,7 @@ function handleSelectTask(task: ScheduledTaskDto) {
 
           <el-descriptions :column="2" border>
             <el-descriptions-item label="任务名称">{{ selectedTask.name }}</el-descriptions-item>
-            <el-descriptions-item label="关联 Agent">{{ selectedTask.agentName }}</el-descriptions-item>
-            <el-descriptions-item label="关联仓库">
-              <template v-if="selectedTask.repo">
-                {{ selectedTask.repo.repoName }} / {{ selectedTask.repo.branch }}
-                <span v-if="selectedTask.repo.path"> / {{ selectedTask.repo.path }}</span>
-              </template>
-              <span v-else>-</span>
-            </el-descriptions-item>
+            <el-descriptions-item label="关联 Agent">{{ getAgentName(selectedTask.agentId) }}</el-descriptions-item>
             <el-descriptions-item label="触发方式">{{ getTriggerTypeText(selectedTask.triggerType) }}</el-descriptions-item>
             <el-descriptions-item label="触发配置">{{ formatTrigger(selectedTask) }}</el-descriptions-item>
             <el-descriptions-item label="当前状态">
@@ -255,28 +223,29 @@ function handleSelectTask(task: ScheduledTaskDto) {
                 {{ getStatusText(selectedTask.status) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="成功率">{{ getSuccessRate(selectedTask) }}</el-descriptions-item>
-            <el-descriptions-item label="下次执行">{{ selectedTask.nextRunTime || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="上次执行">{{ selectedTask.lastRunTime || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="总执行次数" :span="2">{{ selectedTask.totalRuns }} 次（成功 {{ selectedTask.successRuns }} / 失败 {{ selectedTask.failedRuns }}）</el-descriptions-item>
-            <el-descriptions-item label="任务描述" :span="2">{{ selectedTask.description || '无' }}</el-descriptions-item>
+            <el-descriptions-item label="下次执行">{{ formatDateTime(selectedTask.nextRunAtUtc) }}</el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ formatDateTime(selectedTask.createdAtUtc) }}</el-descriptions-item>
+            <el-descriptions-item label="任务标题" :span="2">{{ selectedTask.taskTitle || '-' }}</el-descriptions-item>
             <el-descriptions-item label="任务参数" :span="2">
-              <code class="params-code">{{ selectedTask.params }}</code>
+              <code class="params-code">{{ selectedTask.input }}</code>
             </el-descriptions-item>
           </el-descriptions>
         </el-card>
 
-        <!-- 执行记录 -->
         <el-card class="exec-card" shadow="never">
           <template #header>
             <span>执行记录</span>
           </template>
 
           <el-table :data="executions" stripe size="small" max-height="300">
-            <el-table-column prop="startTime" label="开始时间" width="160" />
-            <el-table-column prop="duration" label="耗时" width="80">
+            <el-table-column prop="startedAtUtc" label="开始时间" width="160">
               <template #default="{ row }">
-                {{ row.duration > 0 ? `${(row.duration / 1000).toFixed(1)}s` : '-' }}
+                {{ formatDateTime(row.startedAtUtc) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="completedAtUtc" label="结束时间" width="160">
+              <template #default="{ row }">
+                {{ formatDateTime(row.completedAtUtc) }}
               </template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="80">
@@ -286,7 +255,7 @@ function handleSelectTask(task: ScheduledTaskDto) {
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="result" label="执行结果" />
+            <el-table-column prop="output" label="执行结果" />
           </el-table>
 
           <el-empty v-if="executions.length === 0" description="暂无执行记录" />
@@ -294,10 +263,8 @@ function handleSelectTask(task: ScheduledTaskDto) {
       </el-col>
     </el-row>
 
-    <!-- 新建/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="700px" :close-on-click-modal="false">
       <el-form label-position="top">
-        <!-- 从模板创建 -->
         <el-form-item v-if="!selectedTask" label="快速开始（可选）">
           <div class="template-grid">
             <el-card
@@ -320,17 +287,6 @@ function handleSelectTask(task: ScheduledTaskDto) {
           <el-input v-model="formData.name" placeholder="输入任务名称" maxlength="50" show-word-limit />
         </el-form-item>
 
-        <el-form-item label="任务描述">
-          <el-input
-            v-model="formData.description"
-            type="textarea"
-            placeholder="简要描述任务的职责"
-            :rows="2"
-            maxlength="200"
-            show-word-limit
-          />
-        </el-form-item>
-
         <el-form-item label="关联仓库" required>
           <el-select v-model="formData.repoId" placeholder="选择关联的仓库" style="width: 100%">
             <el-option v-for="repo in availableRepos" :key="repo.id" :label="repo.name" :value="repo.id" />
@@ -339,10 +295,6 @@ function handleSelectTask(task: ScheduledTaskDto) {
 
         <el-form-item label="目标分支">
           <el-input v-model="formData.branch" placeholder="如 main、develop" style="width: 100%" />
-        </el-form-item>
-
-        <el-form-item label="目标路径（可选）">
-          <el-input v-model="formData.path" placeholder="如 src/utils（留空表示整个仓库）" style="width: 100%" />
         </el-form-item>
 
         <el-form-item label="关联 Agent" required>
@@ -359,13 +311,11 @@ function handleSelectTask(task: ScheduledTaskDto) {
           </el-radio-group>
         </el-form-item>
 
-        <!-- Cron 表达式 -->
         <el-form-item v-if="formData.triggerType === 'cron'" label="Cron 表达式">
           <el-input v-model="formData.cronExpression" placeholder="0 9 * * *" />
           <div class="form-tip">格式：分 时 日 月 周，如 "0 9 * * *" 表示每天 9:00 执行</div>
         </el-form-item>
 
-        <!-- 固定间隔 -->
         <el-form-item v-if="formData.triggerType === 'interval'" label="执行间隔">
           <el-space>
             <el-input-number v-model="formData.intervalHours" :min="0" :max="72" />
@@ -375,7 +325,6 @@ function handleSelectTask(task: ScheduledTaskDto) {
           </el-space>
         </el-form-item>
 
-        <!-- 一次性执行 -->
         <el-form-item v-if="formData.triggerType === 'once'" label="执行时间">
           <el-date-picker
             v-model="formData.onceTime"
