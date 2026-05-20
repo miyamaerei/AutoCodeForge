@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SqlSugarCore" Version="5.1.4.214" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AutoCodeForge.Core\AutoCodeForge.Core.csproj" />
+    <ProjectReference Include="..\AutoCodeForge.Application\AutoCodeForge.Application.csproj" />
+    <ProjectReference Include="..\AutoCodeForge.Infrastructure\AutoCodeForge.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

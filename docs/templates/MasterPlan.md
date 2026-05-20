@@ -36,3 +36,24 @@
 1.  核心任务：__________
 2.  次要任务：__________
 3.  需重点关注：__________（如：待审批规范、依赖项推进）
+
+## 六、失败回流记录模板（闭环专用）
+
+### 6.1 使用规则
+1. 仅记录 blocked 或 failed 的闭环结果。
+2. 每条失败必须有主归因：code、test-case、environment、requirement。
+3. 可附加次归因；若归因不确定，主归因填 `needs-triage` 并创建快速排查动作。
+4. 每条记录必须包含 owner、unblock condition、next action type。
+5. 禁止写泛化待办，必须能追溯到失败证据。
+
+### 6.2 回流记录表
+| 记录时间 | Requirement ID | Loop 模式 | 失败状态 | 主归因 | 次归因 | 失败检查ID/用例 | 错误签名 | 影响范围 | 可复现性 | Owner | Unblock 条件 | Next Action Type | Next Action Priority | 证据链接 |
+|----------|----------------|-----------|----------|--------|--------|-----------------|----------|----------|----------|-------|----------------|------------------|----------------------|----------|
+| ______年____月____日 ____:____ | RQ-__________ | implement/validate-only | blocked/failed | code/test-case/environment/requirement/needs-triage | 可多值 | test-id/build-step | 关键报错摘要 | module/endpoint/workflow | always/intermittent/unknown | @Worker/@Auditor/OPS/PO | 明确可验证条件 | BUG/TEST/OPS/REQ/TRIAGE | P0/P1/P2/P3 | report or log path |
+
+### 6.3 归因到动作映射
+1. code -> BUG：实现修复，标注疑似引入范围和受影响模块。
+2. test-case -> TEST：补用例或修断言，标注缺失场景。
+3. environment -> OPS：修环境配置或依赖，标注环境指纹。
+4. requirement -> REQ：需求澄清或范围重定义，标注决策截止时间。
+5. needs-triage -> TRIAGE：先排查后再回填主归因，最长不超过 1 个执行轮次。
