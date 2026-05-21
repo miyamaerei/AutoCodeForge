@@ -131,4 +131,13 @@ export const systemConfigRoutes: RouteRecordRaw[] = [
       title: '用户管理',
     },
   },
+  {
+    path: '/system-config/management',
+    name: 'system-config.management',
+    component: () => import('./views/SystemConfigManagementView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Management',
+    },
+  },
 ]

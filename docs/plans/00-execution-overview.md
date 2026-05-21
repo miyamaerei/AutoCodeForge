@@ -80,6 +80,7 @@
 | 12 | 阶段十二：Sandbox 继承与 Repo 同步 | `docs/plans/12-phase-twelve-sandbox-repo-sync.md` | ✅ (新增) | 本地 Sandbox + 按用户隔离目录 + 任务拉取仓库 |
 | 13 | 阶段十三：Repo 与审查模块管理 | `docs/plans/13-phase-thirteen-repo-review-management.md` | ✅ (新增) | Repo 管理与审查任务闭环，规则分层与审查报告可追溯 |
 | 14 | 阶段十四：Agent 增强 Git 技能 | `docs/plans/14-phase-fourteen-agent-git-skills.md` | ✅ (新增) | Agent 接入 Git 只读/变更技能，权限管控与审计追踪 |
+| 16 | 阶段十六：Agent 可配置 Skill 与 知识库 | `docs/plans/16-phase-sixteen-agent-skill-knowledge.md` | ⏳ (草案) | 允许在 Agent 调用时注入 skill 与 KB，支持热加载、权限与灰度发布 |
 
 ---
 

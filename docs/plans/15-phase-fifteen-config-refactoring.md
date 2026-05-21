@@ -712,3 +712,52 @@ public enum ConfigType
 ### 下一步
 
 本阶段完成后，配置管理后端核心功能已完善。专项业务配置（如 Repository、Knowledge、Workflow）的具体业务逻辑可在对应业务阶段中通过统一的 ConfigService 扩展实现，无需创建新的配置实体或表。
+
+---
+
+## 附加：将现有 Skill 与 Knowledge 集成到 Agent 调用（集成指南）
+
+说明：本节描述如何把已存在的 Skill（技能配置/实现）和 Knowledge（知识源/索引）在 Agent 被调用时注入并编排，属于配置重构的应用级扩展。目标是提供明确的设计、文件级改动建议、PoC 步骤与验收条件（仅文档，不实现代码）。
+
+### 设计目标（简单契约）
+- 输入：Agent 调用请求 + 可选 invocationConfig（覆盖/合并用户/全局配置），其中 invocationConfig 含 skill 列表与 knowledge 指向。
+- 输出：Agent 响应（文本） + 元数据（usedSkills[], knowledgeHits[], traceId）。
+- 要求：向后兼容；若未提供 invocationConfig 则保持现有行为；支持热加载/灰度发布/审计。
+
+### 变更点（建议的文件级清单，文档说明，不改代码）
+- `server/src/AutoCodeForge.Infrastructure/AI/AgentExecutor.cs`：扩展 Execute 流程，在构建 LLM 请求前合并 invocation 配置、筛选/排序 tools（skills）、并行检索 knowledge snippets，然后把 snippets 注入 SystemPrompt 或 Messages。
+- `server/src/AutoCodeForge.Api/Endpoints/AgentEndpoints.cs` 或 `ChatStreamEndpoints.cs`：API 层接受可选 `invocationConfig` DTO 并传递给 AgentExecutor；保留现有端点兼容性。
+- `server/src/AutoCodeForge.Application/Services/ConfigService.cs`：新增或明确方法以获取合并后的 Agent invocation 配置（用户/全局/默认合并逻辑）。
+- `server/src/AutoCodeForge.Core/DTOs/Agent/`：新增 `AgentInvocationConfigDto`（skills[], knowledge[]）与 `AgentExecutionResultDto`（content, usedSkills, knowledgeHits, traceId）。
+- `server/src/AutoCodeForge.Infrastructure/Logging/AgentToolAuditLogger.cs`：在审计记录中增加 usedSkills 与 knowledgeHits 字段（或 JSON 扩展），便于回溯。
+- `tests/AutoCodeForge.Tests/AgentExecutor*`：增加单元/集成测试（mock IAgentTool、mock knowledge adapter 与 ILlmGateway），验证配置覆盖、KB 注入与审计字段。
+
+### PoC（文档化步骤，按优先级）
+1. 定义 DTO：在 `Core/DTOs/Agent` 中编写 `AgentInvocationConfigDto` 与 `AgentExecutionResultDto`。
+2. API 支持：在 Agent 调用端点增加 `invocationConfig` 可选参数（请求体），并将其传递给 AgentExecutor（新签名或通过额外参数）。
+3. AgentExecutor 流程：描述实现流程（合并配置 -> 选择 tools -> 并行检索 KB -> 注入 prompt -> 调用 LLM -> 记录审计）。在文档中列出每步的输入/输出与错误处理策略（例如 KB 超时降级）。
+4. 测试：编写单元测试覆盖三种场景（无 invocationConfig；通过 invocationConfig 指定 skills；指定 knowledge 源并验证注入）。
+5. 验证：通过 API 手动或自动化测试验证返回的 metadata（usedSkills、knowledgeHits）并检查审计日志。
+
+### 注入策略（设计考量）
+- 注入位置：优先把知识片段注入 SystemPrompt（若需长期记忆）或在 user message 后追加短 snippet；应支持可配置策略。 
+- Token 预算：实现前需要定义 token 预算与截断策略，文档中建议默认 topK=3、snippet 长度限制 500 token。 
+- 并发与缓存：建议对相同查询实现短期缓存（MemoryCache/Redis），并行检索多个知识源以降低延迟。 
+
+### 错误与降级（建议）
+- Knowledge 检索失败或超时：降级到不注入 KB，返回 metadata 标记为 degraded 并记录告警。 
+- Skill 执行失败：根据 skill 配置的 critical 标志决定是否中断流程或记录后继续。 
+- 配置校验失败：API 返回 400 并说明错误字段。
+
+### 验收清单（文档化验收）
+- Agent API 能接受可选 `invocationConfig` 并不破坏现有交互。
+- AgentExecutor 在返回中包含 `usedSkills` 与 `knowledgeHits` 字段并在审计中可回溯。
+- 对于常见错误（KB 超时、skill 执行异常）系统能按文档定义降级并记录日志。
+- 单元/集成测试覆盖关键路径（至少 3 个测试场景）。
+
+### 迁移与灰度建议
+- 先在 staging 环境部署 PoC，使用流量镜像或小比例灰度（10%）验证延迟与准确性。
+- 监控指标：额外延迟（ms）、KB 命中率、skill 执行错误率、审计事件量。
+- 回滚策略：若错误率或延迟超过阈值，快速回退到不注入 invocationConfig 的旧路径。
+
+本节为配置重构阶段的推荐扩展，旨在把已存在的 Skill 与 Knowledge 作为可配置资源在 Agent 调用时被安全、可控地使用。具体实现由后续阶段（如阶段16）按此文档落地。

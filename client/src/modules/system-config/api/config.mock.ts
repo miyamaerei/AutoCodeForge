@@ -299,7 +299,47 @@ export function mockResetConfig(configType: ConfigType): boolean {
  * Get config history - mock implementation (admin)
  */
 export function mockGetConfigHistory(configType?: ConfigType, page = 1, pageSize = 20): ConfigHistoryResponse[] {
-  return []
+  const now = new Date()
+  const mockHistory: ConfigHistoryResponse[] = [
+    {
+      id: 'hist-1',
+      configId: 'pref-1',
+      configType: 'Preferences',
+      configKey: 'locale',
+      previousValue: 'en-US',
+      newValue: 'zh-CN',
+      operation: 'Update',
+      changedBy: 'admin',
+      changedAt: new Date(now.getTime() - 3600000).toISOString(),
+    },
+    {
+      id: 'hist-2',
+      configId: 'pref-3',
+      configType: 'Preferences',
+      configKey: 'theme',
+      previousValue: 'dark',
+      newValue: 'light',
+      operation: 'Update',
+      changedBy: 'admin',
+      changedAt: new Date(now.getTime() - 7200000).toISOString(),
+    },
+    {
+      id: 'hist-3',
+      configId: 'sandbox-1',
+      configType: 'Sandbox',
+      configKey: 'workspace',
+      previousValue: '{"workspaceRootPath":"C:/old"}',
+      newValue: '{"workspaceRootPath":"C:/gitrepos/AutoCodeForge"}',
+      operation: 'Update',
+      changedBy: 'user1',
+      changedAt: new Date(now.getTime() - 86400000).toISOString(),
+    },
+  ]
+
+  if (configType) {
+    return mockHistory.filter((h) => h.configType === configType)
+  }
+  return mockHistory
 }
 
 /**
@@ -307,4 +347,28 @@ export function mockGetConfigHistory(configType?: ConfigType, page = 1, pageSize
  */
 export function mockBatchUpdateConfigs(request: BatchConfigRequest): number {
   return request.configs.length
+}
+
+/**
+ * Export config - mock implementation (admin)
+ */
+export function mockExportConfig(configType: ConfigType): string {
+  const configs = mockGetConfigs(configType)
+  return JSON.stringify({
+    ConfigType: configType,
+    ExportedAt: new Date().toISOString(),
+    Configs: configs,
+  }, null, 2)
+}
+
+/**
+ * Import config - mock implementation (admin)
+ */
+export function mockImportConfig(configType: ConfigType, jsonData: string, overwriteExisting = true): number {
+  try {
+    const data = JSON.parse(jsonData)
+    return data.Configs?.length || 1
+  } catch {
+    return 1
+  }
 }

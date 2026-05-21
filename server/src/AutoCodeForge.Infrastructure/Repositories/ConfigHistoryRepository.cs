@@ -103,6 +103,26 @@ public class ConfigHistoryRepository : BaseRepository<ConfigHistoryEntity>
     }
 
     /// <summary>
+    /// Gets all history records with pagination.
+    /// </summary>
+    /// <param name="page">The page number.</param>
+    /// <param name="pageSize">The page size.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The paginated history records.</returns>
+    public async Task<List<ConfigHistoryEntity>> GetAllAsync(
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        return await Queryable
+            .OrderByDescending(h => h.CreatedAtUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    /// <summary>
     /// Cleans up old history records beyond the maximum allowed.
     /// </summary>
     /// <param name="configId">The configuration entry ID.</param>

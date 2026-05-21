@@ -27,6 +27,8 @@ import {
   mockResetConfig,
   mockGetConfigHistory,
   mockBatchUpdateConfigs,
+  mockExportConfig,
+  mockImportConfig,
 } from './config.mock'
 
 /**
@@ -192,6 +194,7 @@ export async function batchUpdateConfigs(request: BatchConfigRequest): Promise<n
  * Export config by type (admin only)
  */
 export async function exportConfig(configType: ConfigType): Promise<string> {
+  if (USE_MOCK) return mockExportConfig(configType)
   const { data } = await request.get<ApiResponse<string>>(`/v1/configs/${configType}/export`)
   return data.data
 }
@@ -200,6 +203,7 @@ export async function exportConfig(configType: ConfigType): Promise<string> {
  * Import config (admin only)
  */
 export async function importConfig(configType: ConfigType, jsonData: string, overwriteExisting = true): Promise<number> {
+  if (USE_MOCK) return mockImportConfig(configType, jsonData, overwriteExisting)
   const payload = { jsonData, overwriteExisting }
   const { data } = await request.post<ApiResponse<{ importedCount: number }>>(`/v1/configs/${configType}/import`, payload)
   return data.data.importedCount

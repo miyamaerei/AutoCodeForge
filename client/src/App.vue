@@ -200,6 +200,11 @@ const settingsMenuItems = computed<MenuItem[]>(() => [
         title: 'Workflow',
         path: '/settings/workflow',
       },
+      {
+        id: 'settings-management',
+        title: 'Management',
+        path: '/system-config/management',
+      },
     ],
   },
 ])

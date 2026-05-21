@@ -140,4 +140,19 @@ public class ConfigHistoryService
     {
         return await _historyRepository.GetCountAsync(configId, cancellationToken);
     }
+
+    /// <summary>
+    /// Gets all history records with pagination.
+    /// </summary>
+    /// <param name="page">The page number.</param>
+    /// <param name="pageSize">The page size.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The paginated history records.</returns>
+    public async Task<List<ConfigHistoryEntity>> GetAllAsync(
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        return await _historyRepository.GetAllAsync(page, pageSize, cancellationToken);
+    }
 }

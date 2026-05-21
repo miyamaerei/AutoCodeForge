@@ -52,7 +52,9 @@ public class DatabaseInitializer
             typeof(WikiPageEntity),
             typeof(AdminAuditLogEntity),
             typeof(GitSkillGrantEntity),
-            typeof(AgentToolInvocationEntity));
+            typeof(AgentToolInvocationEntity),
+            typeof(ConfigurationEntry),
+            typeof(ConfigHistoryEntity));
 
         if (isDevelopment)
         {

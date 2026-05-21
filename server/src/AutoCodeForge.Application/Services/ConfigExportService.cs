@@ -252,8 +252,8 @@ public class ConfigExportService
 
     private class ImportData
     {
-        public string? ConfigType { get; set; }
-        public Guid? NtId { get; set; }
+        public object? ConfigType { get; set; }
+        public string? NtId { get; set; }
         public List<ImportConfigItem>? Configs { get; set; }
         public DateTime? ExportedAt { get; set; }
     }
