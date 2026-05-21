@@ -155,3 +155,60 @@ export interface ApiResponse<T> {
   message?: string
   data: T
 }
+
+/**
+ * Git configuration options (matches backend GitOptions)
+ */
+export interface GitOptions {
+  azureDevOps: AzureDevOpsOptions
+  path: PathOptions
+  stringHandling: StringHandlingOptions
+  providers: ProviderOptions
+}
+
+/**
+ * Azure DevOps specific configuration options
+ */
+export interface AzureDevOpsOptions {
+  domainPatterns: string[]
+  username: string
+  enableUrlEncoding: boolean
+  defaultOrganization: string
+  defaultProject: string
+}
+
+/**
+ * Path handling configuration options
+ */
+export interface PathOptions {
+  maxPathLength: number
+  tempPathTemplate: string
+  autoShortenPaths: boolean
+  shortPathIdLength: number
+}
+
+/**
+ * Special string handling configuration options
+ */
+export interface StringHandlingOptions {
+  gitHubUsername: string
+  gitLabUsername: string
+  specialCharacters: string[]
+  normalizeWhitespace: boolean
+  whitespaceReplacement: string
+}
+
+/**
+ * Provider-specific configuration options
+ */
+export interface ProviderOptions {
+  defaultUsername: string
+  useSshByDefault: boolean
+  sshPort: number
+  connectionTimeoutSeconds: number
+}
+
+/**
+ * Git provider type
+ */
+export type GitProviderType = 'AzureDevOps' | 'GitHub' | 'GitLab' | 'Generic'

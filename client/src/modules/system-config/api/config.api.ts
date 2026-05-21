@@ -1,4 +1,4 @@
-﻿/**
+/**
  * System Config API functions
  * Wires frontend to backend /v1/configs endpoints
  */
@@ -12,6 +12,7 @@ import type {
   ConfigHistoryResponse,
   BatchConfigRequest,
   ApiResponse,
+  GitOptions,
 } from './config.types'
 import { request } from '@/lib/request'
 import { USE_MOCK } from '@/config/runtime'
@@ -29,6 +30,8 @@ import {
   mockBatchUpdateConfigs,
   mockExportConfig,
   mockImportConfig,
+  mockGetGitConfig,
+  mockUpdateGitConfig,
 } from './config.mock'
 
 /**
@@ -207,4 +210,22 @@ export async function importConfig(configType: ConfigType, jsonData: string, ove
   const payload = { jsonData, overwriteExisting }
   const { data } = await request.post<ApiResponse<{ importedCount: number }>>(`/v1/configs/${configType}/import`, payload)
   return data.data.importedCount
+}
+
+/**
+ * Get Git config
+ */
+export async function getGitConfig(): Promise<GitOptions> {
+  if (USE_MOCK) return mockGetGitConfig()
+  const { data } = await request.get<ApiResponse<GitOptions>>('/v1/configs/git')
+  return data.data
+}
+
+/**
+ * Update Git config
+ */
+export async function updateGitConfig(payload: GitOptions): Promise<GitOptions> {
+  if (USE_MOCK) return mockUpdateGitConfig(payload)
+  const { data } = await request.put<ApiResponse<GitOptions>>('/v1/configs/git', payload)
+  return data.data
 }

@@ -14,6 +14,8 @@ import {
   getConfigDefaults,
   initConfig,
   resetConfig,
+  getGitConfig,
+  updateGitConfig,
 } from '../api/config.api'
 import type {
   ConfigResponse,
@@ -22,6 +24,7 @@ import type {
   ConfigTemplateResponse,
   ConfigInitResult,
   ConfigRequest,
+  GitOptions,
 } from '../api/config.types'
 
 export const useSystemConfigStore = defineStore('module.system-config', () => {
@@ -34,6 +37,9 @@ export const useSystemConfigStore = defineStore('module.system-config', () => {
 
   // Sandbox config state
   const sandboxConfig = ref<SandboxConfigDto | null>(null)
+
+  // Git config state
+  const gitConfig = ref<GitOptions | null>(null)
 
   // Config defaults by type
   const configDefaults = ref<Record<ConfigType, ConfigTemplateResponse>>({} as Record<ConfigType, ConfigTemplateResponse>)
@@ -148,6 +154,38 @@ export const useSystemConfigStore = defineStore('module.system-config', () => {
   }
 
   /**
+   * Load Git config
+   */
+  async function loadGitConfig(): Promise<void> {
+    loading.value = true
+    error.value = null
+    try {
+      gitConfig.value = await getGitConfig()
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '加载 Git 配置失败'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Save Git config
+   */
+  async function saveGitConfig(payload: GitOptions): Promise<GitOptions> {
+    saving.value = true
+    error.value = null
+    try {
+      gitConfig.value = await updateGitConfig(payload)
+      return gitConfig.value
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '保存 Git 配置失败'
+      throw err
+    } finally {
+      saving.value = false
+    }
+  }
+
+  /**
    * Load config defaults
    */
   async function loadConfigDefaults(configType: ConfigType): Promise<void> {
@@ -216,6 +254,7 @@ export const useSystemConfigStore = defineStore('module.system-config', () => {
     configsByType,
     currentConfig,
     sandboxConfig,
+    gitConfig,
     configDefaults,
     loading,
     saving,
@@ -226,6 +265,8 @@ export const useSystemConfigStore = defineStore('module.system-config', () => {
     removeConfig,
     loadSandboxConfig,
     saveSandboxConfig,
+    loadGitConfig,
+    saveGitConfig,
     loadConfigDefaults,
     initializeConfig,
     resetToDefaults,

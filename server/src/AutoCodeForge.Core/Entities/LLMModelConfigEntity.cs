@@ -33,10 +33,34 @@ public class LLMModelConfigEntity : UserOwnedEntity
     public string? Endpoint { get; set; }
 
     /// <summary>
-    /// Gets or sets encrypted api key.
-    /// </summary>
-    [SugarColumn(Length = 1024, IsNullable = true)]
-    public string? ApiKey { get; set; }
+/// Gets or sets encrypted api key.
+/// </summary>
+[SugarColumn(Length = 1024, IsNullable = true)]
+public string? ApiKey { get; set; }
+
+/// <summary>
+/// Gets or sets the CLI executable path (used for GitHub Copilot CLI).
+/// </summary>
+[SugarColumn(Length = 500, IsNullable = true)]
+public string? CliExecutable { get; set; }
+
+/// <summary>
+/// Gets or sets the organization name (used for GitHub Copilot).
+/// </summary>
+[SugarColumn(Length = 100, IsNullable = true)]
+public string? Organization { get; set; }
+
+/// <summary>
+/// Gets or sets the authentication mode (interactive/pat).
+/// </summary>
+[SugarColumn(Length = 20, IsNullable = true)]
+public string? AuthMode { get; set; }
+
+/// <summary>
+/// Gets or sets the PAT environment variable name.
+/// </summary>
+[SugarColumn(Length = 50, IsNullable = true)]
+public string? PatEnvVar { get; set; }
 }
 
 /// <summary>
@@ -48,4 +72,5 @@ public enum LLMProvider
     OpenAI = 1,
     Anthropic = 2,
     Ollama = 3,
+    GitHubCopilot = 4,
 }

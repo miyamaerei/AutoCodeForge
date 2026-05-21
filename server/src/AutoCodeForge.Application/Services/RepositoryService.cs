@@ -77,6 +77,7 @@ public class RepositoryService
             AuthType = request.AuthType,
             MergeStrategy = request.MergeStrategy,
             EncryptedToken = _dataProtectionService.Encrypt(request.Token),
+            Branch = request.Branch?.Trim(),
         };
 
         var created = await _repository.CreateAsync(entity, cancellationToken);
@@ -148,6 +149,11 @@ public class RepositoryService
         if (request.MergeStrategy.HasValue)
         {
             entity.MergeStrategy = request.MergeStrategy.Value;
+        }
+
+        if (request.Branch != null)
+        {
+            entity.Branch = request.Branch.Trim();
         }
 
         await _repository.UpdateAsync(entity, cancellationToken);
@@ -318,6 +324,7 @@ public class RepositoryService
             AuthType = entity.AuthType,
             MergeStrategy = entity.MergeStrategy,
             DefaultReviewRuleSetId = entity.DefaultReviewRuleSetId,
+            Branch = entity.Branch,
             CreatedAtUtc = entity.CreatedAtUtc,
             UpdatedAtUtc = entity.UpdatedAtUtc,
         };

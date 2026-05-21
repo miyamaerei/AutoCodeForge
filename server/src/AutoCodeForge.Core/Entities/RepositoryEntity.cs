@@ -1,4 +1,4 @@
-﻿using AutoCodeForge.Core.Entities.Base;
+using AutoCodeForge.Core.Entities.Base;
 using SqlSugar;
 
 namespace AutoCodeForge.Core.Entities;
@@ -65,6 +65,12 @@ public class RepositoryEntity : UserOwnedEntity
     /// </summary>
     [SugarColumn(Length = 512, IsNullable = true)]
     public string? WebhookSecret { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default branch name for repository operations.
+    /// </summary>
+    [SugarColumn(Length = 100, IsNullable = true)]
+    public string? Branch { get; set; }
 }
 
 /// <summary>
