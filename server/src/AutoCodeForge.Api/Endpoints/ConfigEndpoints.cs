@@ -231,10 +231,10 @@ public static class ConfigEndpoints
         HttpContext context,
         CancellationToken ct)
     {
-        //if (!IsAdmin(context))
-        //{
-        //    return Results.Forbid();
-        //}
+        if (!IsAdmin(context))
+        {
+            return Results.Forbid();
+        }
 
         List<ConfigHistoryEntity> history;
 
@@ -248,7 +248,8 @@ public static class ConfigEndpoints
         }
         else
         {
-            return Results.BadRequest(ApiResponse<object?>.Fail("Either configType or changedBy is required"));
+            // Return all history records when no filter is provided
+            history = await service.GetAllAsync(page, pageSize, ct);
         }
 
         var response = history.Select(MapToHistoryResponse).ToList();

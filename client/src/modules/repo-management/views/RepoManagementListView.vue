@@ -1,11 +1,24 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { fetchGitHubRepositoriesByToken, type RemoteGitRepositoryDto } from '../api/repo-management.api'
 import { useRepoManagementStore } from '../store/useRepoManagementStore'
 import { useRepoStore } from '@/stores/useRepoStore'
 import { useSystemConfigStore } from '../../system-config/store/useSystemConfigStore'
+import { fetchConfigs, createConfig, upsertConfig } from '../../system-config/api/config.api'
+import type { ConfigResponse, ConfigType } from '../../system-config/api/config.types'
+
+/**
+ * Token 配置项接口
+ */
+interface TokenOption {
+  configKey: string
+  configType: ConfigType
+  token: string
+  label: string
+  description: string
+}
 
 const store = useRepoManagementStore()
 const repoGlobal = useRepoStore()
@@ -19,6 +32,14 @@ const tokenHint = ref('')
 const selectedRemoteRepo = ref('')
 const addFormRef = ref<FormInstance>()
 const remoteRepos = ref<RemoteGitRepositoryDto[]>([])
+const tokenLoading = ref(false)
+
+// Token 管理相关
+const tokenOptions = ref<TokenOption[]>([])
+const selectedTokenKey = ref<string>('')
+const showCustomToken = ref(false)
+const customTokenInput = ref('')
+const newTokenName = ref('')
 
 const GITHUB_TOKEN_PATTERN = /^(ghp_|github_pat_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9_]{10,}$/
 
@@ -44,6 +65,136 @@ const addFormRules: FormRules = {
 }
 
 /**
+ * 计算最终的 Token 值
+ * 优先级：自定义输入 > 选中的配置 Token > 自动读取的 Token
+ */
+const finalToken = computed(() => {
+  if (showCustomToken.value) {
+    return customTokenInput.value.trim()
+  }
+  if (selectedTokenKey.value) {
+    const selected = tokenOptions.value.find((opt) => opt.configKey === selectedTokenKey.value)
+    return selected?.token || ''
+  }
+  return addForm.token
+})
+
+/**
+ * Token 选择变化时的处理
+ */
+function handleTokenSelect(value: string) {
+  if (value === '__custom__') {
+    showCustomToken.value = true
+    selectedTokenKey.value = ''
+    customTokenInput.value = ''
+  } else {
+    showCustomToken.value = false
+    selectedTokenKey.value = value
+    const selected = tokenOptions.value.find((opt) => opt.configKey === value)
+    if (selected) {
+      addForm.token = selected.token
+      tokenHint.value = `已选择: ${selected.label}`
+    }
+  }
+}
+
+/**
+ * 保存 Token 到配置
+ */
+async function saveTokenToConfig() {
+  const token = customTokenInput.value.trim()
+  const tokenName = newTokenName.value.trim() || `GitHub-Token-${Date.now()}`
+
+  if (!token) {
+    ElMessage.warning('请输入有效的 Token')
+    return
+  }
+
+  if (!mayBeGitHubToken(token)) {
+    ElMessage.warning('输入的 Token 格式不正确，GitHub Token 通常以 ghp_、github_pat_ 等开头')
+    return
+  }
+
+  tokenLoading.value = true
+  try {
+    const configKey = `git-token-${tokenName.toLowerCase().replace(/\s+/g, '-')}`
+    await upsertConfig('ApiKey' as ConfigType, {
+      configKey,
+      configValue: token,
+      isEncrypted: true,
+      description: `GitHub Token: ${tokenName}`,
+    })
+
+    // 刷新 Token 列表
+    await loadTokenOptions()
+
+    // 自动选中新添加的 Token
+    selectedTokenKey.value = configKey
+    showCustomToken.value = false
+    addForm.token = token
+    newTokenName.value = ''
+    customTokenInput.value = ''
+
+    ElMessage.success(`Token "${tokenName}" 已保存并选中`)
+  } catch (err) {
+    ElMessage.error('保存 Token 失败: ' + (err instanceof Error ? err.message : '未知错误'))
+  } finally {
+    tokenLoading.value = false
+  }
+}
+
+/**
+ * 加载 Token 配置选项
+ */
+async function loadTokenOptions() {
+  tokenLoading.value = true
+  try {
+    const configTypes: ConfigType[] = ['ApiKey', 'Repository', 'Integration']
+    const allConfigs: ConfigResponse[] = []
+
+    for (const configType of configTypes) {
+      try {
+        const configs = await fetchConfigs(configType)
+        allConfigs.push(...configs)
+      } catch {
+        // 忽略单个类型加载失败
+      }
+    }
+
+    // 从配置中提取 Token
+    const options: TokenOption[] = []
+    const seenTokens = new Set<string>()
+
+    for (const config of allConfigs) {
+      const token = findTokenFromConfigValue(config.configValue)
+      if (token && !seenTokens.has(token)) {
+        seenTokens.add(token)
+        options.push({
+          configKey: config.configKey,
+          configType: config.configType,
+          token,
+          label: `${config.configKey} (${config.configType})`,
+          description: config.description || `存储于 ${config.configType}`,
+        })
+      }
+    }
+
+    tokenOptions.value = options
+
+    // 如果有 Token 且未选中任何项，自动选中第一个
+    if (options.length > 0 && !selectedTokenKey.value && !showCustomToken.value) {
+      selectedTokenKey.value = options[0].configKey
+      addForm.token = options[0].token
+      tokenHint.value = `已自动选择: ${options[0].label}`
+    }
+  } catch {
+    tokenHint.value = ''
+  } finally {
+    tokenLoading.value = false
+  }
+}
+
+/**
  * 获取表格行样式类名
  */
 function rowClassName({ row }: { row: any }) {
@@ -52,12 +203,18 @@ function rowClassName({ row }: { row: any }) {
 
 function openAddDialog() {
   addDialogVisible.value = true
+  // 打开对话框时加载 Token 选项
+  loadTokenOptions()
 }
 
 function resetAddForm() {
   addForm.name = ''
   addForm.url = ''
   addForm.token = ''
+  selectedTokenKey.value = ''
+  showCustomToken.value = false
+  customTokenInput.value = ''
+  newTokenName.value = ''
   addFormRef.value?.clearValidate()
 }
 
@@ -148,9 +305,9 @@ function applyRemoteRepo(fullName: string) {
 }
 
 async function fetchRemoteRepos() {
-  const token = addForm.token.trim()
+  const token = finalToken.value
   if (!token) {
-    remoteRepoError.value = '请先填写或加载 Git Token'
+    remoteRepoError.value = '请先选择或输入 Git Token'
     return
   }
 
@@ -165,7 +322,7 @@ async function fetchRemoteRepos() {
     }
     selectedRemoteRepo.value = repos[0].fullName
     applyRemoteRepo(selectedRemoteRepo.value)
-    ElMessage.success(`已拉取 ${repos.length} 个仓库`) 
+    ElMessage.success(`已拉取 ${repos.length} 个仓库`)
   } catch (err) {
     remoteRepoError.value = err instanceof Error ? err.message : '拉取仓库失败'
     ElMessage.error(remoteRepoError.value)
@@ -179,12 +336,18 @@ async function submitAddRepository() {
   if (!form) return
   await form.validate()
 
+  const token = finalToken.value
+  if (!token) {
+    ElMessage.error('请选择或输入 Git Token')
+    return
+  }
+
   submitting.value = true
   try {
     await store.submitCreate({
       name: addForm.name.trim(),
       url: addForm.url.trim(),
-      token: addForm.token.trim(),
+      token: token,
     })
     ElMessage.success('仓库添加成功')
     addDialogVisible.value = false
@@ -251,8 +414,62 @@ onMounted(async () => {
           <el-input v-model="addForm.url" placeholder="例如：https://github.com/owner/repo" />
         </el-form-item>
 
-        <el-form-item label="访问令牌" prop="token">
-          <el-input v-model="addForm.token" type="password" show-password placeholder="输入用于拉取仓库的 Token" />
+        <!-- Token 选择器 -->
+        <el-form-item label="访问令牌">
+          <div class="token-selector">
+            <el-select
+              v-model="selectedTokenKey"
+              placeholder="从配置中选择 Token"
+              filterable
+              clearable
+              style="width: 100%"
+              :loading="tokenLoading"
+              @change="handleTokenSelect"
+            >
+              <el-option
+                v-for="item in tokenOptions"
+                :key="item.configKey"
+                :label="item.label"
+                :value="item.configKey"
+              >
+                <div class="token-option">
+                  <span class="token-label">{{ item.label }}</span>
+                  <span class="token-desc">{{ item.description }}</span>
+                </div>
+              </el-option>
+              <el-option value="__custom__" label="+ 使用自定义 Token">
+                <span style="color: #409eff">+ 使用自定义 Token</span>
+              </el-option>
+            </el-select>
+
+            <!-- 自定义 Token 输入区域 -->
+            <div v-if="showCustomToken" class="custom-token-area">
+              <el-divider content-position="left">自定义 Token</el-divider>
+              <el-input
+                v-model="customTokenInput"
+                type="password"
+                show-password
+                placeholder="输入新的 GitHub Token"
+                style="margin-bottom: 12px"
+              />
+              <el-input
+                v-model="newTokenName"
+                placeholder="为此 Token 起个名称（可选）"
+                style="margin-bottom: 12px"
+              />
+              <div class="custom-token-actions">
+                <el-button
+                  type="primary"
+                  size="small"
+                  :loading="tokenLoading"
+                  @click="saveTokenToConfig"
+                >
+                  保存到配置
+                </el-button>
+                <el-button size="small" @click="showCustomToken = false">取消</el-button>
+              </div>
+            </div>
+          </div>
         </el-form-item>
 
         <el-form-item label="远程仓库">
@@ -320,5 +537,38 @@ onMounted(async () => {
 
 .is-selected-repo {
   background: rgba(59, 130, 246, 0.06) !important;
+}
+
+/* Token 选择器样式 */
+.token-selector {
+  width: 100%;
+}
+
+.token-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+}
+
+.token-label {
+  font-weight: 500;
+}
+
+.token-desc {
+  font-size: 12px;
+  color: #909399;
+}
+
+.custom-token-area {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+
+.custom-token-actions {
+  display: flex;
+  gap: 8px;
 }
 </style>
