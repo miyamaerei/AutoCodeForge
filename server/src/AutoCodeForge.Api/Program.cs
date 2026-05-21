@@ -1,5 +1,6 @@
 using System.Reflection;
 using AutoCodeForge.Api.Endpoints;
+using Microsoft.Extensions.Options;
 using AutoCodeForge.Api.Middleware;
 using AutoCodeForge.Application.Services;
 using AutoCodeForge.Core.Interfaces;
@@ -54,6 +55,8 @@ builder.Services.PostConfigure<JwtOptions>(options =>
         options.Key = envKey;
     }
 });
+
+builder.Services.Configure<GitOptions>(builder.Configuration.GetSection(GitOptions.SectionName));
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDataProtection();
@@ -128,13 +131,18 @@ builder.Services.AddScoped<ConfigHistoryService>();
 builder.Services.AddScoped<ConfigExportService>();
 builder.Services.AddScoped<ConfigInitializationService>();
 builder.Services.AddScoped<IReviewEngine, AutoCodeForge.Infrastructure.Review.RuleBasedReviewEngine>();
-builder.Services.AddScoped<ILlmGateway, LlmGateway>();
+builder.Services.AddScoped<ILlmGateway, AgentFrameworkGateway>();
 builder.Services.AddScoped<ChatSessionManager>();
 builder.Services.AddScoped<AgentExecutor>();
 builder.Services.AddScoped<AgentMatcher>();
+builder.Services.AddScoped<AgentFactory>();
 builder.Services.AddScoped<TaskExecutor>();
 builder.Services.AddScoped<AutoCodeForge.Infrastructure.Sandbox.SandboxPathResolver>();
-builder.Services.AddScoped<AutoCodeForge.Infrastructure.Git.LibGit2SharpProvider>();
+builder.Services.AddScoped<AutoCodeForge.Infrastructure.Git.LibGit2SharpProvider>(sp =>
+{
+    var gitOptions = sp.GetRequiredService<IOptions<GitOptions>>().Value;
+    return new AutoCodeForge.Infrastructure.Git.LibGit2SharpProvider(gitOptions);
+});
 builder.Services.AddScoped<GitCloneService>();
 builder.Services.AddScoped<AutoCodeForge.Infrastructure.BackgroundServices.Handlers.RepoSyncTaskHandler>();
 builder.Services.AddScoped<AutoCodeForge.Infrastructure.BackgroundServices.Handlers.ReviewTaskHandler>();

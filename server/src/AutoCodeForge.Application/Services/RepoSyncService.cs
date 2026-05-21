@@ -61,7 +61,9 @@ public class RepoSyncService
             throw new ValidationException("Repository URL format is invalid");
         }
 
-        var branch = string.IsNullOrWhiteSpace(request.Branch) ? "main" : request.Branch.Trim();
+        var branch = string.IsNullOrWhiteSpace(request.Branch) 
+            ? (string.IsNullOrWhiteSpace(repository.Branch) ? "main" : repository.Branch.Trim()) 
+            : request.Branch.Trim();
 
         var sandboxSnapshot = new SandboxSnapshot
         {

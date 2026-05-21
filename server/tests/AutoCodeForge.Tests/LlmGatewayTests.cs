@@ -108,6 +108,106 @@ public sealed class LlmGatewayTests : IDisposable
         Assert.Contains("tool blew up", response.Content);
     }
 
+    [Fact(Skip = "Requires GitHub Copilot CLI executable ('copilot') available in PATH or via CliExecutable")]
+    public async Task ChatAsync_GitHubCopilotProvider_ShouldRouteToCopilotCli()
+    {
+        // 创建 GitHub Copilot 配置的模型，使用默认的 copilot CLI
+        var copilotModel = await CreateGitHubCopilotModelAsync("copilot-test-model");
+
+        var response = await _gateway.ChatAsync(new LlmRequest
+        {
+            PreferredModelId = copilotModel.Id,
+            Messages =
+            {
+                new ChatMessage
+                {
+                    Role = "user",
+                    Content = "Hello Copilot",
+                },
+            },
+        });
+
+        // 验证响应使用了模型名称
+        Assert.Equal("copilot-test-model", response.ModelName);
+        // 验证响应非空
+        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+    }
+
+    [Fact(Skip = "Requires GitHub Copilot CLI executable ('copilot') available in PATH or via CliExecutable")]
+    public async Task ChatAsync_GitHubCopilotWithPatEnvVar_ShouldIncludePatEnvVar()
+    {
+        // 创建带有 PAT 环境变量配置的 GitHub Copilot 模型
+        var copilotModel = await CreateGitHubCopilotModelAsync(
+            "copilot-pat-model",
+            patEnvVar: "GITHUB_TOKEN");
+
+        var response = await _gateway.ChatAsync(new LlmRequest
+        {
+            PreferredModelId = copilotModel.Id,
+            Messages =
+            {
+                new ChatMessage
+                {
+                    Role = "user",
+                    Content = "Test PAT auth",
+                },
+            },
+        });
+
+        // 验证响应
+        Assert.Equal("copilot-pat-model", response.ModelName);
+        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+    }
+
+    [Fact(Skip = "Requires GitHub Copilot CLI executable ('copilot') available in PATH or via CliExecutable")]
+    public async Task ChatAsync_GitHubCopilotFallbackToDefault_WhenNoPreferredModel()
+    {
+        // 创建默认的 GitHub Copilot 模型（不设置 PreferredModelId）
+        var defaultCopilot = await CreateGitHubCopilotModelAsync("default-copilot");
+
+        var response = await _gateway.ChatAsync(new LlmRequest
+        {
+            Messages =
+            {
+                new ChatMessage
+                {
+                    Role = "user",
+                    Content = "Hello default Copilot",
+                },
+            },
+        });
+
+        // 验证使用了默认的 GitHub Copilot 模型
+        Assert.Equal("default-copilot", response.ModelName);
+        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+    }
+
+    [Fact(Skip = "Requires GitHub Copilot CLI executable ('copilot') available in PATH or via CliExecutable")]
+    public async Task ChatAsync_GitHubCopilotWithOrganization_ShouldIncludeOrganization()
+    {
+        // 创建带有组织配置的 GitHub Copilot 模型
+        var copilotModel = await CreateGitHubCopilotModelAsync(
+            "copilot-org-model",
+            organization: "test-org");
+
+        var response = await _gateway.ChatAsync(new LlmRequest
+        {
+            PreferredModelId = copilotModel.Id,
+            Messages =
+            {
+                new ChatMessage
+                {
+                    Role = "user",
+                    Content = "Test organization",
+                },
+            },
+        });
+
+        // 验证响应
+        Assert.Equal("copilot-org-model", response.ModelName);
+        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+    }
+
     private async Task<LLMModelConfigEntity> CreateModelAsync(string modelName)
     {
         var model = new LLMModelConfigEntity
@@ -117,6 +217,34 @@ public sealed class LlmGatewayTests : IDisposable
             Provider = LLMProvider.AzureOpenAI,
             Endpoint = "https://example.local",
             ApiKey = "encrypted-key",
+        };
+
+        return await _repository.CreateAsync(model);
+    }
+
+    /// <summary>
+    /// 创建 GitHub Copilot 配置的模型
+    /// </summary>
+    private async Task<LLMModelConfigEntity> CreateGitHubCopilotModelAsync(
+        string modelName,
+        string? customCliPath = null,
+        string? patEnvVar = null,
+        string? organization = null)
+    {
+        // CLI 可执行文件路径：使用自定义路径或默认的 copilot
+        var cliExecutable = string.IsNullOrWhiteSpace(customCliPath) ? "copilot" : customCliPath;
+
+        var model = new LLMModelConfigEntity
+        {
+            Id = Guid.NewGuid(),
+            ModelName = modelName,
+            Provider = LLMProvider.GitHubCopilot,
+            Endpoint = "https://github.com",
+            ApiKey = "test-api-key",
+            CliExecutable = cliExecutable,
+            Organization = organization,
+            AuthMode = string.IsNullOrEmpty(patEnvVar) ? "interactive" : "pat",
+            PatEnvVar = patEnvVar,
         };
 
         return await _repository.CreateAsync(model);

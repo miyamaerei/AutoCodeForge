@@ -2,6 +2,7 @@ using AutoCodeForge.Core.DTOs.AI;
 using AutoCodeForge.Core.Entities;
 using AutoCodeForge.Core.Interfaces;
 using AutoCodeForge.Infrastructure.AI;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -14,6 +15,20 @@ namespace AutoCodeForge.Tests;
 public class AgentExecutorToolTests
 {
     /// <summary>
+    /// Test stub for AgentFactory that throws exceptions to force fallback to LLM Gateway.
+    /// This allows testing the traditional LLM Gateway path.
+    /// </summary>
+    private class StubAgentFactory : AgentFactory
+    {
+        public StubAgentFactory()
+            : base(null!, null!, null!)
+        {
+        }
+
+        // CreateAgentAsync will throw, forcing fallback to LLM Gateway
+    }
+
+    /// <summary>
     /// Test: Tool registration completeness.
     /// When AgentExecutor is created with tools, it should receive all tools.
     /// </summary>
@@ -23,6 +38,7 @@ public class AgentExecutorToolTests
         // Arrange
         var mockLlmGateway = new Mock<ILlmGateway>();
         var mockLogger = new Mock<ILogger<AgentExecutor>>();
+        var stubAgentFactory = new StubAgentFactory();
 
         var mockTool = new Mock<IAgentTool>();
         mockTool.Setup(t => t.Name).Returns("TestTool");
@@ -31,7 +47,7 @@ public class AgentExecutorToolTests
             .ReturnsAsync("Tool executed");
 
         var tools = new[] { mockTool.Object };
-        var executor = new AgentExecutor(mockLlmGateway.Object, tools, mockLogger.Object);
+        var executor = new AgentExecutor(mockLlmGateway.Object, stubAgentFactory, tools, mockLogger.Object);
 
         var agent = new AgentEntity
         {
@@ -83,9 +99,10 @@ public class AgentExecutorToolTests
         // Arrange
         var mockLlmGateway = new Mock<ILlmGateway>();
         var mockLogger = new Mock<ILogger<AgentExecutor>>();
+        var stubAgentFactory = new StubAgentFactory();
 
         var emptyTools = Array.Empty<IAgentTool>();
-        var executor = new AgentExecutor(mockLlmGateway.Object, emptyTools, mockLogger.Object);
+        var executor = new AgentExecutor(mockLlmGateway.Object, stubAgentFactory, emptyTools, mockLogger.Object);
 
         var agent = new AgentEntity
         {
@@ -135,9 +152,10 @@ public class AgentExecutorToolTests
         // Arrange
         var mockLlmGateway = new Mock<ILlmGateway>();
         var mockLogger = new Mock<ILogger<AgentExecutor>>();
+        var stubAgentFactory = new StubAgentFactory();
 
         var tools = Array.Empty<IAgentTool>();
-        var executor = new AgentExecutor(mockLlmGateway.Object, tools, mockLogger.Object);
+        var executor = new AgentExecutor(mockLlmGateway.Object, stubAgentFactory, tools, mockLogger.Object);
 
         var agent = new AgentEntity
         {
@@ -205,6 +223,7 @@ public class AgentExecutorToolTests
         // Arrange
         var mockLlmGateway = new Mock<ILlmGateway>();
         var mockLogger = new Mock<ILogger<AgentExecutor>>();
+        var stubAgentFactory = new StubAgentFactory();
 
         var failingTool = new Mock<IAgentTool>();
         failingTool.Setup(t => t.Name).Returns("FailingTool");
@@ -213,7 +232,7 @@ public class AgentExecutorToolTests
             .ThrowsAsync(new InvalidOperationException("Tool failed"));
 
         var tools = new[] { failingTool.Object };
-        var executor = new AgentExecutor(mockLlmGateway.Object, tools, mockLogger.Object);
+        var executor = new AgentExecutor(mockLlmGateway.Object, stubAgentFactory, tools, mockLogger.Object);
 
         var agent = new AgentEntity
         {
@@ -259,6 +278,7 @@ public class AgentExecutorToolTests
         // Arrange
         var mockLlmGateway = new Mock<ILlmGateway>();
         var mockLogger = new Mock<ILogger<AgentExecutor>>();
+        var stubAgentFactory = new StubAgentFactory();
 
         var tool1 = new Mock<IAgentTool>();
         tool1.Setup(t => t.Name).Returns("Tool1");
@@ -269,7 +289,7 @@ public class AgentExecutorToolTests
         tool2.Setup(t => t.Description).Returns("Second tool");
 
         var tools = new[] { tool1.Object, tool2.Object };
-        var executor = new AgentExecutor(mockLlmGateway.Object, tools, mockLogger.Object);
+        var executor = new AgentExecutor(mockLlmGateway.Object, stubAgentFactory, tools, mockLogger.Object);
 
         var agent = new AgentEntity
         {
@@ -320,9 +340,10 @@ public class AgentExecutorToolTests
         // Arrange
         var mockLlmGateway = new Mock<ILlmGateway>();
         var mockLogger = new Mock<ILogger<AgentExecutor>>();
+        var stubAgentFactory = new StubAgentFactory();
 
         var tools = Array.Empty<IAgentTool>();
-        var executor = new AgentExecutor(mockLlmGateway.Object, tools, mockLogger.Object);
+        var executor = new AgentExecutor(mockLlmGateway.Object, stubAgentFactory, tools, mockLogger.Object);
 
         var agent = new AgentEntity
         {

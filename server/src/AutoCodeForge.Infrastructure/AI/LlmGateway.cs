@@ -5,6 +5,7 @@ using AutoCodeForge.Core.Helpers;
 using AutoCodeForge.Core.Interfaces;
 using AutoCodeForge.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace AutoCodeForge.Infrastructure.AI;
 
@@ -286,7 +287,7 @@ public class LlmGateway : ILlmGateway
         throw new CustomException($"LLM invocation failed after retries: {lastException?.Message}", 502);
     }
 
-    private Task<LlmResponse> CallModelAsync(
+    private async Task<LlmResponse> CallModelAsync(
         LLMModelConfigEntity? model,
         LlmRequest request,
         CancellationToken cancellationToken)
@@ -301,19 +302,111 @@ public class LlmGateway : ILlmGateway
             throw new ValidationException("User message is required");
         }
 
+        if (model?.Provider == LLMProvider.GitHubCopilot)
+        {
+            return await CallGitHubCopilotCliAsync(model, lastUserMessage, cancellationToken);
+        }
+
         _logger.LogInformation(
             "Mock LLM call model={ModelName}, request={Request}",
             model?.ModelName ?? "default-model",
             JsonHelper.Serialize(request));
 
         var reply = $"[AutoCodeForge AI] {lastUserMessage}";
-        return Task.FromResult(new LlmResponse
+        return new LlmResponse
         {
             Content = reply,
             ModelName = model?.ModelName ?? "default-model",
             CompletedAtUtc = TimeHelper.UtcNow(),
             TotalTokens = Math.Max(1, lastUserMessage.Length / 4),
-        });
+        };
+    }
+
+    /// <summary>
+    /// Calls GitHub Copilot CLI to get code suggestions.
+    /// </summary>
+    private async Task<LlmResponse> CallGitHubCopilotCliAsync(
+        LLMModelConfigEntity model,
+        string prompt,
+        CancellationToken cancellationToken)
+    {
+        var executable = string.IsNullOrWhiteSpace(model.CliExecutable) 
+            ? "copilot" 
+            : model.CliExecutable;
+
+        _logger.LogInformation(
+            "Calling GitHub Copilot CLI: {Executable}, prompt={Prompt}",
+            executable,
+            prompt);
+
+        try
+        {
+            using var process = new Process();
+            process.StartInfo.FileName = executable;
+            process.StartInfo.Arguments = $"suggest \"{EscapeForShell(prompt)}\"";
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+
+            if (!string.IsNullOrWhiteSpace(model.PatEnvVar))
+            {
+                process.StartInfo.EnvironmentVariables[model.PatEnvVar] = model.ApiKey ?? string.Empty;
+            }
+
+            process.Start();
+
+            var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(60));
+
+            await process.WaitForExitAsync(timeoutCts.Token);
+
+            var output = await outputTask;
+            var error = await errorTask;
+
+            if (process.ExitCode != 0)
+            {
+                _logger.LogError(
+                    "GitHub Copilot CLI failed with exit code {ExitCode}: {Error}",
+                    process.ExitCode,
+                    error);
+                throw new CustomException($"Copilot CLI execution failed: {error}", 502);
+            }
+
+            _logger.LogDebug("GitHub Copilot CLI response: {Output}", output);
+
+            return new LlmResponse
+            {
+                Content = string.IsNullOrWhiteSpace(output) ? "[Copilot] No suggestions available" : output,
+                ModelName = model.ModelName,
+                CompletedAtUtc = TimeHelper.UtcNow(),
+                TotalTokens = Math.Max(1, output.Length / 4),
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            throw new CustomException("GitHub Copilot CLI execution timed out", 504);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to execute GitHub Copilot CLI");
+            throw new CustomException($"Copilot CLI execution error: {ex.Message}", 502);
+        }
+    }
+
+    /// <summary>
+    /// Escapes a string for use in shell commands.
+    /// </summary>
+    private static string EscapeForShell(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+        {
+            return input;
+        }
+        return input.Replace("\"", "\\\"").Replace("'", "\\'");
     }
 
     private void EnsureCircuitClosed()

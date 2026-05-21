@@ -11,6 +11,7 @@ import type {
   ConfigInitResult,
   ConfigHistoryResponse,
   BatchConfigRequest,
+  GitOptions,
 } from './config.types'
 
 /**
@@ -371,4 +372,45 @@ export function mockImportConfig(configType: ConfigType, jsonData: string, overw
   } catch {
     return 1
   }
+}
+
+/**
+ * Get Git config - mock implementation
+ */
+export function mockGetGitConfig(): GitOptions {
+  return {
+    azureDevOps: {
+      domainPatterns: ['dev.azure.com', 'visualstudio.com'],
+      username: '',
+      enableUrlEncoding: true,
+      defaultOrganization: '',
+      defaultProject: '',
+    },
+    path: {
+      maxPathLength: 260,
+      tempPathTemplate: 'C:\\temp\\repo-{guid}',
+      autoShortenPaths: true,
+      shortPathIdLength: 3,
+    },
+    stringHandling: {
+      gitHubUsername: 'x-access-token',
+      gitLabUsername: 'oauth2',
+      specialCharacters: [' ', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', ',', ';', '=', '?', '/'],
+      normalizeWhitespace: true,
+      whitespaceReplacement: '_',
+    },
+    providers: {
+      defaultUsername: 'git',
+      useSshByDefault: false,
+      sshPort: 22,
+      connectionTimeoutSeconds: 60,
+    },
+  }
+}
+
+/**
+ * Update Git config - mock implementation
+ */
+export function mockUpdateGitConfig(dto: GitOptions): GitOptions {
+  return dto
 }

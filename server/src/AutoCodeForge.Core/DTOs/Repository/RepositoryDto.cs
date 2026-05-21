@@ -44,6 +44,11 @@ public class RepositoryDto
     public Guid? DefaultReviewRuleSetId { get; set; }
 
     /// <summary>
+    /// Gets or sets the default branch name.
+    /// </summary>
+    public string? Branch { get; set; }
+
+    /// <summary>
     /// Gets or sets the creation date.
     /// </summary>
     public DateTime CreatedAtUtc { get; set; }
@@ -94,6 +99,12 @@ public class CreateRepositoryRequest
     /// Gets or sets the merge strategy.
     /// </summary>
     public MergeStrategy MergeStrategy { get; set; } = MergeStrategy.Squash;
+
+    /// <summary>
+    /// Gets or sets the default branch name.
+    /// </summary>
+    [StringLength(100)]
+    public string? Branch { get; set; }
 }
 
 /// <summary>
@@ -111,4 +122,10 @@ public class UpdateRepositoryRequest
     /// Gets or sets the merge strategy.
     /// </summary>
     public MergeStrategy? MergeStrategy { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default branch name.
+    /// </summary>
+    [StringLength(100)]
+    public string? Branch { get; set; }
 }
