@@ -31,6 +31,15 @@ None. This template can be instantiated with domain-specific defaults.
 4. `lifecycle`: `live` | `history`.
 5. `outputFormat`: `markdown` | `structured-json`.
 
+## Path Variables
+- `GovernanceRoot`: default `.autoCodeForge`
+- `DocsRoot`: default `docs`
+- `SkillsRoot`: default `.github/skills`
+- `ConfigRoot`: default `${GovernanceRoot}/config`
+- `RegistryRoot`: default `${GovernanceRoot}/registry`
+- `TemplateRoot`: default `${GovernanceRoot}/templates`
+- If these variables are omitted, this skill uses the defaults above for backward compatibility.
+
 ## Governance Requirements
 1. Placement governance must map target output to `docs/` or `.autoCodeForge/docs/` with explicit reason.
 2. Naming governance must evaluate compliance against `.autoCodeForge/config/naming-rules.md`.

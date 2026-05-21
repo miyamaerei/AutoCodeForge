@@ -48,6 +48,15 @@ None. All parameters are optional and auto-detected.
 7. `scopeProfile`: `core` | `extended` | `enterprise` (default: `core`).
 8. `includeExtensions`: comma-separated optional domains, e.g. `security,observability,cost,dr,multi-tenant,data-governance,test-strategy,migration,adr`.
 
+## Path Variables
+- `GovernanceRoot`: default `.autoCodeForge`
+- `DocsRoot`: default `docs`
+- `SkillsRoot`: default `.github/skills`
+- `ConfigRoot`: default `${GovernanceRoot}/config`
+- `RegistryRoot`: default `${GovernanceRoot}/registry`
+- `TemplateRoot`: default `${GovernanceRoot}/templates`
+- If these variables are omitted, this skill uses the defaults above for backward compatibility.
+
 ## Extension Domains (Cross-Project Reuse)
 - This skill supports optional extension sections so the same framework can be reused beyond the current repository.
 - In `scopeProfile=extended` or `scopeProfile=enterprise`, include relevant domains based on project context:

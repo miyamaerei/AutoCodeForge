@@ -68,6 +68,15 @@ None. All parameters are optional and auto-detected.
 
 9. `reportStyle`: `detailed` | `executive-summary` | `checklist` (default: `detailed`).
 
+## Path Variables
+- `GovernanceRoot`: default `.autoCodeForge`
+- `DocsRoot`: default `docs`
+- `SkillsRoot`: default `.github/skills`
+- `ConfigRoot`: default `${GovernanceRoot}/config`
+- `RegistryRoot`: default `${GovernanceRoot}/registry`
+- `TemplateRoot`: default `${GovernanceRoot}/templates`
+- If these variables are omitted, this skill uses the defaults above for backward compatibility.
+
 ## Governance Requirements
 
 ### 1. Document Placement (Reference: autocodeforge-doc-placement)

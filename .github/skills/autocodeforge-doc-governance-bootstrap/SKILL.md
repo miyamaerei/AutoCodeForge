@@ -37,6 +37,15 @@ argument-hint: 'Provide project identifier, mode (quick/full), language (zh/en),
 4. `renamePolicy`: `strict` (auto-rename) or `safe` (report-only, default).
 5. `date`: optional, default `YYYYMMDD` today.
 
+## Path Variables
+- `GovernanceRoot`: default `.autoCodeForge`
+- `DocsRoot`: default `docs`
+- `SkillsRoot`: default `.github/skills`
+- `ConfigRoot`: default `${GovernanceRoot}/config`
+- `RegistryRoot`: default `${GovernanceRoot}/registry`
+- `TemplateRoot`: default `${GovernanceRoot}/templates`
+- If these variables are omitted, this skill uses the defaults above for backward compatibility.
+
 ## Folder Blueprint
 
 Create this structure under project root:

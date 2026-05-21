@@ -30,6 +30,15 @@ argument-hint: 'Provide file path, document date/version, and check mode (check-
 4. siblingScope: optional sibling folder for canonical comparison.
 5. canonicalRule: latest-approved (default) or first-created.
 
+## Path Variables
+- `GovernanceRoot`: default `.autoCodeForge`
+- `DocsRoot`: default `docs`
+- `SkillsRoot`: default `.github/skills`
+- `ConfigRoot`: default `${GovernanceRoot}/config`
+- `RegistryRoot`: default `${GovernanceRoot}/registry`
+- `TemplateRoot`: default `${GovernanceRoot}/templates`
+- If these variables are omitted, this skill uses the defaults above for backward compatibility.
+
 ## Governance Requirements
 1. Rule Compliance
 - Must validate against .autoCodeForge/config/archive-rules.md.
