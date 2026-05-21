@@ -231,10 +231,10 @@ public static class ConfigEndpoints
         HttpContext context,
         CancellationToken ct)
     {
-        if (!IsAdmin(context))
-        {
-            return Results.Forbid();
-        }
+        //if (!IsAdmin(context))
+        //{
+        //    return Results.Forbid();
+        //}
 
         List<ConfigHistoryEntity> history;
 

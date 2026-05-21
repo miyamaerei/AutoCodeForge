@@ -105,7 +105,7 @@ export const systemConfigRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/system-config/api',
+    path: '/settings/api',
     name: 'system-config.api',
     component: () => import('./views/SystemConfigApiView.vue'),
     meta: {
@@ -114,7 +114,7 @@ export const systemConfigRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/system-config/models',
+    path: '/settings/models',
     name: 'system-config.models',
     component: () => import('./views/SystemConfigModelsView.vue'),
     meta: {
@@ -123,7 +123,7 @@ export const systemConfigRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/system-config/users',
+    path: '/settings/users',
     name: 'system-config.users',
     component: () => import('./views/SystemConfigUsersView.vue'),
     meta: {
@@ -132,7 +132,7 @@ export const systemConfigRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/system-config/management',
+    path: '/settings/management',
     name: 'system-config.management',
     component: () => import('./views/SystemConfigManagementView.vue'),
     meta: {

@@ -203,13 +203,15 @@ const settingsMenuItems = computed<MenuItem[]>(() => [
       {
         id: 'settings-management',
         title: 'Management',
-        path: '/system-config/management',
+        path: '/settings/management',
       },
     ],
   },
 ])
 
-const isSettingsMenu = computed(() => route.path.startsWith('/settings'))
+const isSettingsMenu = computed(
+  () => route.path.startsWith('/settings'),
+)
 
 const menuItems = computed<MenuItem[]>(() =>
   isSettingsMenu.value ? settingsMenuItems.value : userMenuItems.value,

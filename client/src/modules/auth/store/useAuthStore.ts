@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { getMe, login, register } from '../auth.api'
 import type { AuthUserDto, LoginRequestDto, RegisterRequestDto } from '../auth.types'
+import { clearAuthTokenState } from '../../../lib/request'
 
 const AUTH_TOKEN_KEY = 'auth_token'
 
@@ -19,7 +20,7 @@ export const useAuthStore = defineStore('module.auth', () => {
       localStorage.setItem(AUTH_TOKEN_KEY, value)
       return
     }
-    localStorage.removeItem(AUTH_TOKEN_KEY)
+    clearAuthTokenState()
   }
 
   async function loginWithWindows(payload: LoginRequestDto = {}): Promise<void> {

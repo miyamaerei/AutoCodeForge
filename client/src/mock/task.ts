@@ -134,7 +134,7 @@ export async function getModuleEntries(): Promise<ModuleEntryDto[]> {
       desc: 'API Key、模型选择、用户管理（简化）。',
       tagType: 'info',
       status: '基础版',
-      routePath: '/system-config',
+      routePath: '/settings',
     },
   ]
 }

@@ -11,6 +11,11 @@ export const request = axios.create({
   },
 })
 
+export function clearAuthTokenState(): void {
+  localStorage.removeItem(AUTH_TOKEN_KEY)
+  delete request.defaults.headers.common.Authorization
+}
+
 request.interceptors.request.use((config) => {
   const nextConfig = { ...config }
   nextConfig.headers = nextConfig.headers ?? {}
@@ -18,6 +23,8 @@ request.interceptors.request.use((config) => {
   const token = localStorage.getItem(AUTH_TOKEN_KEY)
   if (token) {
     nextConfig.headers.Authorization = `Bearer ${token}`
+  } else {
+    delete (nextConfig.headers as Record<string, unknown>).Authorization
   }
   return nextConfig
 })
@@ -26,7 +33,7 @@ request.interceptors.response.use(
   (response) => response,
   (error: AxiosError<{ message?: string }>) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem(AUTH_TOKEN_KEY)
+      clearAuthTokenState()
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'
       }
