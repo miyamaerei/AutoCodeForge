@@ -19,6 +19,7 @@ argument-hint: 'Optional. Provide objective, ActionMode, depth, and outputScope.
 - `code-rule-skill`
 - `code-opinion-analyze-skill`
 - `autocodeforge-archive-management`
+- `autocodeforge-auto-developer`
 
 ## What This Skill Produces
 - A deterministic orchestration plan for AutoCodeForge documentation governance.
@@ -37,7 +38,7 @@ None. All inputs are optional and can be auto-detected.
 
 ## Optional Inputs
 1. `ActionMode`: `check-only` | `plan` | `apply` (default: `plan`).
-2. `objective`: `bootstrap-only` | `direction-only` | `baseline-only` | `rule-only` | `opinion-only` | `archive-only` | `full-governance` (default: `full-governance`).
+2. `objective`: `bootstrap-only` | `direction-only` | `baseline-only` | `rule-only` | `opinion-only` | `archive-only` | `development-only` | `full-governance` (default: `full-governance`).
 3. `depth`: `quick` | `standard` | `thorough` (default: `standard`).
 4. `outputScope`: `docs` | `governance` | `docs+governance` (default: `docs+governance`).
 5. `targetLayer`: `backend` | `frontend` | `fullstack` | `platform` (default: auto-detect).
@@ -134,6 +135,12 @@ None. All inputs are optional and can be auto-detected.
 - Merge stage outputs into one orchestration result.
 - Produce consolidated follow-ups, risk summary, and next-step list.
 
+8. Stage H: Development Delivery and Dev Doc
+- Call `autocodeforge-auto-developer`.
+- Goal: Execute one scoped development task and generate mandatory development documentation outputs.
+- Required handoff: delivery status, validation evidence, unresolved blockers, next actions, and consumed governance artifact list.
+- Injected inputs: resolved path variables + shared run context.
+
 ## Objective Routing Matrix
 - `bootstrap-only` -> Stage A
 - `direction-only` -> Stage B
@@ -141,6 +148,7 @@ None. All inputs are optional and can be auto-detected.
 - `rule-only` -> Stage D
 - `opinion-only` -> Stage E
 - `archive-only` -> Stage F
+- `development-only` -> Stage H
 - `full-governance` -> Stage A -> B -> C -> D -> E -> F -> G
 
 ## Decision Logic
@@ -152,6 +160,11 @@ None. All inputs are optional and can be auto-detected.
   - Default `targetLayer=fullstack`.
 - If objective includes quality or refactoring but no rule/baseline documents are found:
   - Force Stage C and Stage D before Stage E.
+- If objective is `development-only` and governance artifacts are missing or stale:
+  - Force Stage A -> C -> D in `plan` or `check-only` first.
+  - Then run Stage H with injected artifact references.
+- If objective is `development-only` and governance artifacts are present:
+  - Run Stage H directly, but require artifact-consumption evidence in StageResults.
 - If lifecycle conflicts are detected after apply:
   - Require Stage F re-check in `plan` mode and block closure.
 - If unknown inputs are provided:
@@ -202,13 +215,14 @@ Use this exact order to remain parser-compatible with existing AutoCodeForge ski
 
 ## Stage Result Extension (Orchestrator-specific)
 - StageResults:
-  - stage: A..G
+  - stage: A..H
   - skill: invoked skill name
   - status: skipped | completed | blocked
   - pathVariablesInjected: true | false
   - inputsSummary: key inputs passed to that stage
   - injectedPathVariables: resolved variables for that stage
   - outputsSummary: key outputs consumed from that stage
+  - consumedArtifacts: optional list, mandatory for Stage H
   - blockers: optional list
 - OrchestrationSummary:
   - objective
@@ -235,3 +249,4 @@ Use this exact order to remain parser-compatible with existing AutoCodeForge ski
 - /autocodeforge-skill-orchestrator objective=direction-only ActionMode=apply audience=engineering targetLayer=fullstack
 - /autocodeforge-skill-orchestrator objective=opinion-only ActionMode=check-only depth=thorough sourceDocuments=docs/AutoCodeForge-ProjectOverview-v1.0.0-20260521.md
 - /autocodeforge-skill-orchestrator objective=archive-only ActionMode=plan canonicalRule=latest-approved lifecycle=history
+- /autocodeforge-skill-orchestrator objective=development-only ActionMode=apply targetLayer=fullstack depth=standard

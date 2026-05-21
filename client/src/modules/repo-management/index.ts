@@ -5,6 +5,7 @@ export {
   fetchBranches,
   fetchCommits,
   fetchPullRequests,
+  fetchGitHubRepositoriesByToken,
   createRepository,
   createPullRequest,
   updateRepository,
@@ -13,6 +14,7 @@ export {
   type GitBranchDto,
   type GitCommitDto,
   type GitPullRequestDto,
+  type RemoteGitRepositoryDto,
   type CreateRepositoryRequest,
   type UpdateRepositoryRequest,
 } from './api/repo-management.api'

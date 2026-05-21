@@ -193,10 +193,18 @@ public class AzureDevOpsProvider : IGitProvider
             var content = await response.Content.ReadAsStringAsync(linkedCts.Token);
             using var doc = JsonDocument.Parse(content);
             var pr = doc.RootElement;
+            var createdAtUtc = DateTime.Parse(pr.GetProperty("creationDate").GetString() ?? DateTime.UtcNow.ToString()).ToUniversalTime();
+            var updatedAtUtc = createdAtUtc;
+            if (pr.TryGetProperty("closedDate", out var closedDateElement)
+                && closedDateElement.ValueKind == JsonValueKind.String
+                && DateTime.TryParse(closedDateElement.GetString(), out var parsedClosedDate))
+            {
+                updatedAtUtc = parsedClosedDate.ToUniversalTime();
+            }
 
             return new GitPullRequestDto
             {
-                Id = pr.GetProperty("pullRequestId").GetString() ?? string.Empty,
+                Id = pr.GetProperty("pullRequestId").ToString(),
                 Number = pr.GetProperty("pullRequestId").GetInt32(),
                 Title = pr.GetProperty("title").GetString() ?? string.Empty,
                 Description = pr.GetProperty("description").GetString(),
@@ -205,8 +213,8 @@ public class AzureDevOpsProvider : IGitProvider
                 State = pr.GetProperty("status").GetString() ?? string.Empty,
                 Author = pr.GetProperty("createdBy").GetProperty("displayName").GetString() ?? string.Empty,
                 Url = pr.GetProperty("url").GetString() ?? string.Empty,
-                CreatedAtUtc = DateTime.Parse(pr.GetProperty("creationDate").GetString() ?? DateTime.UtcNow.ToString()).ToUniversalTime(),
-                UpdatedAtUtc = DateTime.Parse(pr.GetProperty("closedDate").GetString() ?? DateTime.UtcNow.ToString()).ToUniversalTime(),
+                CreatedAtUtc = createdAtUtc,
+                UpdatedAtUtc = updatedAtUtc,
             };
         }
         catch
@@ -256,9 +264,18 @@ public class AzureDevOpsProvider : IGitProvider
             {
                 foreach (var pr in prArray.EnumerateArray())
                 {
+                    var createdAtUtc = DateTime.Parse(pr.GetProperty("creationDate").GetString() ?? DateTime.UtcNow.ToString()).ToUniversalTime();
+                    var updatedAtUtc = createdAtUtc;
+                    if (pr.TryGetProperty("closedDate", out var closedDateElement)
+                        && closedDateElement.ValueKind == JsonValueKind.String
+                        && DateTime.TryParse(closedDateElement.GetString(), out var parsedClosedDate))
+                    {
+                        updatedAtUtc = parsedClosedDate.ToUniversalTime();
+                    }
+
                     var dto = new GitPullRequestDto
                     {
-                        Id = pr.GetProperty("pullRequestId").GetString() ?? string.Empty,
+                        Id = pr.GetProperty("pullRequestId").ToString(),
                         Number = pr.GetProperty("pullRequestId").GetInt32(),
                         Title = pr.GetProperty("title").GetString() ?? string.Empty,
                         Description = pr.GetProperty("description").GetString(),
@@ -267,8 +284,8 @@ public class AzureDevOpsProvider : IGitProvider
                         State = pr.GetProperty("status").GetString() ?? string.Empty,
                         Author = pr.GetProperty("createdBy").GetProperty("displayName").GetString() ?? string.Empty,
                         Url = pr.GetProperty("url").GetString() ?? string.Empty,
-                        CreatedAtUtc = DateTime.Parse(pr.GetProperty("creationDate").GetString() ?? DateTime.UtcNow.ToString()).ToUniversalTime(),
-                        UpdatedAtUtc = DateTime.Parse(pr.GetProperty("closedDate").GetString() ?? DateTime.UtcNow.ToString()).ToUniversalTime(),
+                        CreatedAtUtc = createdAtUtc,
+                        UpdatedAtUtc = updatedAtUtc,
                     };
                     prs.Add(dto);
                 }

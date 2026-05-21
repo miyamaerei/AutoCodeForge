@@ -114,6 +114,98 @@ public class GitProviderTests
         Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(result);
     }
 
+    [TestMethod]
+    public async Task AzureDevOpsProvider_ListPullRequests_WithValidResponse_ReturnsItems()
+    {
+        // Arrange
+        var provider = _factory.CreateProvider(GitProvider.AzureDevOps);
+        var repoUrl = "https://dev.azure.com/org/project/_git/repo";
+        var token = "test_token";
+        _httpHandler.ResponseFactory = _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+            {
+              "value": [
+                {
+                  "pullRequestId": 101,
+                  "title": "PR title",
+                  "description": "PR description",
+                  "sourceRefName": "refs/heads/feature/a",
+                  "targetRefName": "refs/heads/main",
+                  "status": "active",
+                  "createdBy": { "displayName": "tester" },
+                  "url": "https://dev.azure.com/org/project/_apis/git/repositories/repo/pullRequests/101",
+                  "creationDate": "2026-05-20T10:00:00Z",
+                  "closedDate": "2026-05-20T11:00:00Z"
+                }
+              ]
+            }
+            """, Encoding.UTF8, "application/json"),
+        };
+
+        // Act
+        var result = await provider!.ListPullRequestsAsync(repoUrl, token, "open", 20);
+
+        // Assert
+        var list = result.ToList();
+        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, list.Count);
+        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(101, list[0].Number);
+        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("PR title", list[0].Title);
+    }
+
+    [TestMethod]
+    public async Task AzureDevOpsProvider_CreatePullRequest_WithValidResponse_ReturnsPullRequest()
+    {
+        // Arrange
+        var provider = _factory.CreateProvider(GitProvider.AzureDevOps);
+        var repoUrl = "https://dev.azure.com/org/project/_git/repo";
+        var token = "test_token";
+        _httpHandler.ResponseFactory = request =>
+        {
+            if (request.Method == HttpMethod.Post)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""
+                    {
+                      "pullRequestId": 202,
+                      "title": "Add feature",
+                      "description": "desc",
+                      "sourceRefName": "refs/heads/feature/x",
+                      "targetRefName": "refs/heads/main",
+                      "status": "active",
+                      "createdBy": { "displayName": "tester" },
+                      "url": "https://dev.azure.com/org/project/_apis/git/repositories/repo/pullRequests/202",
+                      "creationDate": "2026-05-20T10:00:00Z",
+                      "closedDate": "2026-05-20T11:00:00Z"
+                    }
+                    """, Encoding.UTF8, "application/json"),
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+            };
+        };
+
+        // Act
+        var result = await provider!.CreatePullRequestAsync(
+            repoUrl,
+            token,
+            new CreateGitPullRequestRequest
+            {
+                Title = "Add feature",
+                Description = "desc",
+                SourceBranch = "feature/x",
+                TargetBranch = "main",
+            });
+
+        // Assert
+        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(202, result.Number);
+        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("Add feature", result.Title);
+    }
+
     private sealed class StubHttpMessageHandler : HttpMessageHandler
     {
         public Func<HttpRequestMessage, HttpResponseMessage> ResponseFactory { get; set; } = _ =>

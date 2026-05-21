@@ -81,6 +81,7 @@
 | 13 | 阶段十三：Repo 与审查模块管理 | `docs/plans/13-phase-thirteen-repo-review-management.md` | ✅ (新增) | Repo 管理与审查任务闭环，规则分层与审查报告可追溯 |
 | 14 | 阶段十四：Agent 增强 Git 技能 | `docs/plans/14-phase-fourteen-agent-git-skills.md` | ✅ (新增) | Agent 接入 Git 只读/变更技能，权限管控与审计追踪 |
 | 16 | 阶段十六：Agent 可配置 Skill 与 知识库 | `docs/plans/16-phase-sixteen-agent-skill-knowledge.md` | ⏳ (草案) | 允许在 Agent 调用时注入 skill 与 KB，支持热加载、权限与灰度发布 |
+| 17 | 阶段十七：AzureDefault 配置与 Git/PR 验证 | `docs/plans/17-phase-seventeen-azuredefault-git-validation.md` | ✅ (新增) | 落地 AzureDevOps 默认配置并补齐拉取/PR 单元测试闭环 |
 
 ---
 
@@ -107,6 +108,7 @@
 ### 第五优先级（扩展治理能力）
 11. **13-phase-thirteen-repo-review-management** - Repo 与审查模块管理
 12. **14-phase-fourteen-agent-git-skills** - Agent 增强 Git 技能
+13. **17-phase-seventeen-azuredefault-git-validation** - Azure 默认配置与 Git/PR 验证闭环
 
 ---
 

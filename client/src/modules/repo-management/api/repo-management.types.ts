@@ -51,6 +51,16 @@ export interface UpdateRepositoryRequest {
   mergeStrategy?: MergeStrategy
 }
 
+export interface RemoteGitRepositoryDto {
+  id: number
+  name: string
+  fullName: string
+  htmlUrl: string
+  defaultBranch: string
+  ownerLogin: string
+  isPrivate: boolean
+}
+
 export interface CreateGitPullRequestRequest {
   title: string
   description?: string

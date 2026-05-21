@@ -12,6 +12,7 @@ import type {
   GitCommitDto,
   GitPullRequestDto,
   PagedResult,
+  RemoteGitRepositoryDto,
   RepositoryDto,
   UpdateRepositoryRequest,
 } from './repo-management.types'
@@ -22,7 +23,20 @@ export type {
   GitPullRequestDto,
   RepositoryDto,
   CreateRepositoryRequest,
+  RemoteGitRepositoryDto,
   UpdateRepositoryRequest,
+}
+
+interface GitHubRepoResponse {
+  id: number
+  name: string
+  full_name: string
+  html_url: string
+  default_branch: string
+  private: boolean
+  owner?: {
+    login?: string
+  }
 }
 
 export async function fetchRepositories(page = 1, pageSize = 20): Promise<PagedResult<RepositoryDto>> {
@@ -98,4 +112,38 @@ export async function updateRepository(id: string, payload: UpdateRepositoryRequ
 
 export async function deleteRepository(id: string): Promise<void> {
   await request.delete(`/v1/repositories/${id}`)
+}
+
+export async function fetchGitHubRepositoriesByToken(token: string, perPage = 100): Promise<RemoteGitRepositoryDto[]> {
+  const normalizedToken = token.trim()
+  if (!normalizedToken) {
+    throw new Error('Git token is required to fetch repositories')
+  }
+
+  const response = await fetch(`https://api.github.com/user/repos?sort=updated&per_page=${Math.min(perPage, 100)}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `token ${normalizedToken}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  })
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Git Token 无效或无权限，请检查后重试')
+    }
+    throw new Error(`拉取 GitHub 仓库失败，状态码 ${response.status}`)
+  }
+
+  const data = (await response.json()) as GitHubRepoResponse[]
+  return (data || []).map((item) => ({
+    id: item.id,
+    name: item.name,
+    fullName: item.full_name,
+    htmlUrl: item.html_url,
+    defaultBranch: item.default_branch || 'main',
+    ownerLogin: item.owner?.login || item.full_name.split('/')[0] || '',
+    isPrivate: Boolean(item.private),
+  }))
 }

@@ -113,14 +113,18 @@ export const useRepoManagementStore = defineStore('module.repo-management', () =
 
   async function submitCreate(payload: CreateRepositoryRequest): Promise<RepositoryDto> {
     const created = await createRepository(payload)
-    repositories.value.unshift(created)
-    return created
+    const adapted = adaptRepositoryData(created)
+    repositories.value.unshift(adapted)
+    if (!repoGlobal.selectedRepositoryId && adapted.id) {
+      repoGlobal.selectRepository(adapted.id)
+    }
+    return adapted
   }
 
   async function submitUpdate(id: string, payload: UpdateRepositoryRequest): Promise<void> {
     const updated = await updateRepository(id, payload)
     const idx = repositories.value.findIndex(r => r.id === id)
-    if (idx !== -1) repositories.value[idx] = updated
+    if (idx !== -1) repositories.value[idx] = adaptRepositoryData(updated)
   }
 
   async function submitDelete(id: string): Promise<void> {
