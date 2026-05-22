@@ -133,6 +133,7 @@ builder.Services.AddScoped<ConfigExportService>();
 builder.Services.AddScoped<ConfigInitializationService>();
 builder.Services.AddScoped<IReviewEngine, AutoCodeForge.Infrastructure.Review.RuleBasedReviewEngine>();
 builder.Services.AddScoped<ILlmGateway, AgentFrameworkGateway>();
+builder.Services.AddScoped<IGitHubCopilotService, GitHubCopilotCliService>();
 builder.Services.AddScoped<ChatSessionManager>();
 builder.Services.AddScoped<AgentExecutor>();
 builder.Services.AddScoped<AgentMatcher>();
