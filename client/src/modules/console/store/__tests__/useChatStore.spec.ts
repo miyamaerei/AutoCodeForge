@@ -263,9 +263,10 @@ describe('useChatStore', () => {
 
       await store.sendMessage('s1', { message: '新消息' })
 
-      expect(store.messagesMap['s1']).toHaveLength(2)
-      expect(store.messagesMap['s1'][0].type).toBe('user')
-      expect(store.messagesMap['s1'][1].type).toBe('ai')
+      const messages = store.messagesMap['s1'] ?? []
+      expect(messages).toHaveLength(2)
+      expect(messages[0]!.type).toBe('user')
+      expect(messages[1]!.type).toBe('ai')
       expect(store.sending).toBe(false)
     })
 
@@ -300,8 +301,8 @@ describe('useChatStore', () => {
 
       await store.sendMessage('s1', { message: '新消息内容' })
 
-      expect(store.sessionList[0].preview).toBe('新消息内容')
-      expect(store.sessionList[0].messagesCount).toBe(2)
+      expect(store.sessionList[0]!.preview).toBe('新消息内容')
+      expect(store.sessionList[0]!.messagesCount).toBe(2)
     })
   })
 

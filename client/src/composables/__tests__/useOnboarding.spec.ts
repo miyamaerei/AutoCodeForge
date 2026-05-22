@@ -269,16 +269,16 @@ describe('useOnboarding', () => {
     it('should have correct first step', () => {
       const { steps } = useOnboarding()
 
-      expect(steps[0].id).toBe('welcome')
-      expect(steps[0].title).toBe('欢迎使用 AutoCodeForge')
-      expect(steps[0].skipable).toBe(true)
+      expect(steps[0]!.id).toBe('welcome')
+      expect(steps[0]!.title).toBe('欢迎使用 AutoCodeForge')
+      expect(steps[0]!.skipable).toBe(true)
     })
 
     it('should have correct last step', () => {
       const { steps } = useOnboarding()
 
-      expect(steps[steps.length - 1].id).toBe('complete')
-      expect(steps[steps.length - 1].skipable).toBe(false)
+      expect(steps[steps.length - 1]!.id).toBe('complete')
+      expect(steps[steps.length - 1]!.skipable).toBe(false)
     })
   })
 })

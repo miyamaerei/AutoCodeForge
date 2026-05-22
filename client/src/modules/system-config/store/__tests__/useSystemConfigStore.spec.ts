@@ -17,9 +17,12 @@ describe('useSystemConfigStore', () => {
   // 测试数据
   const mockConfig: ConfigResponse = {
     configKey: 'test-key',
-    configValue: { enabled: true },
+    configValue: '{"enabled":true}',
     description: '测试配置',
-    configType: 'knowledge' as ConfigType,
+    configType: 'Knowledge' as ConfigType,
+    id: 'config-1',
+    isEncrypted: false,
+    isEnabled: true,
     createdAt: '2026-05-01 10:00:00',
     updatedAt: '2026-05-21 10:00:00',
   }
@@ -28,18 +31,22 @@ describe('useSystemConfigStore', () => {
     mockConfig,
     {
       configKey: 'another-key',
-      configValue: { value: 'test' },
+      configValue: '{"value":"test"}',
       description: '另一个配置',
-      configType: 'knowledge' as ConfigType,
+      configType: 'Knowledge' as ConfigType,
+      id: 'config-2',
+      isEncrypted: false,
+      isEnabled: true,
       createdAt: '2026-05-01 10:00:00',
       updatedAt: '2026-05-21 10:00:00',
     },
   ]
 
   const mockSandboxConfig: SandboxConfigDto = {
-    enabled: true,
-    sandboxType: 'docker',
-    image: 'sandbox:latest',
+    workspaceRootPath: 'C:/workspace',
+    allowedWritePaths: ['src', 'docs'],
+    timeoutSeconds: 300,
+    userIsolationEnabled: true,
   }
 
   // Spy objects
@@ -57,7 +64,7 @@ describe('useSystemConfigStore', () => {
   function setStoreState(
     store: ReturnType<typeof useSystemConfigStore>,
     state: Partial<{
-      configsByType: Record<ConfigType, ConfigResponse[]>
+      configsByType: Partial<Record<ConfigType, ConfigResponse[]>>
       currentConfig: ConfigResponse | null
       sandboxConfig: SandboxConfigDto | null
     }>,
@@ -99,9 +106,9 @@ describe('useSystemConfigStore', () => {
       const store = useSystemConfigStore()
       fetchConfigsSpy.mockResolvedValue(mockConfigs)
 
-      await store.loadConfigs('knowledge')
+      await store.loadConfigs('Knowledge')
 
-      expect(store.configsByType['knowledge']).toEqual(mockConfigs)
+      expect(store.configsByType.Knowledge).toEqual(mockConfigs)
       expect(store.loading).toBe(false)
       expect(store.error).toBe(null)
     })
@@ -110,7 +117,7 @@ describe('useSystemConfigStore', () => {
       const store = useSystemConfigStore()
       fetchConfigsSpy.mockRejectedValue(new Error('加载配置失败'))
 
-      await store.loadConfigs('knowledge')
+      await store.loadConfigs('Knowledge')
 
       expect(store.error).toBe('加载配置失败')
       expect(store.loading).toBe(false)
@@ -122,7 +129,7 @@ describe('useSystemConfigStore', () => {
       const store = useSystemConfigStore()
       getConfigSpy.mockResolvedValue(mockConfig)
 
-      await store.loadConfig('knowledge', 'test-key')
+      await store.loadConfig('Knowledge', 'test-key')
 
       expect(store.currentConfig).toEqual(mockConfig)
       expect(store.loading).toBe(false)
@@ -134,40 +141,42 @@ describe('useSystemConfigStore', () => {
       const store = useSystemConfigStore()
       upsertConfigSpy.mockResolvedValue(mockConfig)
 
-      const result = await store.saveConfig('knowledge', {
+      const result = await store.saveConfig('Knowledge', {
         configKey: 'test-key',
-        configValue: { enabled: true },
+        configValue: '{"enabled":true}',
+        isEncrypted: false,
       })
 
       expect(result).toEqual(mockConfig)
-      expect(store.configsByType['knowledge']).toContainEqual(mockConfig)
+      expect(store.configsByType.Knowledge).toContainEqual(mockConfig)
       expect(store.saving).toBe(false)
     })
 
     it('should update existing config', async () => {
       const store = useSystemConfigStore()
-      setStoreState(store, { configsByType: { knowledge: [mockConfig] } })
-      const updatedConfig = { ...mockConfig, configValue: { enabled: false } }
+      setStoreState(store, { configsByType: { Knowledge: [mockConfig] } })
+      const updatedConfig = { ...mockConfig, configValue: '{"enabled":false}' }
       upsertConfigSpy.mockResolvedValue(updatedConfig)
 
-      await store.saveConfig('knowledge', {
+      await store.saveConfig('Knowledge', {
         configKey: 'test-key',
-        configValue: { enabled: false },
+        configValue: '{"enabled":false}',
+        isEncrypted: false,
       })
 
-      expect(store.configsByType['knowledge'][0].configValue).toEqual({ enabled: false })
+      expect(store.configsByType.Knowledge[0]!.configValue).toBe('{"enabled":false}')
     })
   })
 
   describe('removeConfig', () => {
     it('should remove config successfully', async () => {
       const store = useSystemConfigStore()
-      setStoreState(store, { configsByType: { knowledge: [...mockConfigs] } })
+      setStoreState(store, { configsByType: { Knowledge: [...mockConfigs] } })
       deleteConfigSpy.mockResolvedValue(true)
 
-      await store.removeConfig('knowledge', 'test-key')
+      await store.removeConfig('Knowledge', 'test-key')
 
-      expect(store.configsByType['knowledge'].find((c) => c.configKey === 'test-key')).toBeUndefined()
+      expect(store.configsByType.Knowledge.find((c) => c.configKey === 'test-key')).toBeUndefined()
     })
   })
 
@@ -197,14 +206,16 @@ describe('useSystemConfigStore', () => {
     it('should load config defaults successfully', async () => {
       const store = useSystemConfigStore()
       const mockDefaults: ConfigTemplateResponse = {
-        type: 'knowledge',
-        defaults: {},
+        configType: 'Knowledge',
+        defaultKey: 'test-key',
+        description: '默认配置',
+        defaultValue: '{}',
       }
       getConfigDefaultsSpy.mockResolvedValue(mockDefaults)
 
-      await store.loadConfigDefaults('knowledge')
+      await store.loadConfigDefaults('Knowledge')
 
-      expect(store.configDefaults['knowledge']).toEqual(mockDefaults)
+      expect(store.configDefaults.Knowledge).toEqual(mockDefaults)
     })
   })
 })

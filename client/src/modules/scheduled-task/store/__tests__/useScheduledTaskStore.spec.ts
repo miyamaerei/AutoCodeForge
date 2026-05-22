@@ -20,43 +20,49 @@ describe('useScheduledTaskStore', () => {
     {
       id: 'task-1',
       name: '每日备份',
-      description: '每天凌晨执行备份',
+      triggerType: 'cron',
       cronExpression: '0 0 2 * * ?',
-      enabled: true,
-      lastExecutionTime: '2026-05-21 02:00:00',
-      nextExecutionTime: '2026-05-22 02:00:00',
-      createdAt: '2026-05-01 10:00:00',
+      status: 'pending',
+      input: '{"action":"backup"}',
+      taskTitle: '每日备份',
+      createdAtUtc: '2026-05-01T10:00:00Z',
+      nextRunAtUtc: '2026-05-22T02:00:00Z',
     },
     {
       id: 'task-2',
       name: '数据同步',
-      description: '每小时同步数据',
+      triggerType: 'interval',
       cronExpression: '0 0 * * * ?',
-      enabled: false,
-      lastExecutionTime: '2026-05-21 10:00:00',
-      nextExecutionTime: null,
-      createdAt: '2026-05-05 10:00:00',
+      status: 'disabled',
+      input: '{"action":"sync"}',
+      taskTitle: '数据同步',
+      createdAtUtc: '2026-05-05T10:00:00Z',
     },
   ]
+  const firstTask = mockTasks[0]!
+  const secondTask = mockTasks[1]!
 
   const mockTemplates: TaskTemplateDto[] = [
     {
       id: 'template-1',
       name: '备份任务',
       description: '通用的备份任务模板',
+      agentId: 'agent-1',
+      isBuiltIn: true,
+      triggerType: 'cron',
       cronExpression: '0 0 2 * * ?',
-      config: {},
+      defaultParams: '{}',
     },
   ]
 
   const mockExecutions: ScheduledTaskExecutionDto[] = [
     {
       id: 'exec-1',
-      taskId: 'task-1',
+      scheduledTaskId: 'task-1',
       status: 'success',
-      startTime: '2026-05-21 02:00:00',
-      endTime: '2026-05-21 02:05:00',
-      message: '备份成功',
+      startedAtUtc: '2026-05-21T02:00:00Z',
+      completedAtUtc: '2026-05-21T02:05:00Z',
+      output: '备份成功',
     },
   ]
 
@@ -149,11 +155,10 @@ describe('useScheduledTaskStore', () => {
   describe('loadTask', () => {
     it('should load single task successfully', async () => {
       const store = useScheduledTaskStore()
-      fetchScheduledTaskSpy.mockResolvedValue(mockTasks[0])
-
+      fetchScheduledTaskSpy.mockResolvedValue(firstTask)
       await store.loadTask('task-1')
 
-      expect(store.currentTask).toEqual(mockTasks[0])
+      expect(store.currentTask).toEqual(firstTask)
       expect(store.loading).toBe(false)
     })
   })
@@ -173,7 +178,7 @@ describe('useScheduledTaskStore', () => {
     it('should create task successfully', async () => {
       const store = useScheduledTaskStore()
       const newTask: ScheduledTaskDto = {
-        ...mockTasks[0],
+        ...firstTask,
         id: 'task-new',
         name: '新任务',
       }
@@ -181,10 +186,10 @@ describe('useScheduledTaskStore', () => {
 
       const result = await store.submitCreate({
         name: '新任务',
-        description: '',
         cronExpression: '0 0 2 * * ?',
-        enabled: true,
-        config: {},
+        triggerType: 'cron',
+        input: '{"action":"backup"}',
+        taskTitle: '新任务',
       })
 
       expect(result).toEqual(newTask)
@@ -198,14 +203,14 @@ describe('useScheduledTaskStore', () => {
       const store = useScheduledTaskStore()
       setStoreState(store, { tasks: [...mockTasks] })
       const updated: ScheduledTaskDto = {
-        ...mockTasks[0],
+        ...firstTask,
         name: '更新后的名称',
       }
       updateScheduledTaskSpy.mockResolvedValue(updated)
 
       await store.submitUpdate('task-1', { name: '更新后的名称' })
 
-      expect(store.tasks[0].name).toBe('更新后的名称')
+      expect(store.tasks[0]!.name).toBe('更新后的名称')
     })
   })
 
@@ -225,12 +230,12 @@ describe('useScheduledTaskStore', () => {
     it('should pause task successfully', async () => {
       const store = useScheduledTaskStore()
       setStoreState(store, { tasks: [...mockTasks] })
-      const pausedTask: ScheduledTaskDto = { ...mockTasks[0], enabled: false }
+      const pausedTask: ScheduledTaskDto = { ...firstTask, status: 'disabled' }
       pauseScheduledTaskSpy.mockResolvedValue(pausedTask)
 
       await store.submitPause('task-1')
 
-      expect(store.tasks[0].enabled).toBe(false)
+      expect(store.tasks[0]!.status).toBe('disabled')
     })
   })
 
@@ -238,12 +243,12 @@ describe('useScheduledTaskStore', () => {
     it('should resume task successfully', async () => {
       const store = useScheduledTaskStore()
       setStoreState(store, { tasks: [...mockTasks] })
-      const resumedTask: ScheduledTaskDto = { ...mockTasks[1], enabled: true }
+      const resumedTask: ScheduledTaskDto = { ...secondTask, status: 'pending' }
       resumeScheduledTaskSpy.mockResolvedValue(resumedTask)
 
       await store.submitResume('task-2')
 
-      expect(store.tasks[1].enabled).toBe(true)
+      expect(store.tasks[1]!.status).toBe('pending')
     })
   })
 

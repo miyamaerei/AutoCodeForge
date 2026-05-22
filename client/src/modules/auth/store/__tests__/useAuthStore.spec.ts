@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuthStore } from '../useAuthStore'
 import * as authApi from '../../auth.api'
-import type { AuthUserDto, LoginRequestDto, RegisterRequestDto } from '../auth.types'
+import type { AuthUserDto, LoginRequestDto, RegisterRequestDto } from '../../auth.types'
 
 describe('useAuthStore', () => {
   // 测试数据

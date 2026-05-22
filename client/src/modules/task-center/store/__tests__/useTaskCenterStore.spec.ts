@@ -180,6 +180,7 @@ describe('useTaskCenterStore', () => {
 
       const result = await store.submitTask({
         title: '新任务',
+        taskType: 'DEV',
         description: '描述',
         repository: 'repo-1',
         branch: 'main',
@@ -221,12 +222,12 @@ describe('useTaskCenterStore', () => {
     it('should pause task successfully', async () => {
       const store = useTaskCenterStore()
       setStoreState(store, { tasks: [...mockTaskSummaries] })
-      const pausedTask = { ...mockTaskSummaries[0], state: '已暂停' as const }
+      const pausedTask = { ...mockTaskSummaries[0]!, state: '已暂停' as const }
       pauseTaskSpy.mockResolvedValue(pausedTask)
 
       await store.submitPause('T-1009')
 
-      expect(store.tasks[0].state).toBe('已暂停')
+      expect(store.tasks[0]!.state).toBe('已暂停')
     })
   })
 
@@ -234,15 +235,15 @@ describe('useTaskCenterStore', () => {
     it('should resume task successfully', async () => {
       const store = useTaskCenterStore()
       const pausedTasks: TaskSummaryDto[] = [
-        { ...mockTaskSummaries[0], state: '已暂停' as const },
+        { ...mockTaskSummaries[0]!, state: '已暂停' as const },
       ]
       setStoreState(store, { tasks: pausedTasks })
-      const resumedTask = { ...pausedTasks[0], state: '运行中' as const }
+      const resumedTask = { ...pausedTasks[0]!, state: '运行中' as const }
       resumeTaskSpy.mockResolvedValue(resumedTask)
 
       await store.submitResume('T-1009')
 
-      expect(store.tasks[0].state).toBe('运行中')
+      expect(store.tasks[0]!.state).toBe('运行中')
     })
   })
 })

@@ -83,7 +83,7 @@ function copyPrompt(prompt: string) {
 
 /** 填充通用系统提示词模板 */
 function applyGenericPromptTemplate() {
-  formData.systemPrompt = genericSystemPromptTemplate
+  formData.value.systemPrompt = genericSystemPromptTemplate
   ElMessage.success('已填充通用 Agent 提示')
 }
 </script>

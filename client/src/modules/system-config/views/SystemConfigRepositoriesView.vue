@@ -186,7 +186,7 @@ async function fetchRemoteRepositories() {
       ElMessage.info('未拉取到可访问的仓库')
       return
     }
-    selectedRemoteRepo.value = repos[0].fullName
+    selectedRemoteRepo.value = repos[0]?.fullName || ''
     applyRemoteRepository(selectedRemoteRepo.value)
     ElMessage.success(`已拉取 ${repos.length} 个仓库`)
   } catch (err) {
@@ -323,7 +323,7 @@ const handleSave = async () => {
                     clearable
                     placeholder="从拉取结果中选择仓库"
                     style="min-width: 360px"
-                    @change="(value) => applyRemoteRepository(String(value || ''))"
+                    @change="(value: string | number | boolean | undefined) => applyRemoteRepository(String(value || ''))"
                   >
                     <el-option
                       v-for="item in remoteRepositories"

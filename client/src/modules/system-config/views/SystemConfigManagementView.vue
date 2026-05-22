@@ -58,6 +58,9 @@ const getOperationLabel = (operation: string) => {
   return map[operation] || operation
 }
 
+const historyTab = tabs[0] ?? { key: 'history' as const, label: '配置历史' }
+const importExportTab = tabs[1] ?? { key: 'import-export' as const, label: '导入导出' }
+
 /**
  * 处理过滤条件变化
  */
@@ -83,7 +86,7 @@ onMounted(() => {
         <el-card shadow="hover" class="main-card">
           <el-tabs v-model="activeTab" type="card" class="management-tabs">
             <!-- 配置历史 Tab -->
-            <el-tab-pane :label="tabs[0].label" :name="tabs[0].key">
+            <el-tab-pane :label="historyTab.label" :name="historyTab.key">
               <div class="history-section">
                 <!-- 过滤条件 -->
                 <div class="filter-bar">
@@ -167,7 +170,7 @@ onMounted(() => {
             </el-tab-pane>
 
             <!-- 导入导出 Tab -->
-            <el-tab-pane :label="tabs[1].label" :name="tabs[1].key">
+            <el-tab-pane :label="importExportTab.label" :name="importExportTab.key">
               <div class="import-export-section">
                 <el-row :gutter="24">
                   <!-- 导出配置 -->

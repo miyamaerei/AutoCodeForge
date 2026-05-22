@@ -38,7 +38,7 @@ function normalizeState(status: string): TaskSummaryDto['state'] {
   if (normalized.includes('fail') || normalized.includes('error')) {
     return '失败'
   }
-  return '进行中'
+  return '运行中'
 }
 
 function toLocaleDateTime(iso?: string | null): string {

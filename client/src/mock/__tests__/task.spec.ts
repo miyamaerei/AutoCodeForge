@@ -91,6 +91,7 @@ describe('task mock', () => {
     it('should create task and return summary', async () => {
       const task = await createTask({
         title: '测试任务',
+        taskType: 'code-review',
         description: '描述',
         repository: 'repo-1',
         branch: 'main',

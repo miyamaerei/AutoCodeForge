@@ -1,92 +1,92 @@
 ---
 name: auto-developer
-description: 'Run single-task development with a two-layer prompt system: Strategic Planner (planning brain) and DevOps Orchestrator (execution pipeline), including spec circuit-breaker and evolution flow.'
-argument-hint: 'Describe task type, module scope, priority, acceptance criteria, component reuse constraints, and known policy risks.'
+description: '使用双层提示系统执行单任务开发：Strategic Planner 负责规划，DevOps Orchestrator 负责执行，并包含规范断路器与演进流程。'
+argument-hint: '请说明任务类型、模块范围、优先级、验收标准、组件复用约束，以及已知的策略风险。'
 ---
 
-# Auto Developer
+# 自动开发
 
-## When to Use
-- You need one-task delivery with planning, execution, audit, and single-task reporting.
-- You need a resilient workflow that can handle policy conflicts without deadlock.
-- You need strict component reuse enforcement with controlled policy evolution.
+## 适用场景
+- 需要包含规划、执行、审计和单任务报告的一次性交付。
+- 需要能够处理策略冲突且不发生死锁的稳健工作流。
+- 需要严格执行组件复用，并支持受控的策略演进。
 
-## Two-Layer Prompt System
-1. Strategic Planner (planning brain)
-- Owns requirement decomposition, risk prediction, and plan resilience.
-- Maintains docs/MasterPlan.md (the live MASTER_PLAN file for this repo).
-- Shrinks or reprioritizes scope when round capacity is insufficient.
-- Triggers policy-upgrade flow when implementation and policy conflict blocks delivery.
+## 双层提示系统
+1. Strategic Planner（规划层）
+- 负责需求拆解、风险预判和方案韧性。
+- 维护 docs/MasterPlan.md（本仓库的实时 MASTER_PLAN 文件）。
+- 当本轮容量不足时，缩小范围或重新排序优先级。
+- 当实现与策略冲突并阻塞交付时，触发策略升级流程。
 
-2. DevOps Orchestrator (execution layer)
-- Runs the delivery pipeline using two fixed roles:
-	- @Worker: implements code and must reuse approved shared components.
-	- @Auditor: enforces policy gates and has veto power for non-compliant output.
-- Executes only the scope approved by Strategic Planner.
+2. DevOps Orchestrator（执行层）
+- 使用两个固定角色运行交付流水线：
+	- @Worker：负责实现代码，且必须复用已批准的共享组件。
+	- @Auditor：负责执行策略门禁，并对不符合规范的输出拥有否决权。
+- 仅执行 Strategic Planner 批准的范围。
 
-## Not in Scope
-- Multi-task summary or cross-round aggregation.
-- Daily report generation.
-- Historical file archiving or batch file cleanup.
-- Component library synchronization.
+## 不在范围内
+- 多任务汇总或跨轮聚合。
+- 日报生成。
+- 历史文件归档或批量清理文件。
+- 组件库同步。
 
-## Inputs Required
-1. Task type: DEV, BUG, REFACTOR, OPTIMIZE, DOCS, or OTHER.
-2. Scope: target modules and files.
-3. Priority: P0, P1, P2, or P3.
-4. Acceptance criteria and expected behavior.
-5. Reuse target: required shared components or reusable modules.
-6. Known policy conflict candidates (if any).
+## 需要的输入
+1. 任务类型：DEV、BUG、REFACTOR、OPTIMIZE、DOCS 或 OTHER。
+2. 范围：目标模块和文件。
+3. 优先级：P0、P1、P2 或 P3。
+4. 验收标准和期望行为。
+5. 复用目标：需要使用的共享组件或可复用模块。
+6. 已知的策略冲突候选项（如有）。
 
-## Workflow
-1. Task Understanding
-- Confirm task type, scope, priority, and acceptance criteria.
-- Read current context from docs/MasterPlan.md.
-- Read policy requirements from docs/templates/PROJECT_SPEC.md.
+## 工作流程
+1. 任务理解
+- 确认任务类型、范围、优先级和验收标准。
+- 从 docs/MasterPlan.md 读取当前上下文。
+- 从 docs/templates/PROJECT_SPEC.md 读取策略要求。
 
-2. Strategic Planning (Planner Layer)
-- Break work into executable slices that can pass auditor gates.
-- Identify dependency order, fallback options, and stop-loss boundaries.
-- If full scope cannot fit the round, cut to smallest valuable deliverable and record deferral in docs/MasterPlan.md.
+2. 战略规划（规划层）
+- 将工作拆分为可执行、可通过审计门禁的切片。
+- 确定依赖顺序、回退方案和止损边界。
+- 如果完整范围无法放入本轮，则裁剪为最小有价值交付，并在 docs/MasterPlan.md 中记录延期项。
 
-3. Pipeline Execution (Orchestrator Layer)
-- @Worker implements according to the approved plan and repository conventions.
-- Mandatory reuse rule: prefer approved shared components and existing module abstractions; do not ship ad-hoc duplicate logic when reusable assets exist.
-- Implement in this order when applicable: model, API layer, business logic, tests, comments/docs.
+3. 流水线执行（编排层）
+- @Worker 按照批准的方案和仓库约定进行实现。
+- 强制复用规则：优先使用已批准的共享组件和现有模块抽象；只要存在可复用资产，就不要交付临时拼凑的重复逻辑。
+- 如适用，按以下顺序实现：模型、API 层、业务逻辑、测试、注释/文档。
 
-4. Self Validation
-- Confirm code builds or runs.
-- Run or update relevant tests.
-- Check alignment with PROJECT_SPEC rules.
+4. 自检验证
+- 确认代码可以构建或运行。
+- 运行或更新相关测试。
+- 检查是否符合 PROJECT_SPEC 规则。
 
-5. Auditor Gate
-- Review maintainability, reuse, and test coverage.
-- Enforce one-vote veto for policy violations.
+5. 审计门禁
+- 审查可维护性、复用情况和测试覆盖率。
+- 对违反策略的内容执行一票否决。
 
-6. Spec Circuit-Breaker and Evolution
-- Conflict detection: if implementation needs a pattern rejected by policy (for example, @Worker proposes fmt.Println while @Auditor blocks it), do not deadlock.
-- Circuit-breaker action:
-	- Freeze only conflict-affected items.
-	- Continue non-conflicting slices to keep delivery alive.
-	- Create docs/reports/SPEC_CHANGE_REQUEST_XXX.md with conflict evidence, impact, and proposed policy revision.
-- Approval flow:
-	- APPROVE: apply the accepted rule update to docs/templates/PROJECT_SPEC.md, then resume blocked work.
-	- REJECT: keep current policy, replan implementation path, and update docs/MasterPlan.md with mitigation.
+6. 规范断路器与演进
+- 冲突检测：如果实现需要采用被策略拒绝的模式（例如 @Worker 提议使用 fmt.Println，而 @Auditor 阻止），不要陷入死锁。
+- 断路器动作：
+	- 只冻结受冲突影响的项。
+	- 继续推进不冲突的切片，保持交付不断线。
+	- 创建 docs/reports/SPEC_CHANGE_REQUEST_XXX.md，写入冲突证据、影响范围和建议的策略修订。
+- 审批流程：
+	- APPROVE：将已接受的规则更新应用到 docs/templates/PROJECT_SPEC.md，然后恢复被阻塞的工作。
+	- REJECT：保持当前策略，重新规划实现路径，并在 docs/MasterPlan.md 中更新缓解方案。
 
-7. Single-Task Output Update
-- Always create docs/reports/ROUND_REPORT_YYYYMMDD_TYPE_XXX.md for every task, including small fixes and docs-only work.
-- Update docs/MasterPlan.md only for this task's progress, status, and blockers.
-- Do not perform cross-task summaries, archive actions, or global report merges in this skill.
+7. 单任务输出更新
+- 每个任务都必须创建 docs/reports/ROUND_REPORT_YYYYMMDD_TYPE_XXX.md，包括小修复和仅文档工作。
+- 只在 docs/MasterPlan.md 中更新本任务的进度、状态和阻塞项。
+- 在此 skill 中不要执行跨任务汇总、归档动作或全局报告合并。
 
-## Quality Gates
-1. Code is consistent with current architecture and naming.
-2. Reuse-first principle is enforced; component bypass requires explicit exception.
-3. Tests are added or updated for behavior changes.
-4. Round report and task-scoped MasterPlan updates are completed for every task.
-5. Any policy conflict is processed through SPEC_CHANGE_REQUEST and approval state is explicit.
-6. Approved policy evolution is reflected in docs/templates/PROJECT_SPEC.md.
+## 质量门槛
+1. 代码与现有架构和命名保持一致。
+2. 严格执行优先复用原则；绕过组件必须有明确例外。
+3. 行为变更必须补充或更新测试。
+4. 每个任务都完成轮次报告和任务范围内的 MasterPlan 更新。
+5. 任何策略冲突都必须通过 SPEC_CHANGE_REQUEST 处理，并明确审批状态。
+6. 已批准的策略演进必须反映到 docs/templates/PROJECT_SPEC.md 中。
 
-## Key Paths
+## 关键路径
 - docs/templates/MasterPlan.md
 - docs/templates/PROJECT_SPEC.md
 - docs/templates/ROUND_REPORT.md
@@ -94,7 +94,7 @@ argument-hint: 'Describe task type, module scope, priority, acceptance criteria,
 - docs/MasterPlan.md
 - docs/reports/
 
-## Example Prompts
-- /auto-developer deliver DEV task with Planner decomposition and Orchestrator execution, enforce shared component reuse
-- /auto-developer fix BUG in repo-management flow, trigger SPEC_CHANGE_REQUEST if auditor conflict appears, and output one round report
-- /auto-developer implement P0 scope with strict auditor veto, partial-scope fallback, and task-scoped MasterPlan sync
+## 示例提示
+- /auto-developer 交付 DEV 任务，要求 Planner 拆解和 Orchestrator 执行，并强制复用共享组件
+- /auto-developer 修复仓库管理流程中的 BUG，若出现审计冲突则触发 SPEC_CHANGE_REQUEST，并输出一份轮次报告
+- /auto-developer 实现 P0 范围，启用严格审计否决、部分范围回退，以及任务级 MasterPlan 同步

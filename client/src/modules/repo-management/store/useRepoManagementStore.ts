@@ -12,9 +12,9 @@ import {
   type GitBranchDto,
   type GitPullRequestDto,
   type RepositoryDto,
-  type CreateGitPullRequestRequest,
   type CreateRepositoryRequest,
   type UpdateRepositoryRequest,
+  type CreateGitPullRequestRequest,
 } from '../api/repo-management.api'
 
 /**

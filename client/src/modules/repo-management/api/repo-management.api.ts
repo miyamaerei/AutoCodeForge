@@ -23,6 +23,7 @@ import type {
 
 export type {
   CreateRepoSyncTaskRequest,
+  CreateGitPullRequestRequest,
   GitBranchDto,
   GitCommitDto,
   GitPullRequestDto,

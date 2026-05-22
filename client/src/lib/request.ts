@@ -28,6 +28,9 @@ function decodeJwt(token: string): Record<string, unknown> | null {
       return null
     }
     const payload = parts[1]
+    if (!payload) {
+      return null
+    }
     const decoded = JSON.parse(atob(payload))
     return decoded as Record<string, unknown>
   } catch {

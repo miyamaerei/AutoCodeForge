@@ -30,10 +30,10 @@ describe('log mock', () => {
       const logs = await getTaskLogs('T-1009')
 
       if (logs.length > 0) {
-        expect(typeof logs[0].id).toBe('string')
-        expect(typeof logs[0].taskId).toBe('string')
-        expect(typeof logs[0].message).toBe('string')
-        expect(logs[0].message).toContain('[') // Log format includes timestamp
+        expect(typeof logs[0]!.id).toBe('string')
+        expect(typeof logs[0]!.taskId).toBe('string')
+        expect(typeof logs[0]!.message).toBe('string')
+        expect(logs[0]!.message).toContain('[') // Log format includes timestamp
       }
     })
   })

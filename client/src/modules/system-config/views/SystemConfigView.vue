@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { useSystemConfigStore } from './store/useSystemConfigStore'
-import type { ConfigType } from './api/config.types'
+import { useSystemConfigStore } from '../store/useSystemConfigStore'
+import type { ConfigType } from '../api/config.types'
 
 const store = useSystemConfigStore()
 

@@ -121,7 +121,7 @@ function updateQueue(value: 'all' | 'notifications' | 'approvals' | 'hitl'): voi
             { label: '审批', value: 'approvals' },
             { label: 'HITL', value: 'hitl' },
           ]"
-          @update:model-value="(value) => updateQueue(value as 'all' | 'notifications' | 'approvals' | 'hitl')"
+          @update:model-value="(value: string | number | boolean) => updateQueue(value as 'all' | 'notifications' | 'approvals' | 'hitl')"
         />
         <el-select
           :model-value="selectedRepository"

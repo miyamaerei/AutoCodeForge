@@ -5,6 +5,7 @@ using AutoCodeForge.Core.Helpers;
 using AutoCodeForge.Core.Models;
 using AutoCodeForge.Infrastructure.AI;
 using AutoCodeForge.Infrastructure.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace AutoCodeForge.Application.Services;
 
@@ -19,6 +20,7 @@ public class ChatService
     private readonly AgentMatcher _agentMatcher;
     private readonly AgentExecutor _agentExecutor;
     private readonly ChatDefaultsProvisioningService? _chatDefaultsProvisioningService;
+    private readonly ILogger<ChatService>? _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ChatService"/> class.
@@ -34,7 +36,8 @@ public class ChatService
         ChatSessionManager chatSessionManager,
         AgentMatcher agentMatcher,
         AgentExecutor agentExecutor,
-        ChatDefaultsProvisioningService? chatDefaultsProvisioningService = null)
+        ChatDefaultsProvisioningService? chatDefaultsProvisioningService = null,
+        ILogger<ChatService>? logger = null)
     {
         _chatSessionRepository = chatSessionRepository;
         _chatMessageRepository = chatMessageRepository;
@@ -42,6 +45,7 @@ public class ChatService
         _agentMatcher = agentMatcher;
         _agentExecutor = agentExecutor;
         _chatDefaultsProvisioningService = chatDefaultsProvisioningService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -144,10 +148,19 @@ public class ChatService
             await _chatDefaultsProvisioningService.EnsureDefaultsForNtIdAsync(session.NtId, cancellationToken);
         }
 
-        var matchedAgent = await _agentMatcher.MatchAgentAsync(
-            messageText,
-            request.AgentId ?? session.AgentId,
-            cancellationToken);
+        AgentEntity? matchedAgent;
+        try
+        {
+            matchedAgent = await _agentMatcher.MatchAgentAsync(
+                messageText,
+                request.AgentId ?? session.AgentId,
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Agent matching failed for session {SessionId}; falling back to generic chat", sessionId);
+            matchedAgent = null;
+        }
 
         var history = await _chatSessionManager.GetHistoryAsync(sessionId, cancellationToken: cancellationToken);
         var userMessage = await _chatSessionManager.AddMessageAsync(
@@ -157,28 +170,45 @@ public class ChatService
             null,
             cancellationToken);
 
-        var assistantText = matchedAgent is null
-            ? await _agentExecutor.ExecuteGenericAsync(messageText, history, cancellationToken)
-            : await _agentExecutor.ExecuteAsync(matchedAgent, messageText, history, cancellationToken);
+        AgentEntity? effectiveAgent = matchedAgent;
+        string assistantText;
+
+        if (matchedAgent is null)
+        {
+            assistantText = await _agentExecutor.ExecuteGenericAsync(messageText, history, cancellationToken);
+        }
+        else
+        {
+            try
+            {
+                assistantText = await _agentExecutor.ExecuteAsync(matchedAgent, messageText, history, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Agent execution failed for session {SessionId}; falling back to generic chat", sessionId);
+                effectiveAgent = null;
+                assistantText = await _agentExecutor.ExecuteGenericAsync(messageText, history, cancellationToken);
+            }
+        }
 
         var assistantMessage = await _chatSessionManager.AddMessageAsync(
             sessionId,
             MessageType.Assistant,
             assistantText,
-            matchedAgent?.Name,
+            effectiveAgent?.Name,
             cancellationToken);
 
         session.LastMessageAtUtc = TimeHelper.UtcNow();
-        if (matchedAgent is not null)
+        if (effectiveAgent is not null)
         {
-            session.AgentId = matchedAgent.Id;
+            session.AgentId = effectiveAgent.Id;
         }
         await _chatSessionRepository.UpdateAsync(session, cancellationToken);
 
         return new SendMessageResponse
         {
             SessionId = sessionId,
-            AgentId = matchedAgent?.Id,
+            AgentId = effectiveAgent?.Id,
             UserMessage = ToMessageResponse(userMessage),
             AssistantMessage = ToMessageResponse(assistantMessage),
         };

@@ -72,7 +72,7 @@ const copilotConfig = reactive({
 })
 
 const installCommand = computed(() => {
-  if (process.platform === 'win32') {
+  if (navigator.platform.toLowerCase().includes('win')) {
     return 'winget install GitHub.Copilot'
   }
   return 'npm install -g @github/copilot-cli'

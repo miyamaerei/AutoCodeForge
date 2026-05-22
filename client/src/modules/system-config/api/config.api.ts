@@ -180,10 +180,10 @@ export async function rollbackConfig(historyId: string): Promise<ConfigResponse>
 /**
  * Batch update configs (admin only)
  */
-export async function batchUpdateConfigs(request: BatchConfigRequest): Promise<number> {
-  if (USE_MOCK) return mockBatchUpdateConfigs(request)
-  await request.post('/v1/configs/batch', request)
-  return request.configs.length
+export async function batchUpdateConfigs(payload: BatchConfigRequest): Promise<number> {
+  if (USE_MOCK) return mockBatchUpdateConfigs(payload)
+  await request.post('/v1/configs/batch', payload)
+  return payload.configs.length
 }
 
 /**

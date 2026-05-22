@@ -40,8 +40,9 @@ describe('chat mock', () => {
       expect(result.length).toBeGreaterThan(2) // Original + user + ai
       // Last message should be AI response
       const lastMessage = result[result.length - 1]
-      expect(lastMessage.role).toBe('ai')
-      expect(lastMessage.content).toContain('测试消息')
+      expect(lastMessage).toBeDefined()
+      expect(lastMessage!.role).toBe('ai')
+      expect(lastMessage!.content).toContain('测试消息')
     })
 
     it('should add both user and ai messages', async () => {
@@ -56,8 +57,10 @@ describe('chat mock', () => {
       expect(result.length).toBe(initialLength + 2)
       const userMessage = result[result.length - 2]
       const aiMessage = result[result.length - 1]
-      expect(userMessage.role).toBe('user')
-      expect(aiMessage.role).toBe('ai')
+      expect(userMessage).toBeDefined()
+      expect(aiMessage).toBeDefined()
+      expect(userMessage!.role).toBe('user')
+      expect(aiMessage!.role).toBe('ai')
     })
   })
 })

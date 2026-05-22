@@ -6,7 +6,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useAgentStore } from '../useAgentStore'
 import * as agentApi from '../../agent.api'
 import type { AgentDto, CreateAgentDto, UpdateAgentDto } from '../../agent.api'
-import type { PagedResult } from '../../agent-center/api/agent.types'
+import type { PagedResult } from '../../api/agent.types'
 
 describe('useAgentStore', () => {
   // 测试数据
@@ -45,6 +45,8 @@ describe('useAgentStore', () => {
       updatedAt: '2026-05-17 16:00:00',
     },
   ]
+  const firstAgent = mockAgents[0]!
+  const secondAgent = mockAgents[1]!
 
   // Spy objects
   let fetchAgentsSpy: ReturnType<typeof vi.spyOn>
@@ -105,7 +107,7 @@ describe('useAgentStore', () => {
     it('should load agents successfully', async () => {
       const store = useAgentStore()
       const pagedResult: PagedResult<AgentDto> = {
-        items: [mockAgents[0], mockAgents[1]],
+        items: [firstAgent, secondAgent],
         totalCount: 2,
         page: 1,
         pageSize: 20,
@@ -115,7 +117,7 @@ describe('useAgentStore', () => {
 
       await store.loadAgents()
 
-      expect(store.agents).toEqual([mockAgents[0], mockAgents[1]])
+      expect(store.agents).toEqual([firstAgent, secondAgent])
       expect(store.totalCount).toBe(2)
       expect(store.currentPage).toBe(1)
       expect(store.loading).toBe(false)
@@ -162,7 +164,7 @@ describe('useAgentStore', () => {
   describe('loadAgent', () => {
     it('should load single agent successfully', async () => {
       const store = useAgentStore()
-      getAgentSpy.mockResolvedValue(mockAgents[0])
+      getAgentSpy.mockResolvedValue(firstAgent)
 
       const agent = await store.loadAgent('agent-1')
 
@@ -235,7 +237,7 @@ describe('useAgentStore', () => {
         name: '更新的名称',
       }
       const updatedAgent: AgentDto = {
-        ...mockAgents[0],
+        ...firstAgent,
         name: '更新的名称',
       }
       updateAgentSpy.mockResolvedValue(updatedAgent)
@@ -243,20 +245,20 @@ describe('useAgentStore', () => {
       const result = await store.submitUpdate(updateDto)
 
       expect(result).toEqual(updatedAgent)
-      expect(store.agents[0].name).toBe('更新的名称')
+      expect(store.agents[0]!.name).toBe('更新的名称')
       expect(store.saving).toBe(false)
     })
 
     it('should update selectedAgent when updating selected one', async () => {
       const store = useAgentStore()
       setStoreAgents(store, [...mockAgents])
-      setStoreSelectedAgent(store, mockAgents[0])
+      setStoreSelectedAgent(store, firstAgent)
       const updateDto: UpdateAgentDto = {
         id: 'agent-1',
         name: '更新的名称',
       }
       const updatedAgent: AgentDto = {
-        ...mockAgents[0],
+        ...firstAgent,
         name: '更新的名称',
       }
       updateAgentSpy.mockResolvedValue(updatedAgent)
@@ -281,7 +283,7 @@ describe('useAgentStore', () => {
     it('should delete agent successfully', async () => {
       const store = useAgentStore()
       setStoreAgents(store, [...mockAgents])
-      setStoreSelectedAgent(store, mockAgents[0])
+      setStoreSelectedAgent(store, firstAgent)
       deleteAgentSpy.mockResolvedValue(true)
 
       const result = await store.submitDelete('agent-1')
@@ -305,7 +307,7 @@ describe('useAgentStore', () => {
     it('should not clear selectedAgent if deleting different agent', async () => {
       const store = useAgentStore()
       setStoreAgents(store, [...mockAgents])
-      setStoreSelectedAgent(store, mockAgents[0])
+      setStoreSelectedAgent(store, firstAgent)
       deleteAgentSpy.mockResolvedValue(true)
 
       await store.submitDelete('agent-2')
@@ -339,7 +341,7 @@ describe('useAgentStore', () => {
   describe('clearSelection', () => {
     it('should clear selectedAgent', () => {
       const store = useAgentStore()
-      setStoreSelectedAgent(store, mockAgents[0])
+      setStoreSelectedAgent(store, firstAgent)
 
       store.clearSelection()
 
@@ -363,7 +365,7 @@ describe('useAgentStore', () => {
       const store = useAgentStore()
       expect(store.hasAgents).toBe(false)
 
-      setStoreAgents(store, [mockAgents[0]])
+      setStoreAgents(store, [firstAgent])
       expect(store.hasAgents).toBe(true)
 
       setStoreAgents(store, [])

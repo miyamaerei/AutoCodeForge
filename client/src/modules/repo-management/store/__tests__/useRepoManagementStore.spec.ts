@@ -19,20 +19,24 @@ describe('useRepoManagementStore', () => {
     {
       id: 'repo-1',
       name: '订单服务',
-      fullName: 'org/order-service',
-      description: '订单相关服务',
-      defaultBranch: 'main',
+      url: 'https://github.com/org/order-service',
+      provider: 0,
+      authType: 0,
+      mergeStrategy: 1,
+      branch: 'main',
+      createdAtUtc: '2026-05-19T10:00:00Z',
       updatedAtUtc: '2026-05-20T10:00:00Z',
-      isPrivate: false,
     },
     {
       id: 'repo-2',
       name: '用户服务',
-      fullName: 'org/user-service',
-      description: '用户相关服务',
-      defaultBranch: 'main',
+      url: 'https://github.com/org/user-service',
+      provider: 0,
+      authType: 0,
+      mergeStrategy: 1,
+      branch: 'main',
+      createdAtUtc: '2026-05-18T10:00:00Z',
       updatedAtUtc: '2026-05-19T10:00:00Z',
-      isPrivate: true,
     },
   ]
 
@@ -40,27 +44,28 @@ describe('useRepoManagementStore', () => {
     {
       name: 'main',
       commitSha: 'abc1234567890',
-      isProtected: true,
-      createdAt: '2026-05-01',
+      isDefault: true,
     },
     {
       name: 'develop',
       commitSha: 'def1234567890',
-      isProtected: false,
-      createdAt: '2026-05-10',
+      isDefault: false,
     },
   ]
 
   const mockPullRequests: GitPullRequestDto[] = [
     {
       id: 'pr-1',
+      number: 1,
       title: '修复空指针异常',
+      description: '修复导出流程中的空指针问题',
       state: 'open',
-      createdAtUtc: '2026-05-21T10:00:00Z',
-      updatedAtUtc: '2026-05-21T12:00:00Z',
       author: 'developer1',
       sourceBranch: 'feature/fix-null',
       targetBranch: 'main',
+      url: 'https://github.com/org/order-service/pull/1',
+      createdAtUtc: '2026-05-21T10:00:00Z',
+      updatedAtUtc: '2026-05-21T12:00:00Z',
     },
   ]
 

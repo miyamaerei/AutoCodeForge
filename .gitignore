@@ -51,3 +51,6 @@ server/tests/AutoCodeForge.Tests/test-configs/
 
 # Local nested repository workspace
 3033846/
+
+# Local server verification artifacts
+server/.build-temp/

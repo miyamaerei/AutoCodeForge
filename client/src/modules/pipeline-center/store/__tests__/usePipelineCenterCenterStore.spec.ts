@@ -14,36 +14,38 @@ describe('usePipelineCenterStore', () => {
       id: 'pipeline-1',
       name: '主流水线',
       status: 'success',
-      lastRunTime: '2026-05-21 10:00:00',
+      lastRun: '2026-05-21 10:00:00',
+      successRate: '95%',
       branch: 'main',
-      commitMessage: '提交1',
     },
     {
       id: 'pipeline-2',
       name: '开发流水线',
       status: 'running',
-      lastRunTime: '2026-05-21 11:00:00',
+      lastRun: '2026-05-21 11:00:00',
+      successRate: '88%',
       branch: 'develop',
-      commitMessage: '提交2',
     },
   ]
 
   const mockBuilds: BuildDto[] = [
     {
       id: 'build-1',
-      pipelineId: 'pipeline-1',
-      buildNumber: 1,
+      pipelineName: '主流水线',
+      buildNumber: '#1',
       status: 'success',
       startTime: '2026-05-21 10:00:00',
-      duration: 120,
+      duration: '120s',
+      branch: 'main',
     },
     {
       id: 'build-2',
-      pipelineId: 'pipeline-1',
-      buildNumber: 2,
+      pipelineName: '主流水线',
+      buildNumber: '#2',
       status: 'failed',
       startTime: '2026-05-21 11:00:00',
-      duration: 60,
+      duration: '60s',
+      branch: 'main',
     },
   ]
 
