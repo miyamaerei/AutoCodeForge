@@ -418,7 +418,27 @@ public sealed class AgentFrameworkGatewayTests : IDisposable
     [Fact]
     public async Task ChatAsync_GitHubCopilotProvider_RealTest()
     {
-        var copilotModel = await CreateGitHubCopilotModelAsync("copilot-real-test");
+        // 使用完整路径（确保dotnet进程能找到copilot）
+        var copilotPath = @"C:\Users\Administrator\AppData\Roaming\npm\copilot.cmd";
+        if (!File.Exists(copilotPath))
+        {
+            // 回退到PATH中的copilot
+            copilotPath = "copilot";
+        }
+
+        // 检查是否有GitHub Token
+        var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+        if (string.IsNullOrEmpty(githubToken))
+        {
+            // 没有Token，尝试检查是否有Copilot权限
+            Console.WriteLine("警告: GITHUB_TOKEN环境变量未设置，Copilot可能无法使用");
+        }
+
+        // GitHub Copilot CLI支持的模型名称：gpt-4o, gpt-4, o1-mini, o1-preview 等
+        var copilotModel = await CreateGitHubCopilotModelAsync(
+            "gpt-4o",
+            customCliPath: copilotPath,
+            patEnvVar: "GITHUB_TOKEN");
 
         var response = await _gateway.ChatAsync(new LlmRequest
         {
@@ -433,7 +453,7 @@ public sealed class AgentFrameworkGatewayTests : IDisposable
             },
         });
 
-        Assert.Equal("copilot-real-test", response.ModelName);
+        Assert.Equal("gpt-4o", response.ModelName);
         Assert.False(string.IsNullOrWhiteSpace(response.Content));
         Assert.Contains("4", response.Content);
     }
