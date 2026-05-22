@@ -165,14 +165,21 @@ async function saveTokenToConfig() {
 
   tokenLoading.value = true
   try {
-    const configKey = `git-token-${tokenName.toLowerCase().replace(/\s+/g, '-')}`
+    const configKey = `credential.github-${tokenName.toLowerCase().replace(/\s+/g, '-')}`
     console.log(`[Token] Saving token with key: ${configKey}`)
     
-    await upsertConfig('ApiKey' as ConfigType, {
+    await upsertConfig('Git' as ConfigType, {
       configKey,
-      configValue: token,
+      configValue: JSON.stringify({
+        type: 'credential',
+        provider: 'GitHub',
+        authMode: 'token',
+        token: token,
+        description: `GitHub Token: ${tokenName}`,
+      }),
       isEncrypted: true,
       description: `GitHub Token: ${tokenName}`,
+      group: 'credentials',
     })
     console.log(`[Token] Token saved successfully, key: ${configKey}`)
 
@@ -217,7 +224,7 @@ async function saveTokenToConfig() {
 async function loadTokenOptions() {
   tokenLoading.value = true
   try {
-    const configTypes: ConfigType[] = ['ApiKey', 'Repository', 'Integration']
+    const configTypes: ConfigType[] = ['Git', 'Repository', 'Integration']
     const allConfigs: ConfigResponse[] = []
     const failedTypes: string[] = []
 
@@ -369,13 +376,13 @@ async function loadTokenFromConfigCenter() {
   try {
     await Promise.all([
       systemConfigStore.loadConfigs('Repository'),
-      systemConfigStore.loadConfigs('ApiKey'),
+      systemConfigStore.loadConfigs('Git'),
       systemConfigStore.loadConfigs('Integration'),
     ])
 
     const mergedConfigs = [
       ...systemConfigStore.getConfigs('Repository'),
-      ...systemConfigStore.getConfigs('ApiKey'),
+      ...systemConfigStore.getConfigs('Git'),
       ...systemConfigStore.getConfigs('Integration'),
     ]
 

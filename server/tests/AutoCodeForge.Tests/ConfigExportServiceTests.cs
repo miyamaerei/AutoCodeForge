@@ -60,9 +60,9 @@ public sealed class ConfigExportServiceTests : IDisposable
     public async Task ExportByTypeAsync_WithEncryptedConfigs_ShouldExportDecryptedValues()
     {
         var secretValue = "my_secret_api_key_123";
-        await _configService.UpsertAsync(ConfigType.ApiKey, "export.api.1", secretValue, isEncrypted: true);
+        await _configService.UpsertAsync(ConfigType.Llm, "export.api.1", secretValue, isEncrypted: true);
 
-        var json = await _exportService.ExportByTypeAsync(ConfigType.ApiKey, _testNtId);
+        var json = await _exportService.ExportByTypeAsync(ConfigType.Llm, _testNtId);
 
         Assert.Contains(secretValue, json);
     }
@@ -160,19 +160,19 @@ public sealed class ConfigExportServiceTests : IDisposable
     public async Task ImportAsync_WithEncryptedConfigs_ShouldEncryptOnImport()
     {
         var secretValue = "secret_to_import";
-        await _configService.UpsertAsync(ConfigType.ApiKey, "import.encrypted.1", secretValue, isEncrypted: true);
-        var exportJson = await _exportService.ExportByTypeAsync(ConfigType.ApiKey, _testNtId);
+        await _configService.UpsertAsync(ConfigType.Llm, "import.encrypted.1", secretValue, isEncrypted: true);
+        var exportJson = await _exportService.ExportByTypeAsync(ConfigType.Llm, _testNtId);
 
         await _db.Deleteable<ConfigurationEntry>().ExecuteCommandAsync();
 
         await _exportService.ImportAsync(exportJson, _testNtId, overwriteExisting: true);
 
-        var inDb = await _configRepository.GetByTypeAndKeyAsync(ConfigType.ApiKey, "import.encrypted.1", _testNtId);
+        var inDb = await _configRepository.GetByTypeAndKeyAsync(ConfigType.Llm, "import.encrypted.1", _testNtId);
         Assert.NotNull(inDb);
         Assert.True(inDb.IsEncrypted);
         Assert.NotEqual(secretValue, inDb.ConfigValue);
 
-        var decrypted = await _configService.GetByTypeAndKeyAsync(ConfigType.ApiKey, "import.encrypted.1");
+        var decrypted = await _configService.GetByTypeAndKeyAsync(ConfigType.Llm, "import.encrypted.1");
         Assert.Equal(secretValue, decrypted!.ConfigValue);
     }
 

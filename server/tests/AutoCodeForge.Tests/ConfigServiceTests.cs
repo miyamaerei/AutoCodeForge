@@ -87,18 +87,18 @@ public sealed class ConfigServiceTests : IDisposable
         var configValue = "sensitive_data_123";
 
         var result = await _configService.UpsertAsync(
-            ConfigType.ApiKey,
+            ConfigType.Llm,
             configKey,
             configValue,
             isEncrypted: true);
 
         // Verify decrypted value is correct
-        var retrieved = await _configService.GetByTypeAndKeyAsync(ConfigType.ApiKey, configKey);
+        var retrieved = await _configService.GetByTypeAndKeyAsync(ConfigType.Llm, configKey);
         Assert.NotNull(retrieved);
         Assert.Equal(configValue, retrieved.ConfigValue);
 
         // Check in database it's actually encrypted
-        var inDb = await _configRepository.GetByTypeAndKeyAsync(ConfigType.ApiKey, configKey, _testNtId);
+        var inDb = await _configRepository.GetByTypeAndKeyAsync(ConfigType.Llm, configKey, _testNtId);
         Assert.NotNull(inDb);
         Assert.True(inDb.IsEncrypted);
         Assert.NotEqual(configValue, inDb.ConfigValue);

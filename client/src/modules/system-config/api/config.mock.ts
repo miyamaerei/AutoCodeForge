@@ -156,8 +156,8 @@ export function mockGetConfigs(configType: ConfigType): ConfigResponse[] {
     Schedule: [],
     DeepWiki: [],
     Review: [],
-    ApiKey: [],
-    Model: [],
+    Llm: [],
+    Git: [],
     System: [],
   }
 
@@ -270,8 +270,8 @@ export function mockGetConfigDefaults(configType: ConfigType): ConfigTemplateRes
     Schedule: { configType: 'Schedule', defaultKey: 'schedule', description: 'Schedule config', defaultValue: '{}' },
     DeepWiki: { configType: 'DeepWiki', defaultKey: 'deepwiki', description: 'DeepWiki config', defaultValue: '{}' },
     Review: { configType: 'Review', defaultKey: 'review', description: 'Review config', defaultValue: '{}' },
-    ApiKey: { configType: 'ApiKey', defaultKey: 'apikey', description: 'API key config', defaultValue: '{}' },
-    Model: { configType: 'Model', defaultKey: 'model', description: 'Model config', defaultValue: '{}' },
+    Llm: { configType: 'Llm', defaultKey: 'settings.default', description: 'LLM config', defaultValue: '{}' },
+    Git: { configType: 'Git', defaultKey: 'settings.default', description: 'Git config', defaultValue: '{}' },
     System: { configType: 'System', defaultKey: 'system', description: 'System config', defaultValue: '{}' },
   }
 

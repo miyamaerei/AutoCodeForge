@@ -144,14 +144,14 @@ function applyRemoteRepository(fullName: string) {
 async function loadTokenFromConfigs() {
   try {
     await Promise.all([
-      store.loadConfigs('ApiKey' as ConfigType),
+      store.loadConfigs('Git' as ConfigType),
       store.loadConfigs('Integration' as ConfigType),
       store.loadConfigs('Repository' as ConfigType),
     ])
 
     const candidates = [
       ...store.getConfigs('Repository' as ConfigType),
-      ...store.getConfigs('ApiKey' as ConfigType),
+      ...store.getConfigs('Git' as ConfigType),
       ...store.getConfigs('Integration' as ConfigType),
     ]
 

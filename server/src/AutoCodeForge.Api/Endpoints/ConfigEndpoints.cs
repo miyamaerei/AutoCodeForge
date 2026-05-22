@@ -441,7 +441,8 @@ public static class ConfigEndpoints
             ConfigType.Integration => true,
             ConfigType.Skill => true,
             ConfigType.Repository => true,
-            ConfigType.ApiKey => true,
+            ConfigType.Llm => true,
+            ConfigType.Git => true,
             _ => false
         };
     }
@@ -466,7 +467,8 @@ public static class ConfigEndpoints
             ConfigType.Integration => true,
             ConfigType.Skill => true,
             ConfigType.Repository => true,
-            ConfigType.ApiKey => true,
+            ConfigType.Llm => true,
+            ConfigType.Git => true,
             _ => false
         };
     }

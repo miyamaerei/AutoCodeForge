@@ -28,8 +28,8 @@ public static class ConfigDefaultsProvider
             ConfigType.Integration => GetIntegrationDefault(),
             ConfigType.Skill => GetSkillDefault(),
             ConfigType.Repository => GetRepositoryDefault(),
-            ConfigType.ApiKey => GetApiKeyDefault(),
-            ConfigType.Model => GetModelDefault(),
+            ConfigType.Llm => GetLlmDefault(),
+            ConfigType.Git => GetGitDefault(),
             ConfigType.System => GetSystemDefault(),
             _ => "{}"
         };
@@ -57,8 +57,8 @@ public static class ConfigDefaultsProvider
             ConfigType.Notification => "user.notification.default",
             ConfigType.Sandbox => "user.sandbox.default",
             ConfigType.Workflow => "user.workflow.team-default",
-            ConfigType.ApiKey => "global.api.default",
-            ConfigType.Model => "global.model.default",
+            ConfigType.Llm => "settings.default",
+            ConfigType.Git => "settings.default",
             ConfigType.System => "global.system.version",
             _ => "unknown.default"
         };
@@ -86,8 +86,8 @@ public static class ConfigDefaultsProvider
             ConfigType.Notification => "通知策略配置",
             ConfigType.Sandbox => "沙盒执行配置",
             ConfigType.Workflow => "流程编排配置",
-            ConfigType.ApiKey => "API密钥配置",
-            ConfigType.Model => "AI模型配置",
+            ConfigType.Llm => "LLM配置（模型和凭证）",
+            ConfigType.Git => "Git配置（仓库和凭证）",
             ConfigType.System => "系统配置",
             _ => "未知配置类型"
         };
@@ -124,8 +124,8 @@ public static class ConfigDefaultsProvider
         return new List<ConfigType>
         {
             ConfigType.Global,
-            ConfigType.ApiKey,
-            ConfigType.Model,
+            ConfigType.Llm,
+            ConfigType.Git,
             ConfigType.System
         };
     }
@@ -337,22 +337,36 @@ public static class ConfigDefaultsProvider
         return JsonHelper.Serialize(config);
     }
 
-    private static string GetApiKeyDefault()
+    private static string GetLlmDefault()
     {
         var config = new
         {
-            keys = Array.Empty<object>()
+            models = Array.Empty<object>(),
+            credentials = Array.Empty<object>(),
+            settings = new
+            {
+                defaultModelKey = (string?)null,
+                fallbackModelKey = (string?)null,
+                temperature = 0.7,
+                maxTokens = 2048,
+                timeoutSeconds = 60,
+                maxRetries = 3
+            }
         };
         return JsonHelper.Serialize(config);
     }
 
-    private static string GetModelDefault()
+    private static string GetGitDefault()
     {
         var config = new
         {
-            defaultModel = "gpt-4",
-            fallbackModel = "gpt-3.5-turbo",
-            availableModels = new[] { "gpt-4", "gpt-3.5-turbo", "claude-3-opus" }
+            credentials = Array.Empty<object>(),
+            settings = new
+            {
+                defaultCredentialKey = (string?)null,
+                defaultBranch = "main",
+                timeoutSeconds = 300
+            }
         };
         return JsonHelper.Serialize(config);
     }

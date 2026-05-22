@@ -15,8 +15,8 @@ export type ConfigType =
   | 'Notification'
   | 'Sandbox'
   | 'Workflow'
-  | 'ApiKey'
-  | 'Model'
+  | 'Llm'
+  | 'Git'
   | 'System'
 
 /**

@@ -107,8 +107,8 @@ export function useSystemConfigManagement() {
     { value: 'Notification', label: 'Notification' },
     { value: 'Sandbox', label: 'Sandbox' },
     { value: 'Workflow', label: 'Workflow' },
-    { value: 'ApiKey', label: 'ApiKey' },
-    { value: 'Model', label: 'Model' },
+    { value: 'Llm', label: 'LLM' },
+    { value: 'Git', label: 'Git' },
     { value: 'System', label: 'System' },
   ]
 

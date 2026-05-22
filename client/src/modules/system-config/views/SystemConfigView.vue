@@ -16,18 +16,31 @@ const form = reactive({
 const handleSave = async () => {
   saving.value = true
   try {
-    // Save to Global config (admin only)
-    await store.saveConfig('Global' as ConfigType, {
-      configKey: 'apiKey',
-      configValue: form.apiKey,
+    // Save to LLM config (using Llm type instead of ApiKey/Model)
+    await store.saveConfig('Llm' as ConfigType, {
+      configKey: 'credential.api-key-main',
+      configValue: JSON.stringify({
+        type: 'credential',
+        providerType: 'ApiKey',
+        apiKey: form.apiKey,
+        description: 'API Key for LLM access',
+      }),
       isEncrypted: true,
-      description: 'API Key for model access',
+      description: 'LLM API Key credential',
+      group: 'credentials',
     })
-    await store.saveConfig('Model' as ConfigType, {
-      configKey: 'defaultModel',
-      configValue: form.model,
+    await store.saveConfig('Llm' as ConfigType, {
+      configKey: 'model.azureopenai-gpt4o',
+      configValue: JSON.stringify({
+        type: 'model',
+        provider: 'AzureOpenAI',
+        modelName: form.model,
+        isDefault: true,
+        isActive: true,
+      }),
       isEncrypted: false,
-      description: 'Default model selection',
+      description: 'Default LLM model',
+      group: 'models',
     })
     await store.saveConfig('Global' as ConfigType, {
       configKey: 'maxConcurrentTasks',

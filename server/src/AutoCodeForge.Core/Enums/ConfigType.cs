@@ -71,14 +71,15 @@ public enum ConfigType
     Workflow,
 
     /// <summary>
-    /// API key management configuration.
+    /// LLM configuration (unified model and credential management).
+    /// Supports multiple models with different providers.
     /// </summary>
-    ApiKey,
+    Llm,
 
     /// <summary>
-    /// AI model configuration.
+    /// Git configuration (repository and credential management).
     /// </summary>
-    Model,
+    Git,
 
     /// <summary>
     /// System configuration (legacy compatibility).
