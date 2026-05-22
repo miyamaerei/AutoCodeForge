@@ -35,7 +35,8 @@ public sealed class AgentFrameworkGatewayTests : IDisposable
         _db.CodeFirst.InitTables(typeof(LLMModelConfigEntity));
 
         _repository = new LLMModelConfigRepository(_db, new TestCurrentUser("agent.user"));
-        _gateway = new AgentFrameworkGateway(_repository, NullLogger<AgentFrameworkGateway>.Instance);
+        var copilotService = new GitHubCopilotCliService(NullLogger<GitHubCopilotCliService>.Instance);
+        _gateway = new AgentFrameworkGateway(_repository, copilotService, NullLogger<AgentFrameworkGateway>.Instance);
     }
 
     [Fact]
@@ -412,6 +413,29 @@ public sealed class AgentFrameworkGatewayTests : IDisposable
 
         Assert.Equal("copilot-tools-model", response.ModelName);
         Assert.False(string.IsNullOrWhiteSpace(response.Content));
+    }
+
+    [Fact]
+    public async Task ChatAsync_GitHubCopilotProvider_RealTest()
+    {
+        var copilotModel = await CreateGitHubCopilotModelAsync("copilot-real-test");
+
+        var response = await _gateway.ChatAsync(new LlmRequest
+        {
+            PreferredModelId = copilotModel.Id,
+            Messages =
+            {
+                new ChatMessage
+                {
+                    Role = "user",
+                    Content = "What is 2+2? Reply with only the number.",
+                },
+            },
+        });
+
+        Assert.Equal("copilot-real-test", response.ModelName);
+        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+        Assert.Contains("4", response.Content);
     }
 
     private async Task<LLMModelConfigEntity> CreateModelAsync(string modelName)

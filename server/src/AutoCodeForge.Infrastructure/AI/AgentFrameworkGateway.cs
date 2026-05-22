@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using Azure;
 using Azure.Identity;
 using Azure.AI.OpenAI;
-using System.Diagnostics;
 using System.Text.Json;
 
 namespace AutoCodeForge.Infrastructure.AI;
@@ -21,15 +20,21 @@ public class AgentFrameworkGateway : ILlmGateway
 {
     private readonly LLMModelConfigRepository _modelConfigRepository;
     private readonly ILogger<AgentFrameworkGateway> _logger;
+    private readonly IGitHubCopilotService _copilotService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AgentFrameworkGateway"/> class.
     /// </summary>
     /// <param name="modelConfigRepository">The model config repository.</param>
+    /// <param name="copilotService">The GitHub Copilot service.</param>
     /// <param name="logger">The logger.</param>
-    public AgentFrameworkGateway(LLMModelConfigRepository modelConfigRepository, ILogger<AgentFrameworkGateway> logger)
+    public AgentFrameworkGateway(
+        LLMModelConfigRepository modelConfigRepository,
+        IGitHubCopilotService copilotService,
+        ILogger<AgentFrameworkGateway> logger)
     {
         _modelConfigRepository = modelConfigRepository;
+        _copilotService = copilotService;
         _logger = logger;
     }
 
@@ -53,7 +58,7 @@ public class AgentFrameworkGateway : ILlmGateway
         if (model.Provider == LLMProvider.GitHubCopilot)
         {
             var prompt = request.Messages.LastOrDefault(m => m.Role == "user")?.Content ?? string.Empty;
-            return await CallGitHubCopilotCliAsync(model, prompt, cancellationToken);
+            return await _copilotService.ExecuteAsync(model, prompt, request.SystemPrompt, cancellationToken);
         }
 
         try
@@ -101,8 +106,8 @@ public class AgentFrameworkGateway : ILlmGateway
 
         if (model.Provider == LLMProvider.GitHubCopilot)
         {
-            _logger.LogWarning("GitHub Copilot does not support tools, falling back to ChatAsync");
-            return await ChatAsync(request, cancellationToken);
+            var prompt = request.Messages.LastOrDefault(m => m.Role == "user")?.Content ?? string.Empty;
+            return await _copilotService.ExecuteAsync(model, prompt, request.SystemPrompt, cancellationToken);
         }
 
         try
@@ -145,13 +150,11 @@ public class AgentFrameworkGateway : ILlmGateway
 
         if (!string.IsNullOrWhiteSpace(model.ApiKey))
         {
-            // Use Azure OpenAI client with API key
             var azureClient = new AzureOpenAIClient(endpoint, new AzureKeyCredential(model.ApiKey));
             return azureClient.GetChatClient(model.ModelName ?? "gpt-4o").AsIChatClient();
         }
         else
         {
-            // Use Azure Identity for authentication
             var azureClient = new AzureOpenAIClient(endpoint, new DefaultAzureCredential());
             return azureClient.GetChatClient(model.ModelName ?? "gpt-4o").AsIChatClient();
         }
@@ -200,90 +203,6 @@ public class AgentFrameworkGateway : ILlmGateway
             CompletedAtUtc = DateTime.UtcNow,
             TotalTokens = Math.Max(1, userMessage.Length / 4),
         };
-    }
-
-    /// <summary>
-    /// Calls GitHub Copilot CLI to get code suggestions.
-    /// </summary>
-    private async Task<LlmResponse> CallGitHubCopilotCliAsync(
-        LLMModelConfigEntity model,
-        string prompt,
-        CancellationToken cancellationToken)
-    {
-        var executable = string.IsNullOrWhiteSpace(model.CliExecutable) 
-            ? "copilot" 
-            : model.CliExecutable;
-
-        _logger.LogInformation(
-            "Calling GitHub Copilot CLI: {Executable}, prompt={Prompt}",
-            executable,
-            prompt);
-
-        try
-        {
-            using var process = new Process();
-            process.StartInfo.FileName = executable;
-            process.StartInfo.Arguments = $"suggest \"{EscapeForShell(prompt)}\"";
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-
-            if (!string.IsNullOrWhiteSpace(model.PatEnvVar))
-            {
-                process.StartInfo.EnvironmentVariables[model.PatEnvVar] = model.ApiKey ?? string.Empty;
-            }
-
-            process.Start();
-
-            var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-            var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
-
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(60));
-
-            await process.WaitForExitAsync(timeoutCts.Token);
-
-            var output = await outputTask;
-            var error = await errorTask;
-
-            if (process.ExitCode != 0)
-            {
-                _logger.LogError(
-                    "GitHub Copilot CLI failed with exit code {ExitCode}: {Error}",
-                    process.ExitCode,
-                    error);
-                throw new InvalidOperationException($"CLI execution failed: {error}");
-            }
-
-            _logger.LogInformation("GitHub Copilot CLI completed successfully");
-
-            return new LlmResponse
-            {
-                Content = output,
-                ModelName = model.ModelName ?? "GitHub Copilot CLI",
-                CompletedAtUtc = DateTime.UtcNow,
-                TotalTokens = 0,
-            };
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("GitHub Copilot CLI request timed out");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error calling GitHub Copilot CLI");
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Escapes a string for shell command.
-    /// </summary>
-    private string EscapeForShell(string input)
-    {
-        return input.Replace("\"", "\\\"").Replace("`", "\\`").Replace("$", "\\$");
     }
 
     /// <summary>
