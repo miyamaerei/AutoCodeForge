@@ -9,6 +9,7 @@ export interface MenuItem {
   title: string
   path: string
   icon?: string
+  highlighted?: boolean
   children?: MenuItem[]
 }
 
@@ -235,6 +236,7 @@ const getMenuItemIndex = (id: string) => id
         <el-sub-menu
           v-if="item.children && item.children.length > 0"
           :index="item.id"
+          :class="{ 'is-key-menu': item.highlighted }"
           :data-guide="item.id === 'task-center' ? 'task-center' : item.id === 'repo-management' ? 'repo-management' : item.id === 'pipeline-center' ? 'pipeline-center' : item.id === 'quick-actions' ? 'chat-console' : ''"
         >
           <template #title>
@@ -244,6 +246,7 @@ const getMenuItemIndex = (id: string) => id
             v-for="child in item.children"
             :key="child.id"
             :index="child.id"
+            :class="{ 'is-key-child': child.highlighted }"
             @click="handleMenuSelect(child.path)"
           >
             {{ child.title }}
@@ -254,6 +257,7 @@ const getMenuItemIndex = (id: string) => id
         <el-menu-item
           v-else
           :index="item.id"
+          :class="{ 'is-key-menu-item': item.highlighted }"
           :data-guide="item.id === 'dashboard' ? 'dashboard' : item.id === 'settings-root' ? 'system-config' : item.id === 'agent-center' ? 'agent-center' : ''"
           @click="handleMenuSelect(item.path)"
         >
@@ -476,6 +480,29 @@ const getMenuItemIndex = (id: string) => id
   font-weight: 600;
   padding-left: 16px;
   box-shadow: 0 6px 14px rgba(79, 70, 229, 0.35);
+}
+
+:deep(.el-menu-item.is-key-menu-item),
+:deep(.el-sub-menu.is-key-menu > .el-sub-menu__title),
+:deep(.el-sub-menu .el-menu-item.is-key-child) {
+  border: 1px solid #fcd34d;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  color: #92400e !important;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.12);
+}
+
+:deep(.el-menu-item.is-key-menu-item:hover),
+:deep(.el-sub-menu.is-key-menu > .el-sub-menu__title:hover),
+:deep(.el-sub-menu .el-menu-item.is-key-child:hover) {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+  color: #78350f !important;
+}
+
+:deep(.el-menu-item.is-key-menu-item.is-active),
+:deep(.el-sub-menu .el-menu-item.is-key-child.is-active) {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: #fff !important;
+  border-right: 3px solid #b45309;
 }
 
 :deep(.el-sub-menu.is-opened > .el-sub-menu__title) {

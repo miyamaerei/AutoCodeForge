@@ -71,10 +71,17 @@ const userMenuItems = computed<MenuItem[]>(() => [
       },
     ],
   },
+   {
+    id: 'dashboard',
+    title: 'Dashboard',
+    path: '/dashboard',
+    highlighted: true,
+  },
   {
     id: 'task-center',
     title: 'AI任务中心',
     path: '/task-center',
+    highlighted: true,
     children: [
       {
         id: 'task-create',
@@ -89,9 +96,43 @@ const userMenuItems = computed<MenuItem[]>(() => [
     ],
   },
   {
+    id: 'workflow-center',
+    title: '流程中心',
+    path: '/workflow-center/requirements',
+    highlighted: true,
+    children: [
+      {
+        id: 'workflow-requirements',
+        title: '需求',
+        path: '/workflow-center/requirements',
+      },
+      {
+        id: 'workflow-rounds',
+        title: '轮次',
+        path: '/workflow-center/rounds',
+      },
+      {
+        id: 'workflow-tasks',
+        title: '任务',
+        path: '/workflow-center/tasks',
+      },
+      {
+        id: 'workflow-flow',
+        title: '流程',
+        path: '/workflow-center/flow',
+      },
+      {
+        id: 'workflow-ops',
+        title: '通知审批台',
+        path: '/workflow-center/ops',
+      },
+    ],
+  },
+  {
     id: 'repo-management',
     title: '仓库管理',
     path: '/repo-management',
+    highlighted: true,
     children: [
       {
         id: 'repo-list',
@@ -108,32 +149,29 @@ const userMenuItems = computed<MenuItem[]>(() => [
         title: 'PR管理',
         path: '/repo-management/prs',
       },
+      {
+        id: 'repo-sync-progress',
+        title: '同步进度',
+        path: '/repo-management/sync-progress',
+      },
     ],
   },
-  {
-    id: 'dashboard',
-    title: 'Dashboard',
-    path: '/dashboard',
-  },
+ 
   {
     id: 'agent-center',
     title: 'Agent中心',
-    path: '/agent-center',
-  },
-  {
-    id: 'pipeline-center',
-    title: '流水线中心',
-    path: '/pipeline-center',
+    path: '/agent-center/prompt-guide',
+    highlighted: true,
     children: [
       {
-        id: 'pipeline-list',
-        title: '流水线列表',
-        path: '/pipeline-center',
+        id: 'agent-prompt-guide',
+        title: '通用提示',
+        path: '/agent-center/prompt-guide',
       },
       {
-        id: 'pipeline-builds',
-        title: '构建状态',
-        path: '/pipeline-center/builds',
+        id: 'agent-manage',
+        title: 'Agent管理',
+        path: '/agent-center',
       },
     ],
   },

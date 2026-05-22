@@ -15,6 +15,7 @@ public class AuthService
     private readonly UserRepository _userRepository;
     private readonly JwtService _jwtService;
     private readonly ConfigInitializationService? _configInitializationService;
+    private readonly ChatDefaultsProvisioningService? _chatDefaultsProvisioningService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AuthService"/> class.
@@ -25,11 +26,13 @@ public class AuthService
     public AuthService(
         UserRepository userRepository, 
         JwtService jwtService,
-        ConfigInitializationService? configInitializationService = null)
+        ConfigInitializationService? configInitializationService = null,
+        ChatDefaultsProvisioningService? chatDefaultsProvisioningService = null)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
         _configInitializationService = configInitializationService;
+        _chatDefaultsProvisioningService = chatDefaultsProvisioningService;
     }
 
     /// <summary>
@@ -59,7 +62,9 @@ public class AuthService
 
         await _userRepository.CreateAsync(user, cancellationToken);
 
-        await InitializeUserConfigAsync(request.NtId.Trim(), cancellationToken);
+        var normalizedNtId = request.NtId.Trim();
+        await InitializeUserConfigAsync(normalizedNtId, cancellationToken);
+        await EnsureChatDefaultsAsync(normalizedNtId, cancellationToken);
 
         return BuildAuthResponse(user);
     }
@@ -98,6 +103,8 @@ public class AuthService
 
             await InitializeUserConfigAsync(normalizedNtId, cancellationToken);
         }
+
+        await EnsureChatDefaultsAsync(normalizedNtId, cancellationToken);
 
         return BuildAuthResponse(user);
     }
@@ -146,6 +153,22 @@ public class AuthService
         try
         {
             await _configInitializationService.InitializeUserDefaultsForNtIdAsync(ntId, cancellationToken);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private async Task EnsureChatDefaultsAsync(string ntId, CancellationToken cancellationToken)
+    {
+        if (_chatDefaultsProvisioningService is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _chatDefaultsProvisioningService.EnsureDefaultsForNtIdAsync(ntId, cancellationToken);
         }
         catch (Exception)
         {

@@ -13,7 +13,7 @@ public class SendMessageResponse
     /// <summary>
     /// Gets or sets selected agent identifier.
     /// </summary>
-    public Guid AgentId { get; set; }
+    public Guid? AgentId { get; set; }
 
     /// <summary>
     /// Gets or sets user message.

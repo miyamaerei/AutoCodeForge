@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
 import { useTaskCenterStore } from '../store/useTaskCenterStore'
-import { useRepoStore } from '@/stores/useRepoStore'
+import RepositoryBranchSelector from '@/components/repository/RepositoryBranchSelector.vue'
 
 const router = useRouter()
 const store = useTaskCenterStore()
@@ -12,45 +12,35 @@ const { creating, error } = storeToRefs(store)
 
 interface TaskForm {
   title: string
+  taskType: string
   description: string
   repository: string
   branch: string
 }
 
+const taskTypeOptions = [
+  { value: 'requirement', label: '需求开发' },
+  { value: 'bug-fix', label: '修复 Bug' },
+  { value: 'data-sync', label: '同步数据' },
+  { value: 'auto-unit-test', label: '自动添加单元测试' },
+  { value: 'api-integration', label: 'API 对接' },
+  { value: 'code-refactor', label: '代码重构' },
+  { value: 'performance-opt', label: '性能优化' },
+  { value: 'doc-generation', label: '文档生成' },
+  { value: 'code-review', label: '代码审查' },
+  { value: 'other-ai-dev', label: '其他 AI 开发任务' },
+] as const
+
 const form = ref<TaskForm>({
   title: '',
+  taskType: 'requirement',
   description: '',
-  repository: 'AutoCodeForge',
-  branch: 'main',
+  repository: '',
+  branch: '',
 })
-
-const repoGlobal = useRepoStore()
-
-onMounted(() => {
-  // initialize form repository from global selection if available
-  if (repoGlobal.selectedRepositoryId) {
-    form.value.repository = repoGlobal.selectedRepositoryId
-  }
-})
-
-function handleRepoChange(val: string) {
-  repoGlobal.selectRepository(val)
-}
-
-const repositories = [
-  { label: 'AutoCodeForge', value: 'AutoCodeForge' },
-  { label: 'backend-service', value: 'backend-service' },
-  { label: 'mobile-app', value: 'mobile-app' },
-]
-
-const branches = [
-  { label: 'main', value: 'main' },
-  { label: 'develop', value: 'develop' },
-  { label: 'staging', value: 'staging' },
-]
 
 const handleSubmit = async () => {
-  if (!form.value.title || !form.value.description) {
+  if (!form.value.title || !form.value.taskType || !form.value.description || !form.value.repository || !form.value.branch) {
     ElMessage.error('请填写必要字段')
     return
   }
@@ -85,6 +75,17 @@ const handleCancel = () => {
           <el-input v-model="form.title" placeholder="请输入任务标题，如：修复订单导出功能" />
         </el-form-item>
 
+        <el-form-item label="任务类型" required>
+          <el-select v-model="form.taskType" placeholder="请选择任务类型" style="width: 100%">
+            <el-option
+              v-for="option in taskTypeOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="任务描述" required>
           <el-input
             v-model="form.description"
@@ -94,17 +95,15 @@ const handleCancel = () => {
           />
         </el-form-item>
 
-        <el-form-item label="选择仓库">
-          <el-select v-model="form.repository" placeholder="选择目标仓库" @change="handleRepoChange">
-            <el-option v-for="repo in repositories" :key="repo.value" :label="repo.label" :value="repo.value" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="选择分支">
-          <el-select v-model="form.branch" placeholder="选择目标分支">
-            <el-option v-for="branch in branches" :key="branch.value" :label="branch.label" :value="branch.value" />
-          </el-select>
-        </el-form-item>
+        <RepositoryBranchSelector
+          v-model:repository-id="form.repository"
+          v-model:branch="form.branch"
+          repository-label="选择仓库"
+          branch-label="选择分支"
+          repository-placeholder="选择目标仓库"
+          branch-placeholder="选择目标分支"
+          :disabled="creating"
+        />
 
         <el-form-item>
           <el-space>

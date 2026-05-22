@@ -6,6 +6,8 @@ import {
   getRepositories as getRepositoriesMock,
 } from '../../../mock'
 import type {
+  ApiResponse,
+  CreateRepoSyncTaskRequest,
   CreateGitPullRequestRequest,
   CreateRepositoryRequest,
   GitBranchDto,
@@ -13,18 +15,30 @@ import type {
   GitPullRequestDto,
   PagedResult,
   RemoteGitRepositoryDto,
+  RepoSyncTaskDetailDto,
+  RepoSyncTaskResponseDto,
   RepositoryDto,
   UpdateRepositoryRequest,
 } from './repo-management.types'
 
 export type {
+  CreateRepoSyncTaskRequest,
   GitBranchDto,
   GitCommitDto,
   GitPullRequestDto,
   RepositoryDto,
+  RepoSyncTaskDetailDto,
+  RepoSyncTaskResponseDto,
   CreateRepositoryRequest,
   RemoteGitRepositoryDto,
   UpdateRepositoryRequest,
+}
+
+function unwrapApiResponse<T>(payload: ApiResponse<T> | T): T {
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return (payload as ApiResponse<T>).data
+  }
+  return payload as T
 }
 
 interface GitHubRepoResponse {
@@ -49,21 +63,22 @@ export async function fetchRepositories(page = 1, pageSize = 20): Promise<PagedR
       pageSize,
     }
   }
-  const { data } = await request.get<PagedResult<RepositoryDto>>('/v1/repositories', {
+  const { data } = await request.get<ApiResponse<PagedResult<RepositoryDto>>>('/v1/repositories', {
     params: { page, pageSize },
   })
+  const result = unwrapApiResponse(data)
   // 确保返回的数据结构正确，防止 undefined 访问
   return {
-    items: data?.items || [],
-    totalCount: data?.totalCount || 0,
-    page: data?.page || page,
-    pageSize: data?.pageSize || pageSize,
+    items: result?.items || [],
+    totalCount: result?.totalCount || 0,
+    page: result?.page || page,
+    pageSize: result?.pageSize || pageSize,
   }
 }
 
 export async function fetchRepository(id: string): Promise<RepositoryDto> {
-  const { data } = await request.get<RepositoryDto>(`/v1/repositories/${id}`)
-  return data
+  const { data } = await request.get<ApiResponse<RepositoryDto>>(`/v1/repositories/${id}`)
+  return unwrapApiResponse(data)
 }
 
 export async function fetchBranches(repositoryId: string): Promise<GitBranchDto[]> {
@@ -71,16 +86,16 @@ export async function fetchBranches(repositoryId: string): Promise<GitBranchDto[
     return getBranchesMock() as unknown as GitBranchDto[]
   }
   if (!repositoryId) throw new Error('repositoryId is required to fetch branches')
-  const { data } = await request.get<GitBranchDto[]>(`/v1/repositories/${repositoryId}/branches`)
-  return data || []
+  const { data } = await request.get<ApiResponse<GitBranchDto[]>>(`/v1/repositories/${repositoryId}/branches`)
+  return unwrapApiResponse(data) || []
 }
 
 export async function fetchCommits(repositoryId: string, branch = 'main', limit = 10): Promise<GitCommitDto[]> {
   if (!repositoryId) throw new Error('repositoryId is required to fetch commits')
-  const { data } = await request.get<GitCommitDto[]>(`/v1/repositories/${repositoryId}/commits`, {
+  const { data } = await request.get<ApiResponse<GitCommitDto[]>>(`/v1/repositories/${repositoryId}/commits`, {
     params: { branch, limit },
   })
-  return data || []
+  return unwrapApiResponse(data) || []
 }
 
 export async function fetchPullRequests(repositoryId: string, state = 'open', limit = 20): Promise<GitPullRequestDto[]> {
@@ -88,30 +103,53 @@ export async function fetchPullRequests(repositoryId: string, state = 'open', li
     return getPullRequestsMock() as unknown as GitPullRequestDto[]
   }
   if (!repositoryId) throw new Error('repositoryId is required to fetch pull requests')
-  const { data } = await request.get<GitPullRequestDto[]>(`/v1/repositories/${repositoryId}/pull-requests`, {
+  const { data } = await request.get<ApiResponse<GitPullRequestDto[]>>(`/v1/repositories/${repositoryId}/pull-requests`, {
     params: { state, limit },
   })
-  return data || []
+  return unwrapApiResponse(data) || []
 }
 
 export async function createRepository(payload: CreateRepositoryRequest): Promise<RepositoryDto> {
-  const { data } = await request.post<RepositoryDto>('/v1/repositories', payload)
-  return data
+  const { data } = await request.post<ApiResponse<RepositoryDto>>('/v1/repositories', payload)
+  return unwrapApiResponse(data)
 }
 
 export async function createPullRequest(repositoryId: string, payload: CreateGitPullRequestRequest): Promise<GitPullRequestDto> {
   if (!repositoryId) throw new Error('repositoryId is required to create pull request')
-  const { data } = await request.post<GitPullRequestDto>(`/v1/repositories/${repositoryId}/pull-requests`, payload)
-  return data
+  const requestBody = {
+    Title: payload.title,
+    Description: payload.description,
+    SourceBranch: payload.sourceBranch,
+    TargetBranch: payload.targetBranch,
+  }
+  const { data } = await request.post<ApiResponse<GitPullRequestDto>>(`/v1/repositories/${repositoryId}/pull-requests`, requestBody)
+  return unwrapApiResponse(data)
 }
 
 export async function updateRepository(id: string, payload: UpdateRepositoryRequest): Promise<RepositoryDto> {
-  const { data } = await request.put<RepositoryDto>(`/v1/repositories/${id}`, payload)
-  return data
+  const { data } = await request.put<ApiResponse<RepositoryDto>>(`/v1/repositories/${id}`, payload)
+  return unwrapApiResponse(data)
 }
 
 export async function deleteRepository(id: string): Promise<void> {
   await request.delete(`/v1/repositories/${id}`)
+}
+
+export async function createRepoSyncTask(payload: CreateRepoSyncTaskRequest): Promise<RepoSyncTaskResponseDto> {
+  const { data } = await request.post<ApiResponse<RepoSyncTaskResponseDto>>('/v1/repo-sync/tasks', payload)
+  return unwrapApiResponse(data)
+}
+
+export async function fetchRepoSyncTaskDetail(taskId: string): Promise<RepoSyncTaskDetailDto> {
+  if (!taskId) throw new Error('taskId is required to fetch repo sync detail')
+  const { data } = await request.get<ApiResponse<RepoSyncTaskDetailDto>>(`/v1/repo-sync/tasks/${taskId}`)
+  return unwrapApiResponse(data)
+}
+
+export async function cancelRepoSyncTask(taskId: string): Promise<RepoSyncTaskDetailDto> {
+  if (!taskId) throw new Error('taskId is required to cancel repo sync task')
+  const { data } = await request.post<ApiResponse<RepoSyncTaskDetailDto>>(`/v1/repo-sync/tasks/${taskId}/cancel`)
+  return unwrapApiResponse(data)
 }
 
 export async function fetchGitHubRepositoriesByToken(token: string, perPage = 100): Promise<RemoteGitRepositoryDto[]> {

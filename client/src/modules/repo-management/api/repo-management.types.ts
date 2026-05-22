@@ -5,7 +5,8 @@ export interface RepositoryDto {
   provider: GitProvider
   authType: AuthenticationType
   mergeStrategy: MergeStrategy
-  defaultReviewRuleSetId?: string
+  defaultReviewRuleSetId?: string | null
+  branch?: string | null
   createdAtUtc: string
   updatedAtUtc: string
 }
@@ -44,6 +45,7 @@ export interface CreateRepositoryRequest {
   authType?: AuthenticationType
   token: string
   mergeStrategy?: MergeStrategy
+  branch?: string
 }
 
 export interface UpdateRepositoryRequest {
@@ -68,6 +70,47 @@ export interface CreateGitPullRequestRequest {
   targetBranch: string
 }
 
+export interface CreateRepoSyncTaskRequest {
+  repositoryId: string
+  branch?: string
+  title?: string
+  description?: string
+}
+
+export interface RepoSyncTaskResponseDto {
+  id: string
+  title: string
+  description?: string
+  status: string
+  taskType: string
+  progress: number
+  input?: string
+  result?: string
+  errorMessage?: string
+  agentId?: string
+  dueAtUtc?: string
+  startedAtUtc?: string
+  completedAtUtc?: string
+  createdAtUtc: string
+  updatedAtUtc: string
+}
+
+export interface RepoSyncTaskDetailDto {
+  taskId: string
+  status: string
+  workspaceStatus: string
+  effectiveSandboxPath: string
+  branch?: string
+  commitSha?: string
+  errorMessage?: string
+}
+
+export interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T
+}
+
 export interface PagedResult<T> {
   items: T[]
   totalCount: number
@@ -75,8 +118,21 @@ export interface PagedResult<T> {
   pageSize: number
 }
 
-export type GitProvider = 'GitHub' | 'GitLab' | 'AzureDevOps' | 'Local'
+export enum GitProvider {
+  GitHub = 0,
+  GitLab = 1,
+  AzureDevOps = 2,
+  Bitbucket = 3,
+}
 
-export type AuthenticationType = 'Token' | 'UsernamePassword' | 'SSH'
+export enum AuthenticationType {
+  Token = 0,
+  SshKey = 1,
+  UsernamePassword = 2,
+}
 
-export type MergeStrategy = 'Squash' | 'Merge' | 'Rebase'
+export enum MergeStrategy {
+  MergeCommit = 0,
+  Squash = 1,
+  Rebase = 2,
+}

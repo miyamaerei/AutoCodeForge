@@ -15,9 +15,9 @@ onMounted(async () => {
   if (!repositories.value || repositories.value.length === 0) {
     await store.loadRepositories()
   }
-  if (!hasBranches.value) {
-    await store.loadBranches()
-  }
+  // Always reload branches so the correct repo's branches are shown,
+  // even when navigating here after selectRepository() was already called.
+  await store.loadBranches()
 })
 
 // reload branches when selected repository changes

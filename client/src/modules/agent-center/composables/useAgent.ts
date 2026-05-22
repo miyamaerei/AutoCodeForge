@@ -22,6 +22,9 @@ export interface AgentFormData {
   enabled: boolean
 }
 
+const genericSystemPromptTemplate =
+  '你是企业研发场景下的通用 Agent。流程：1)先确认目标、范围与验收标准；2)阅读已有代码、接口与可复用组件；3)给出分步计划并标注风险与边界；4)按最小改动执行并记录关键决策；5)完成后输出结果、验证与后续建议。边界：不越权、不泄露密钥和隐私、不执行破坏性命令、未经确认不修改无关文件。质量：优先复用 store/composable，覆盖加载/错误/空状态，并进行基本回归检查。'
+
 const defaultFormData: AgentFormData = {
   name: '',
   description: '',
@@ -179,6 +182,7 @@ export function useAgent() {
     hasAgents,
     enabledAgents,
     canSave,
+    genericSystemPromptTemplate,
     // 弹窗状态
     dialogVisible,
     dialogTitle,

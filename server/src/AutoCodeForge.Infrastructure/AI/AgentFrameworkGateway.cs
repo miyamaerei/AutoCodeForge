@@ -50,6 +50,12 @@ public class AgentFrameworkGateway : ILlmGateway
             throw new InvalidOperationException("No model configuration found");
         }
 
+        if (model.Provider == LLMProvider.GitHubCopilot)
+        {
+            var prompt = request.Messages.LastOrDefault(m => m.Role == "user")?.Content ?? string.Empty;
+            return await CallGitHubCopilotCliAsync(model, prompt, cancellationToken);
+        }
+
         try
         {
             var lastUserMessage = request.Messages.LastOrDefault(m => m.Role == "user")?.Content ?? string.Empty;
@@ -91,6 +97,12 @@ public class AgentFrameworkGateway : ILlmGateway
         {
             _logger.LogError("No model configuration found");
             throw new InvalidOperationException("No model configuration found");
+        }
+
+        if (model.Provider == LLMProvider.GitHubCopilot)
+        {
+            _logger.LogWarning("GitHub Copilot does not support tools, falling back to ChatAsync");
+            return await ChatAsync(request, cancellationToken);
         }
 
         try
@@ -157,9 +169,21 @@ public class AgentFrameworkGateway : ILlmGateway
             {
                 return config;
             }
+
+            config = await _modelConfigRepository.GetByIdAsync(modelConfigId.Value, true, cancellationToken);
+            if (config != null)
+            {
+                return config;
+            }
         }
 
         var configs = await _modelConfigRepository.GetAllAsync(false, cancellationToken);
+        if (configs.Count > 0)
+        {
+            return configs.OrderBy(c => c.CreatedAtUtc).FirstOrDefault();
+        }
+
+        configs = await _modelConfigRepository.GetAllAsync(true, cancellationToken);
         return configs.OrderBy(c => c.CreatedAtUtc).FirstOrDefault();
     }
 

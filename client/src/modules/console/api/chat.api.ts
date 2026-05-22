@@ -16,6 +16,11 @@ import type {
   SessionRecord,
 } from './chat.types'
 
+interface StreamEventHandlers {
+  onToken?: (token: string) => void
+  onDone?: (result: SendMessageResponse) => void
+}
+
 // 重新导出类型
 export type {
   PagedResult,
@@ -178,15 +183,8 @@ export async function getSessions(): Promise<SessionRecord[]> {
     await wait(200)
     return [...mockSessionList]
   }
-  const { data } = await request.get<{
-    data: {
-      items: ChatSessionResponse[]
-      totalCount: number
-      page: number
-      pageSize: number
-    }
-  }>('/v1/chat/sessions')
-  return data.data.items.map(sessionResponseToRecord)
+  const result = await fetchSessions(1, 20)
+  return result.items
 }
 
 /** 创建新会话 */
@@ -290,6 +288,107 @@ export async function sendMessage(sessionId: string, msg: SendMessageRequest): P
     data: SendMessageResponse
   }>(`/v1/chat/sessions/${sessionId}/messages`, msg)
   return data.data
+}
+
+/** 发送消息（流式返回） */
+export async function sendMessageStream(
+  sessionId: string,
+  msg: SendMessageRequest,
+  handlers: StreamEventHandlers = {},
+): Promise<SendMessageResponse> {
+  if (USE_MOCK) {
+    const result = await sendMessage(sessionId, msg)
+    handlers.onToken?.(result.assistantMessage.content)
+    handlers.onDone?.(result)
+    return result
+  }
+
+  const baseURL = request.defaults.baseURL ?? ''
+  const token = localStorage.getItem('auth_token')
+  const response = await fetch(`${baseURL}/v1/chat/sessions/${sessionId}/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(msg),
+  })
+
+  if (!response.ok || !response.body) {
+    throw new Error(`流式请求失败: ${response.status}`)
+  }
+
+  const decoder = new TextDecoder('utf-8')
+  const reader = response.body.getReader()
+  let buffer = ''
+  let donePayload: SendMessageResponse | null = null
+
+  const parseEventBlock = (block: string): void => {
+    const lines = block.split('\n')
+    let eventName = 'message'
+    const dataLines: string[] = []
+
+    for (const line of lines) {
+      if (line.startsWith('event:')) {
+        eventName = line.slice(6).trim()
+      } else if (line.startsWith('data:')) {
+        dataLines.push(line.slice(5).trim())
+      }
+    }
+
+    const dataText = dataLines.join('\n')
+    if (!dataText) {
+      return
+    }
+
+    if (eventName === 'token') {
+      handlers.onToken?.(dataText)
+      return
+    }
+
+    if (eventName === 'error') {
+      try {
+        const payload = JSON.parse(dataText) as { message?: string }
+        throw new Error(payload.message || '流式处理失败')
+      } catch (err) {
+        if (err instanceof Error) {
+          throw err
+        }
+        throw new Error('流式处理失败')
+      }
+    }
+
+    if (eventName === 'done') {
+      const payload = JSON.parse(dataText) as SendMessageResponse
+      donePayload = payload
+      handlers.onDone?.(payload)
+    }
+  }
+
+  while (true) {
+    const { value, done } = await reader.read()
+    if (done) {
+      break
+    }
+
+    buffer += decoder.decode(value, { stream: true })
+    let delimiterIndex = buffer.indexOf('\n\n')
+    while (delimiterIndex !== -1) {
+      const rawBlock = buffer.slice(0, delimiterIndex).replace(/\r/g, '').trim()
+      buffer = buffer.slice(delimiterIndex + 2)
+      if (rawBlock) {
+        parseEventBlock(rawBlock)
+      }
+      delimiterIndex = buffer.indexOf('\n\n')
+    }
+  }
+
+  if (!donePayload) {
+    throw new Error('流式响应未返回完成结果')
+  }
+
+  return donePayload
 }
 
 /** 删除会话 */

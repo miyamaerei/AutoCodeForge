@@ -56,7 +56,7 @@ export interface SendMessageRequest {
 /** 发送消息响应 */
 export interface SendMessageResponse {
   sessionId: string
-  agentId: string
+  agentId?: string | null
   userMessage: ChatMessageResponse
   assistantMessage: ChatMessageResponse
 }

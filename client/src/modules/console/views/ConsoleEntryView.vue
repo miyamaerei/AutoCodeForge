@@ -3,11 +3,22 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useConsoleStore } from '../store/useConsoleStore'
+import { useWorkflowCenterStore } from '../../workflow-center/store/useWorkflowCenterStore'
 
 const router = useRouter()
 const store = useConsoleStore()
+const workflowStore = useWorkflowCenterStore()
 const { stats, recentTasks, loading, error, hasData } = storeToRefs(store)
+const {
+  stats: workflowStats,
+  filteredNotifications,
+  filteredApprovals,
+  filteredHumanLoopCases,
+} = storeToRefs(workflowStore)
 const hasRecentTasks = computed(() => recentTasks.value.length > 0)
+const pendingOpsNotifications = computed(
+  () => filteredNotifications.value.filter((item) => item.priority === 'P0' && item.state === '待处理').length,
+)
 
 // 功能模块
 const features = ref([
@@ -51,12 +62,21 @@ const features = ref([
     color: '#30b0fe',
     route: '/automations',
   },
+  {
+    id: 'workflow-ops',
+    icon: '🛟',
+    title: 'Workflow OPS',
+    desc: '查看通知、审批与人工确认队列',
+    color: '#34d399',
+    route: '/workflow-center/ops',
+  },
 ])
 
 onMounted(async () => {
   if (!hasData.value) {
     await store.fetchConsoleData()
   }
+  await workflowStore.loadWorkflowData()
 })
 
 const navigateTo = (route: string) => {
@@ -105,6 +125,20 @@ const navigateTo = (route: string) => {
             <div class="stat-content">
               <div class="stat-label">告警数</div>
               <div class="stat-value">{{ stats?.alertCount ?? 0 }}</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🧑‍⚖️</div>
+            <div class="stat-content">
+              <div class="stat-label">待人工审批</div>
+              <div class="stat-value">{{ workflowStats?.approvalPending ?? 0 }}</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🧭</div>
+            <div class="stat-content">
+              <div class="stat-label">待人工介入</div>
+              <div class="stat-value">{{ workflowStats?.humanLoopOpen ?? 0 }}</div>
             </div>
           </div>
         </div>
@@ -161,6 +195,27 @@ const navigateTo = (route: string) => {
             <button class="action-btn" @click="navigateTo('/session')">
               <span>📝 历史记录</span>
             </button>
+            <button class="action-btn" @click="navigateTo('/workflow-center/ops')">
+              <span>🛟 进入OPS运营台</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h4>OPS 待确认</h4>
+          <div class="ops-summary">
+            <div class="ops-line">
+              <span>待审批</span>
+              <strong>{{ filteredApprovals.filter((item) => item.status !== '已完成').length }}</strong>
+            </div>
+            <div class="ops-line">
+              <span>待人工介入</span>
+              <strong>{{ filteredHumanLoopCases.filter((item) => item.status !== '已闭环').length }}</strong>
+            </div>
+            <div class="ops-line ops-line-danger">
+              <span>P0待处理通知</span>
+              <strong>{{ pendingOpsNotifications }}</strong>
+            </div>
           </div>
         </div>
       </aside>
@@ -214,7 +269,7 @@ const navigateTo = (route: string) => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -410,6 +465,29 @@ const navigateTo = (route: string) => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.ops-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ops-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #334155;
+}
+
+.ops-line strong {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.ops-line-danger strong {
+  color: #b91c1c;
 }
 
 .action-btn {

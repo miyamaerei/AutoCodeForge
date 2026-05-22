@@ -26,9 +26,11 @@ public static class ChatEndpoints
             return Results.Ok(ApiResponse<ChatSessionResponse>.Ok(result, "Session created"));
         });
 
-        group.MapGet("/", async (int page, int pageSize, ChatService service, CancellationToken cancellationToken) =>
+        group.MapGet("/", async (int? page, int? pageSize, ChatService service, CancellationToken cancellationToken) =>
         {
-            var result = await service.GetSessionsAsync(page <= 0 ? 1 : page, pageSize <= 0 ? 20 : pageSize, cancellationToken);
+            var normalizedPage = !page.HasValue || page.Value <= 0 ? 1 : page.Value;
+            var normalizedPageSize = !pageSize.HasValue || pageSize.Value <= 0 ? 20 : pageSize.Value;
+            var result = await service.GetSessionsAsync(normalizedPage, normalizedPageSize, cancellationToken);
             return Results.Ok(ApiResponse<PagedResult<ChatSessionResponse>>.Ok(result));
         });
 

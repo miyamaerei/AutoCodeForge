@@ -114,6 +114,8 @@ public static class AuthEndpoints
 
         try
         {
+
+            var name = WindowsIdentity.GetCurrent();
             return WindowsIdentity.GetCurrent()?.Name;
         }
         catch

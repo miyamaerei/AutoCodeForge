@@ -48,3 +48,6 @@ __screenshots__/
 
 # Test configurations (contains sensitive data like tokens)
 server/tests/AutoCodeForge.Tests/test-configs/
+
+# Local nested repository workspace
+3033846/

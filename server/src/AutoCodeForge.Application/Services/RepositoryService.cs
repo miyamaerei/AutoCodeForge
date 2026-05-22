@@ -54,6 +54,8 @@ public class RepositoryService
             throw new ValidationException("Repository URL already registered");
         }
 
+        //request.Provider = GitProvider.AzureDevOps;
+
         // Verify credentials with Git provider
         var provider = _providerFactory.CreateProvider(request.Provider);
         if (provider == null)

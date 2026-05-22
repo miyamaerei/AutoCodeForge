@@ -60,6 +60,23 @@ public class AgentExecutor
     }
 
     /// <summary>
+    /// Executes a plain chat request without binding to a specific agent.
+    /// </summary>
+    /// <param name="userInput">The user input.</param>
+    /// <param name="history">Conversation history.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The assistant output text.</returns>
+    public async Task<string> ExecuteGenericAsync(
+        string userInput,
+        List<ChatMessageEntity> history,
+        CancellationToken cancellationToken = default)
+    {
+        var request = BuildGenericRequest(userInput, history);
+        var response = await _llmGateway.ChatAsync(request, cancellationToken);
+        return response.Content;
+    }
+
+    /// <summary>
     /// Executes using Microsoft Agent Framework's ChatClientAgent.
     /// </summary>
     private async Task<string> ExecuteWithAgentFrameworkAsync(
@@ -128,6 +145,22 @@ public class AgentExecutor
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         return _tools.Where(tool => allowed.Contains(tool.Name));
+    }
+
+    private static LlmRequest BuildGenericRequest(string userInput, List<ChatMessageEntity> history)
+    {
+        var messages = history.Select(ToDto).ToList();
+        messages.Add(new ChatMessage
+        {
+            Role = "user",
+            Content = userInput,
+        });
+
+        return new LlmRequest
+        {
+            SystemPrompt = "You are a helpful AI assistant.",
+            Messages = messages,
+        };
     }
 
     private static ChatMessage ToDto(ChatMessageEntity message)

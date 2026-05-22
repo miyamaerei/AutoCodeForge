@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { fetchGitHubRepositoriesByToken, type RemoteGitRepositoryDto } from '../api/repo-management.api'
 import { useRepoManagementStore } from '../store/useRepoManagementStore'
 import { useRepoStore } from '@/stores/useRepoStore'
 import { useSystemConfigStore } from '../../system-config/store/useSystemConfigStore'
-import { fetchConfigs, createConfig, upsertConfig } from '../../system-config/api/config.api'
+import { fetchConfigs, upsertConfig } from '../../system-config/api/config.api'
 import type { ConfigResponse, ConfigType } from '../../system-config/api/config.types'
+import { GitProvider, AuthenticationType, MergeStrategy } from '../api/repo-management.types'
 
 /**
  * Token 配置项接口
@@ -22,6 +24,12 @@ interface TokenOption {
 
 const store = useRepoManagementStore()
 const repoGlobal = useRepoStore()
+const router = useRouter()
+
+function navigateToBranches(id: string) {
+  repoGlobal.selectRepository(id)
+  router.push({ name: 'repo-management.branches' })
+}
 const systemConfigStore = useSystemConfigStore()
 const { repositories, loading, error, hasRepositories } = storeToRefs(store)
 const addDialogVisible = ref(false)
@@ -43,10 +51,19 @@ const newTokenName = ref('')
 
 const GITHUB_TOKEN_PATTERN = /^(ghp_|github_pat_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9_]{10,}$/
 
+const providerOptions = [
+  { label: 'GitHub', value: GitProvider.GitHub },
+  { label: 'GitLab', value: GitProvider.GitLab },
+  { label: 'Azure DevOps', value: GitProvider.AzureDevOps },
+  { label: 'Bitbucket', value: GitProvider.Bitbucket },
+]
+
 const addForm = reactive({
   name: '',
   url: '',
   token: '',
+  provider: GitProvider.GitHub,
+  branch: 'main',
 })
 
 const addFormRules: FormRules = {
@@ -78,6 +95,37 @@ const finalToken = computed(() => {
   }
   return addForm.token
 })
+
+const providerLabelMap: Record<number, string> = {
+  [GitProvider.GitHub]: 'GitHub',
+  [GitProvider.GitLab]: 'GitLab',
+  [GitProvider.AzureDevOps]: 'Azure DevOps',
+  [GitProvider.Bitbucket]: 'Bitbucket',
+}
+
+const authTypeLabelMap: Record<number, string> = {
+  [AuthenticationType.Token]: 'Token',
+  [AuthenticationType.SshKey]: 'SSH Key',
+  [AuthenticationType.UsernamePassword]: 'Username/Password',
+}
+
+const mergeStrategyLabelMap: Record<number, string> = {
+  [MergeStrategy.MergeCommit]: 'Merge Commit',
+  [MergeStrategy.Squash]: 'Squash',
+  [MergeStrategy.Rebase]: 'Rebase',
+}
+
+function formatProvider(provider: number) {
+  return providerLabelMap[provider] || `Unknown(${provider})`
+}
+
+function formatAuthType(authType: number) {
+  return authTypeLabelMap[authType] || `Unknown(${authType})`
+}
+
+function formatMergeStrategy(strategy: number) {
+  return mergeStrategyLabelMap[strategy] || `Unknown(${strategy})`
+}
 
 /**
  * Token 选择变化时的处理
@@ -118,26 +166,46 @@ async function saveTokenToConfig() {
   tokenLoading.value = true
   try {
     const configKey = `git-token-${tokenName.toLowerCase().replace(/\s+/g, '-')}`
+    console.log(`[Token] Saving token with key: ${configKey}`)
+    
     await upsertConfig('ApiKey' as ConfigType, {
       configKey,
       configValue: token,
       isEncrypted: true,
       description: `GitHub Token: ${tokenName}`,
     })
+    console.log(`[Token] Token saved successfully, key: ${configKey}`)
 
-    // 刷新 Token 列表
+    // 刷新 Token 列表并等待完成
+    console.log('[Token] Reloading token options after save...')
     await loadTokenOptions()
 
-    // 自动选中新添加的 Token
-    selectedTokenKey.value = configKey
+    // 检查新 Token 是否在列表中
+    const newTokenOption = tokenOptions.value.find((opt) => opt.configKey === configKey)
+    if (newTokenOption) {
+      console.log('[Token] New token found in options, selecting it:', newTokenOption)
+      selectedTokenKey.value = configKey
+      addForm.token = newTokenOption.token
+      ElMessage.success(`Token "${tokenName}" 已保存并选中`)
+    } else {
+      console.warn('[Token] New token NOT found in loaded options!', {
+        savedKey: configKey,
+        loadedKeys: tokenOptions.value.map((opt) => opt.configKey),
+      })
+      // 降级处理：至少用保存时的值
+      showCustomToken.value = false
+      addForm.token = token
+      ElMessage.warning(`Token 已保存，但刷新配置列表时未找到，请检查浏览器控制台`)
+      return
+    }
+
     showCustomToken.value = false
-    addForm.token = token
     newTokenName.value = ''
     customTokenInput.value = ''
-
-    ElMessage.success(`Token "${tokenName}" 已保存并选中`)
   } catch (err) {
-    ElMessage.error('保存 Token 失败: ' + (err instanceof Error ? err.message : '未知错误'))
+    const message = err instanceof Error ? err.message : '未知错误'
+    console.error('[Token] Failed to save token:', err)
+    ElMessage.error('保存 Token 失败: ' + message)
   } finally {
     tokenLoading.value = false
   }
@@ -151,22 +219,33 @@ async function loadTokenOptions() {
   try {
     const configTypes: ConfigType[] = ['ApiKey', 'Repository', 'Integration']
     const allConfigs: ConfigResponse[] = []
+    const failedTypes: string[] = []
 
     for (const configType of configTypes) {
       try {
         const configs = await fetchConfigs(configType)
+        console.log(`[Token] Fetched ${configs.length} configs of type ${configType}`, configs)
         allConfigs.push(...configs)
-      } catch {
-        // 忽略单个类型加载失败
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        console.warn(`[Token] Failed to fetch ${configType} configs:`, errorMsg)
+        failedTypes.push(configType)
       }
+    }
+
+    if (failedTypes.length > 0) {
+      console.warn(`[Token] Failed to fetch from config types: ${failedTypes.join(', ')}`)
     }
 
     // 从配置中提取 Token
     const options: TokenOption[] = []
     const seenTokens = new Set<string>()
+    const failedExtractions: { configKey: string; configType: ConfigType; reason: string }[] = []
 
     for (const config of allConfigs) {
       const token = findTokenFromConfigValue(config.configValue)
+      console.log(`[Token] Extraction for ${config.configKey} (${config.configType}): token=${token ? '***' : 'empty'}, value=${config.configValue.substring(0, 50)}...`)
+      
       if (token && !seenTokens.has(token)) {
         seenTokens.add(token)
         options.push({
@@ -176,18 +255,34 @@ async function loadTokenOptions() {
           label: `${config.configKey} (${config.configType})`,
           description: config.description || `存储于 ${config.configType}`,
         })
+      } else if (!token) {
+        failedExtractions.push({
+          configKey: config.configKey,
+          configType: config.configType,
+          reason: 'Token extraction failed',
+        })
       }
     }
 
+    if (failedExtractions.length > 0) {
+      console.warn(`[Token] Failed to extract tokens:`, failedExtractions)
+    }
+
     tokenOptions.value = options
+    console.log(`[Token] Total token options loaded: ${options.length}`)
 
     // 如果有 Token 且未选中任何项，自动选中第一个
     if (options.length > 0 && !selectedTokenKey.value && !showCustomToken.value) {
-      selectedTokenKey.value = options[0].configKey
-      addForm.token = options[0].token
-      tokenHint.value = `已自动选择: ${options[0].label}`
+      const firstOption = options[0]
+      if (firstOption) {
+        selectedTokenKey.value = firstOption.configKey
+        addForm.token = firstOption.token
+        tokenHint.value = `已自动选择: ${firstOption.label}`
+      }
     }
-  } catch {
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err)
+    console.error('[Token] Critical error loading token options:', errorMsg)
     tokenHint.value = ''
   } finally {
     tokenLoading.value = false
@@ -211,6 +306,8 @@ function resetAddForm() {
   addForm.name = ''
   addForm.url = ''
   addForm.token = ''
+  addForm.provider = GitProvider.GitHub
+  addForm.branch = 'main'
   selectedTokenKey.value = ''
   showCustomToken.value = false
   customTokenInput.value = ''
@@ -302,6 +399,11 @@ function applyRemoteRepo(fullName: string) {
   }
   addForm.name = selected.name
   addForm.url = selected.htmlUrl
+  addForm.branch = selected.defaultBranch || 'main'
+}
+
+function handleRemoteRepoChange(value: string | undefined) {
+  applyRemoteRepo(value || '')
 }
 
 async function fetchRemoteRepos() {
@@ -320,7 +422,12 @@ async function fetchRemoteRepos() {
       ElMessage.info('未获取到可访问仓库')
       return
     }
-    selectedRemoteRepo.value = repos[0].fullName
+    const firstRepo = repos[0]
+    if (!firstRepo) {
+      ElMessage.info('未获取到可访问仓库')
+      return
+    }
+    selectedRemoteRepo.value = firstRepo.fullName
     applyRemoteRepo(selectedRemoteRepo.value)
     ElMessage.success(`已拉取 ${repos.length} 个仓库`)
   } catch (err) {
@@ -348,6 +455,10 @@ async function submitAddRepository() {
       name: addForm.name.trim(),
       url: addForm.url.trim(),
       token: token,
+      provider: addForm.provider,
+      authType: AuthenticationType.Token,
+      mergeStrategy: MergeStrategy.Squash,
+      branch: addForm.branch.trim() || 'main',
     })
     ElMessage.success('仓库添加成功')
     addDialogVisible.value = false
@@ -384,13 +495,22 @@ onMounted(async () => {
       <el-empty v-else-if="!hasRepositories" description="暂无仓库数据" />
 
     <el-table v-else :data="repositories" stripe :row-class-name="rowClassName">
-        <el-table-column prop="name" label="仓库名称" width="200" />
-        <el-table-column prop="url" label="仓库地址" min-width="300" />
+        <el-table-column prop="name" label="仓库名称" min-width="220" />
+        <el-table-column prop="url" label="仓库地址" min-width="360" show-overflow-tooltip />
+        <el-table-column prop="provider" label="代码源" width="130">
+          <template #default="{ row }">{{ formatProvider(Number(row.provider)) }}</template>
+        </el-table-column>
+        <el-table-column prop="authType" label="鉴权" width="150">
+          <template #default="{ row }">{{ formatAuthType(Number(row.authType)) }}</template>
+        </el-table-column>
+        <el-table-column prop="mergeStrategy" label="合并策略" width="140">
+          <template #default="{ row }">{{ formatMergeStrategy(Number(row.mergeStrategy)) }}</template>
+        </el-table-column>
         <el-table-column prop="branch" label="默认分支" width="120" />
         <el-table-column prop="lastUpdate" label="最后更新" width="180" />
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
-            <el-button link type="primary" size="small">查看</el-button>
+            <el-button link type="primary" size="small" @click="navigateToBranches(row.id)">查看分支</el-button>
             <el-button link type="primary" size="small" @click="repoGlobal.selectRepository(row.id)">设为当前仓库</el-button>
             <el-button link type="danger" size="small">删除</el-button>
           </template>
@@ -412,6 +532,21 @@ onMounted(async () => {
 
         <el-form-item label="仓库地址" prop="url">
           <el-input v-model="addForm.url" placeholder="例如：https://github.com/owner/repo" />
+        </el-form-item>
+
+        <el-form-item label="代码源类型">
+          <el-select v-model="addForm.provider" style="width: 100%" placeholder="请选择代码源">
+            <el-option
+              v-for="item in providerOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="默认分支">
+          <el-input v-model="addForm.branch" placeholder="例如：main / master / develop" />
         </el-form-item>
 
         <!-- Token 选择器 -->
@@ -481,7 +616,7 @@ onMounted(async () => {
               clearable
               placeholder="选择仓库后自动填充"
               style="min-width: 300px"
-              @change="(value) => applyRemoteRepo(String(value || ''))"
+              @change="handleRemoteRepoChange"
             >
               <el-option
                 v-for="item in remoteRepos"

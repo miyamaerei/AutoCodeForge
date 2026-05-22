@@ -28,4 +28,13 @@ export const repoManagementRoutes: RouteRecordRaw[] = [
       title: 'PR管理',
     },
   },
+  {
+    path: '/repo-management/sync-progress',
+    name: 'repo-management.sync-progress',
+    component: () => import('./views/RepoManagementSyncProgressView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Repo同步进度',
+    },
+  },
 ]

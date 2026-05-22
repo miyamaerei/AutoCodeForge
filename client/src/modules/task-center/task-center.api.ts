@@ -111,9 +111,10 @@ function mapTaskLog(dto: TaskLogResponseDto): TaskLogDto {
   }
 }
 
-function buildTaskInput(payload: Pick<CreateTaskRequestDto, 'description' | 'repository' | 'branch'>): string {
+function buildTaskInput(payload: Pick<CreateTaskRequestDto, 'description' | 'repository' | 'branch' | 'taskType'>): string {
   return JSON.stringify(
     {
+      taskType: payload.taskType,
       description: payload.description,
       repository: payload.repository,
       branch: payload.branch,
@@ -163,6 +164,7 @@ export async function createTask(payload: CreateTaskRequestDto): Promise<TaskSum
 
   const { data } = await request.post<ApiEnvelope<TaskResponseDto>>('/v1/tasks', {
     title: payload.title,
+    taskType: payload.taskType,
     description: payload.description,
     input: buildTaskInput(payload),
     agentId: payload.agentId,
@@ -185,6 +187,7 @@ export async function updateTask(taskId: string, payload: UpdateTaskRequestDto):
     title: payload.title,
     description: payload.description,
     input: buildTaskInput({
+      taskType: payload.taskType ?? 'requirement',
       description: payload.description ?? '',
       repository: payload.repository ?? '',
       branch: payload.branch ?? '',

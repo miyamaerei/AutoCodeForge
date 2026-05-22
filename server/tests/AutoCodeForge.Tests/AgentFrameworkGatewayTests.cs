@@ -298,6 +298,122 @@ public sealed class AgentFrameworkGatewayTests : IDisposable
         Assert.True(response.CompletedAtUtc <= afterCall);
     }
 
+    [Fact(Skip = "Requires GitHub Copilot CLI executable ('copilot') available in PATH or via CliExecutable")]
+    public async Task ChatAsync_GitHubCopilotProvider_ShouldRouteToCopilotCli()
+    {
+        var copilotModel = await CreateGitHubCopilotModelAsync("copilot-test-model");
+
+        var response = await _gateway.ChatAsync(new LlmRequest
+        {
+            PreferredModelId = copilotModel.Id,
+            Messages =
+            {
+                new ChatMessage
+                {
+                    Role = "user",
+                    Content = "Hello Copilot",
+                },
+            },
+        });
+
+        Assert.Equal("copilot-test-model", response.ModelName);
+        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+    }
+
+    [Fact(Skip = "Requires GitHub Copilot CLI executable ('copilot') available in PATH or via CliExecutable")]
+    public async Task ChatAsync_GitHubCopilotWithPatEnvVar_ShouldIncludePatEnvVar()
+    {
+        var copilotModel = await CreateGitHubCopilotModelAsync(
+            "copilot-pat-model",
+            patEnvVar: "GITHUB_TOKEN");
+
+        var response = await _gateway.ChatAsync(new LlmRequest
+        {
+            PreferredModelId = copilotModel.Id,
+            Messages =
+            {
+                new ChatMessage
+                {
+                    Role = "user",
+                    Content = "Test PAT auth",
+                },
+            },
+        });
+
+        Assert.Equal("copilot-pat-model", response.ModelName);
+        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+    }
+
+    [Fact(Skip = "Requires GitHub Copilot CLI executable ('copilot') available in PATH or via CliExecutable")]
+    public async Task ChatAsync_GitHubCopilotFallbackToDefault_WhenNoPreferredModel()
+    {
+        var defaultCopilot = await CreateGitHubCopilotModelAsync("default-copilot");
+
+        var response = await _gateway.ChatAsync(new LlmRequest
+        {
+            Messages =
+            {
+                new ChatMessage
+                {
+                    Role = "user",
+                    Content = "Hello default Copilot",
+                },
+            },
+        });
+
+        Assert.Equal("default-copilot", response.ModelName);
+        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+    }
+
+    [Fact(Skip = "Requires GitHub Copilot CLI executable ('copilot') available in PATH or via CliExecutable")]
+    public async Task ChatAsync_GitHubCopilotWithOrganization_ShouldIncludeOrganization()
+    {
+        var copilotModel = await CreateGitHubCopilotModelAsync(
+            "copilot-org-model",
+            organization: "test-org");
+
+        var response = await _gateway.ChatAsync(new LlmRequest
+        {
+            PreferredModelId = copilotModel.Id,
+            Messages =
+            {
+                new ChatMessage
+                {
+                    Role = "user",
+                    Content = "Test organization",
+                },
+            },
+        });
+
+        Assert.Equal("copilot-org-model", response.ModelName);
+        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+    }
+
+    [Fact(Skip = "Requires GitHub Copilot CLI executable ('copilot') available in PATH or via CliExecutable")]
+    public async Task ChatWithToolsAsync_GitHubCopilot_ShouldFallbackToChatAsync()
+    {
+        var copilotModel = await CreateGitHubCopilotModelAsync("copilot-tools-model");
+        var tool = new StubTool("TestTool", _ => Task.FromResult("tool-result"));
+
+        var response = await _gateway.ChatWithToolsAsync(
+            new LlmRequest
+            {
+                PreferredModelId = copilotModel.Id,
+                Messages =
+                {
+                    new ChatMessage
+                    {
+                        Role = "user",
+                        Content = "Test with tools",
+                    },
+                },
+            },
+            new[] { tool });
+
+        Assert.Equal("copilot-tools-model", response.ModelName);
+        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+    }
+
     private async Task<LLMModelConfigEntity> CreateModelAsync(string modelName)
     {
         var model = new LLMModelConfigEntity
@@ -323,6 +439,30 @@ public sealed class AgentFrameworkGatewayTests : IDisposable
             Provider = LLMProvider.AzureOpenAI,
             Endpoint = "https://test.openai.azure.com",
             ApiKey = apiKey ?? "test-key",
+        };
+
+        return await _repository.CreateAsync(model);
+    }
+
+    private async Task<LLMModelConfigEntity> CreateGitHubCopilotModelAsync(
+        string modelName,
+        string? customCliPath = null,
+        string? patEnvVar = null,
+        string? organization = null)
+    {
+        var cliExecutable = string.IsNullOrWhiteSpace(customCliPath) ? "copilot" : customCliPath;
+
+        var model = new LLMModelConfigEntity
+        {
+            Id = Guid.NewGuid(),
+            ModelName = modelName,
+            Provider = LLMProvider.GitHubCopilot,
+            Endpoint = "https://github.com",
+            ApiKey = "test-api-key",
+            CliExecutable = cliExecutable,
+            Organization = organization,
+            AuthMode = string.IsNullOrEmpty(patEnvVar) ? "interactive" : "pat",
+            PatEnvVar = patEnvVar,
         };
 
         return await _repository.CreateAsync(model);

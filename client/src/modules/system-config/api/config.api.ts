@@ -80,19 +80,12 @@ export async function updateConfig(
 
 /**
  * Upsert config (create or update)
+ * Direct POST to backend which handles both creation and update via UpsertAsync
  */
 export async function upsertConfig(configType: ConfigType, payload: ConfigRequest): Promise<ConfigResponse> {
   if (USE_MOCK) return mockUpsertConfig(configType, payload)
-  try {
-    const { data } = await request.put<ApiResponse<ConfigResponse>>(
-      `/v1/configs/${configType}/${payload.configKey}`,
-      payload,
-    )
-    return data.data
-  } catch {
-    const { data } = await request.post<ApiResponse<ConfigResponse>>(`/v1/configs/${configType}`, payload)
-    return data.data
-  }
+  const { data } = await request.post<ApiResponse<ConfigResponse>>(`/v1/configs/${configType}`, payload)
+  return data.data
 }
 
 /**

@@ -10,6 +10,7 @@ import { systemConfigRoutes } from '../modules/system-config'
 import { taskCenterRoutes } from '../modules/task-center'
 import { agentCenterRoutes } from '../modules/agent-center'
 import { scheduledTaskRoutes } from '../modules/scheduled-task'
+import { workflowCenterRoutes } from '../modules/workflow-center'
 
 const routes: RouteRecordRaw[] = [
   ...authRoutes,
@@ -22,6 +23,7 @@ const routes: RouteRecordRaw[] = [
   ...systemConfigRoutes,
   ...agentCenterRoutes,
   ...scheduledTaskRoutes,
+  ...workflowCenterRoutes,
 ]
 
 export const router = createRouter({

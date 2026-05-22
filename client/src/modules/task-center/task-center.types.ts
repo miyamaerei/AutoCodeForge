@@ -46,6 +46,7 @@ export interface TaskLogResponseDto {
 
 export interface CreateTaskRequestDto {
   title: string
+  taskType: string
   description: string
   repository: string
   branch: string
@@ -55,6 +56,7 @@ export interface CreateTaskRequestDto {
 
 export interface UpdateTaskRequestDto {
   title?: string
+  taskType?: string
   description?: string
   repository?: string
   branch?: string

@@ -1,6 +1,7 @@
 import { computed, ref, type Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useChatStore } from '../store/useChatStore'
+import { createSession as createChatSession, sendMessageStream } from '../api/chat.api'
 import type { ChatMessage, SessionRecord } from '../api/chat.types'
 
 export type ChatMode = 'ask' | 'session'
@@ -14,12 +15,6 @@ const suggestedQuestions = [
 
 function nowTime(): string {
   return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-}
-
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, ms)
-  })
 }
 
 export function useConsoleChat(mode: Ref<ChatMode>) {
@@ -38,6 +33,7 @@ export function useConsoleChat(mode: Ref<ChatMode>) {
   const sending = ref(false)
   const error = ref<string | null>(null)
   const inputMessage = ref('')
+  const askSessionId = ref<string | null>(null)
 
   const askMessages = ref<ChatMessage[]>([
     {
@@ -119,7 +115,6 @@ export function useConsoleChat(mode: Ref<ChatMode>) {
     sending.value = true
 
     if (mode.value === 'ask') {
-      // Ask 模式使用 mock
       const userMessage: ChatMessage = {
         id: `u-${Date.now()}`,
         type: 'user',
@@ -129,16 +124,50 @@ export function useConsoleChat(mode: Ref<ChatMode>) {
       askMessages.value.push(userMessage)
 
       try {
-        await wait(500)
+        if (!askSessionId.value) {
+          const askSession = await createChatSession({ title: `快速提问 ${new Date().toLocaleString('zh-CN', { hour12: false })}` })
+          if (!askSession || !askSession.id) {
+            throw new Error('创建会话失败：未返回会话ID')
+          }
+          askSessionId.value = askSession.id
+        }
+
+        if (!askSessionId.value) {
+          throw new Error('创建会话失败：会话ID为空')
+        }
+
+        const assistantMessageId = `a-${Date.now()}`
         const aiMessage: ChatMessage = {
-          id: `a-${Date.now()}`,
+          id: assistantMessageId,
           type: 'ai',
-          content: `收到你的问题：${text}。这是统一 Chat 页面返回的建议草案，可按场景继续细化。`,
+          content: '',
           timestamp: nowTime(),
         }
         askMessages.value.push(aiMessage)
+
+        await sendMessageStream(askSessionId.value, { message: text }, {
+          onToken: (token) => {
+            const target = askMessages.value.find((item) => item.id === assistantMessageId)
+            if (target) {
+              target.content += token
+            }
+          },
+          onDone: (result) => {
+            const target = askMessages.value.find((item) => item.id === assistantMessageId)
+            if (target) {
+              target.timestamp = result.assistantMessage.createdAtUtc
+              if (!target.content.trim()) {
+                target.content = result.assistantMessage.content
+              }
+            }
+          },
+        })
       } catch (err) {
         error.value = err instanceof Error ? err.message : '发送消息失败'
+        const target = askMessages.value[askMessages.value.length - 1]
+        if (target && target.type === 'ai' && !target.content) {
+          target.content = '消息发送失败，请稍后重试。'
+        }
       } finally {
         sending.value = false
       }

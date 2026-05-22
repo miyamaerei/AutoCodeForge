@@ -44,6 +44,42 @@ interface SandboxStorageModel {
   lastSavedAt: string
 }
 
+const isAbsolutePath = (value: string): boolean => /^(?:[a-zA-Z]:[\\/]|\\\\|\/)/.test(value)
+
+const normalizePath = (value: string): string => value.replace(/\\/g, '/').replace(/\/+/g, '/').trim()
+
+const trimGlobSuffix = (value: string): string => value.replace(/[\\/]+\*\*.*$/, '').replace(/\*.*$/, '').trim()
+
+const toAbsoluteWritePath = (rawPath: string, workspaceRootPath: string): string | null => {
+  const trimmed = rawPath.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const root = normalizePath(workspaceRootPath)
+  if (!root) {
+    return null
+  }
+
+  const withoutGlob = trimGlobSuffix(trimmed)
+  if (!withoutGlob) {
+    return root
+  }
+
+  if (isAbsolutePath(withoutGlob)) {
+    return normalizePath(withoutGlob)
+  }
+
+  const relativePath = withoutGlob.replace(/^\.?[\\/]+/, '')
+  return normalizePath(`${root}/${relativePath}`)
+}
+
+const mapDtoToForm = (dto: SandboxConfigDto): Partial<SandboxFormModel> => ({
+  workspaceRootPath: dto.workspaceRootPath,
+  allowedWritePaths: dto.allowedWritePaths.join('\n'),
+  commandTimeoutSec: dto.timeoutSeconds,
+})
+
 const defaultForm = (): SandboxFormModel => ({
   profileName: 'default-sandbox',
   workspaceRootPath: 'C:/gitrepos/AutoCodeForge',
@@ -243,9 +279,21 @@ export function useSystemConfigSandbox() {
           description: '配置默认模型和回退模型，确保请求失败时可降级。',
         },
       ]
-      restoreConfig()
+
+      await store.loadSandboxConfig()
+      if (!store.error && store.sandboxConfig) {
+        Object.assign(form, mapDtoToForm(store.sandboxConfig))
+        initialSnapshot.value = JSON.stringify(form)
+        persistConfig()
+      } else {
+        restoreConfig()
+      }
     } catch {
-      error.value = '沙盒配置加载失败，请稍后重试。'
+      // Keep local fallback available when backend request fails.
+      restoreConfig()
+      if (!optionSections.value.length) {
+        error.value = '沙盒配置加载失败，请稍后重试。'
+      }
     } finally {
       loading.value = false
     }
@@ -256,25 +304,25 @@ export function useSystemConfigSandbox() {
     saveError.value = ''
     saveSuccess.value = false
     try {
-      await new Promise((resolve) => setTimeout(resolve, 280))
-      lastSavedAt.value = new Date().toLocaleString('zh-CN')
-      saveSuccess.value = true
-      persistConfig()
+      const normalizedWritePaths = form.allowedWritePaths
+        .split('\n')
+        .map((value) => toAbsoluteWritePath(value, form.workspaceRootPath))
+        .filter((value): value is string => Boolean(value))
 
-      // 保存到后端 store
       const sandboxDto: SandboxConfigDto = {
         workspaceRootPath: form.workspaceRootPath,
-        allowedWritePaths: form.allowedWritePaths.split('\n').filter(Boolean),
+        allowedWritePaths: Array.from(new Set(normalizedWritePaths)),
         timeoutSeconds: form.commandTimeoutSec,
         userIsolationEnabled: true,
       }
-      try {
-        await store.saveSandboxConfig(sandboxDto)
-      } catch (backendErr) {
-        console.warn('Failed to save to backend, localStorage preserved:', backendErr)
-      }
-    } catch {
-      saveError.value = '保存沙盒配置失败，请稍后重试。'
+
+      await store.saveSandboxConfig(sandboxDto)
+
+      lastSavedAt.value = new Date().toLocaleString('zh-CN')
+      saveSuccess.value = true
+      persistConfig()
+    } catch (err) {
+      saveError.value = err instanceof Error ? err.message : '保存沙盒配置失败，请稍后重试。'
     } finally {
       saving.value = false
     }

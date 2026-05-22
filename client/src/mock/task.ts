@@ -29,6 +29,7 @@ export interface TaskSummaryDto {
 
 export interface TaskCreateRequestDto {
   title: string
+  taskType: string
   description: string
   repository: string
   branch: string

@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useRepoStore } from '../../../stores/useRepoStore'
 import {
+  createPullRequest,
   createRepository,
   deleteRepository,
   fetchBranches,
@@ -11,6 +12,7 @@ import {
   type GitBranchDto,
   type GitPullRequestDto,
   type RepositoryDto,
+  type CreateGitPullRequestRequest,
   type CreateRepositoryRequest,
   type UpdateRepositoryRequest,
 } from '../api/repo-management.api'
@@ -21,7 +23,7 @@ import {
 function adaptRepositoryData(repo: RepositoryDto) {
   return {
     ...repo,
-    branch: 'main', // 默认分支，可从其他接口获取
+    branch: repo.branch?.trim() || 'main',
     lastUpdate: new Date(repo.updatedAtUtc).toLocaleString(),
   }
 }
@@ -97,6 +99,19 @@ export const useRepoManagementStore = defineStore('module.repo-management', () =
     }
   }
 
+  async function loadBranchesForRepo(repoId: string): Promise<void> {
+    loading.value = true
+    error.value = null
+    try {
+      const rawBranches = await fetchBranches(repoId)
+      branches.value = (rawBranches || []).map(adaptBranchData)
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '加载分支失败'
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function loadPullRequests(): Promise<void> {
     loading.value = true
     error.value = null
@@ -119,6 +134,25 @@ export const useRepoManagementStore = defineStore('module.repo-management', () =
       repoGlobal.selectRepository(adapted.id)
     }
     return adapted
+  }
+
+  async function submitCreatePullRequest(
+    repositoryId: string,
+    payload: CreateGitPullRequestRequest,
+  ): Promise<GitPullRequestDto> {
+    loading.value = true
+    error.value = null
+    try {
+      const created = await createPullRequest(repositoryId, payload)
+      const adapted = adaptPullRequestData(created)
+      pullRequests.value = [adapted, ...pullRequests.value.filter((item) => item.id !== adapted.id)]
+      return adapted
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '创建 PR 失败'
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
   async function submitUpdate(id: string, payload: UpdateRepositoryRequest): Promise<void> {
@@ -149,7 +183,9 @@ export const useRepoManagementStore = defineStore('module.repo-management', () =
     repoGlobal,
     loadRepositories,
     loadBranches,
+    loadBranchesForRepo,
     loadPullRequests,
+    submitCreatePullRequest,
     submitCreate,
     submitUpdate,
     submitDelete,

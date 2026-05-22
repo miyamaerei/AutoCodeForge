@@ -19,6 +19,7 @@ const {
   closeDialog,
   saveAgent,
   removeAgent,
+  genericSystemPromptTemplate,
 } = useAgent()
 
 /** 初始化加载 */
@@ -78,6 +79,12 @@ function getStatusText(enabled: boolean) {
 function copyPrompt(prompt: string) {
   navigator.clipboard.writeText(prompt)
   ElMessage.success('已复制到剪贴板')
+}
+
+/** 填充通用系统提示词模板 */
+function applyGenericPromptTemplate() {
+  formData.systemPrompt = genericSystemPromptTemplate
+  ElMessage.success('已填充通用 Agent 提示')
 }
 </script>
 
@@ -172,6 +179,14 @@ function copyPrompt(prompt: string) {
             maxlength="500"
             show-word-limit
           />
+          <div class="prompt-toolbar">
+            <el-button size="small" text type="primary" @click="applyGenericPromptTemplate">
+              填充通用 Agent 提示
+            </el-button>
+          </div>
+          <div class="form-tip">
+            通用模板已内置任务流程、边界约束、已有代码复用与回归验证要点，可按业务再细化。
+          </div>
         </el-form-item>
 
         <el-form-item label="自动选择关键词">
@@ -284,6 +299,12 @@ function copyPrompt(prompt: string) {
 .form-tip {
   color: #909399;
   font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.prompt-toolbar {
+  display: flex;
+  justify-content: flex-end;
   margin-top: 0.25rem;
 }
 </style>

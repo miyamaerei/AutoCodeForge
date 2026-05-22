@@ -106,6 +106,7 @@ builder.Services.AddScoped(typeof(GitProviderFactory), sp =>
 });
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ChatDefaultsProvisioningService>();
 builder.Services.AddScoped<AgentService>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<TaskService>();
