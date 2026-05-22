@@ -11,6 +11,7 @@
  */
 
 using AutoCodeForge.Core.DTOs.Config;
+using AutoCodeForge.Core.Entities;
 using AutoCodeForge.Core.Models;
 using AutoCodeForge.Infrastructure.Git;
 using LibGit2Sharp;
@@ -86,14 +87,13 @@ public sealed class GitConfigIntegrationTests : IDisposable
             // Act - 克隆仓库
             var cloneOptions = new CloneOptions
             {
-                FetchOptions = new FetchOptions
-                {
-                    CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
-                    {
-                        Username = _gitConfig.Provider == GitProvider.GitHub ? "x-access-token" : _gitConfig.Username,
-                        Password = _gitConfig.Token,
-                    }
-                }
+                Checkout = true
+            };
+
+            cloneOptions.FetchOptions.CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
+            {
+                Username = _gitConfig.Provider == GitProvider.GitHub ? "x-access-token" : _gitConfig.Username,
+                Password = _gitConfig.Token,
             };
 
             Repository.Clone(_gitConfig.Repo, localRepoPath, cloneOptions);
@@ -148,14 +148,13 @@ public sealed class GitConfigIntegrationTests : IDisposable
             // 克隆仓库
             var cloneOptions = new CloneOptions
             {
-                FetchOptions = new FetchOptions
-                {
-                    CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
-                    {
-                        Username = _gitConfig.Provider == GitProvider.GitHub ? "x-access-token" : _gitConfig.Username,
-                        Password = _gitConfig.Token,
-                    }
-                }
+                Checkout = true
+            };
+
+            cloneOptions.FetchOptions.CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
+            {
+                Username = _gitConfig.Provider == GitProvider.GitHub ? "x-access-token" : _gitConfig.Username,
+                Password = _gitConfig.Token,
             };
 
             Repository.Clone(_gitConfig.Repo, localRepoPath, cloneOptions);
@@ -216,15 +215,14 @@ public sealed class GitConfigIntegrationTests : IDisposable
 
             var cloneOptions = new CloneOptions
             {
-                FetchOptions = new FetchOptions
-                {
-                    CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
-                    {
-                        Username = _gitConfig.Provider == GitProvider.GitHub ? "x-access-token" : _gitConfig.Username,
-                        Password = _gitConfig.Token,
-                    }
-                },
                 BranchName = _gitConfig.Branch,
+                Checkout = true
+            };
+
+            cloneOptions.FetchOptions.CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
+            {
+                Username = _gitConfig.Provider == GitProvider.GitHub ? "x-access-token" : _gitConfig.Username,
+                Password = _gitConfig.Token,
             };
 
             Repository.Clone(_gitConfig.Repo, localRepoPath, cloneOptions);
@@ -288,14 +286,13 @@ public sealed class GitConfigIntegrationTests : IDisposable
             {
                 var cloneOptions = new CloneOptions
                 {
-                    FetchOptions = new FetchOptions
-                    {
-                        CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
-                        {
-                            Username = _gitConfig.Provider == GitProvider.GitHub ? "x-access-token" : _gitConfig.Username,
-                            Password = _gitConfig.Token,
-                        }
-                    }
+                    Checkout = true
+                };
+
+                cloneOptions.FetchOptions.CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
+                {
+                    Username = _gitConfig.Provider == GitProvider.GitHub ? "x-access-token" : _gitConfig.Username,
+                    Password = _gitConfig.Token,
                 };
 
                 Repository.Clone(_gitConfig.Repo, localRepoPath, cloneOptions);

@@ -63,6 +63,16 @@ public sealed class IntegrationTestContext : IDisposable
     public TaskLogRepository TaskLogRepository { get; }
 
     /// <summary>
+    /// 工序步骤仓储
+    /// </summary>
+    public TaskStepRepository TaskStepRepository { get; }
+
+    /// <summary>
+    /// 工序步骤服务
+    /// </summary>
+    public TaskStepService TaskStepService { get; }
+
+    /// <summary>
     /// 工作空间仓储
     /// </summary>
     public RepoSandboxWorkspaceRepository WorkspaceRepository { get; }
@@ -149,6 +159,7 @@ public sealed class IntegrationTestContext : IDisposable
         Db.CodeFirst.InitTables(
             typeof(TaskEntity),
             typeof(TaskLogEntity),
+            typeof(TaskStepEntity),
             typeof(UserConfigEntity),
             typeof(RepositoryEntity),
             typeof(RepoSandboxWorkspaceEntity),
@@ -167,6 +178,7 @@ public sealed class IntegrationTestContext : IDisposable
         RepositoryRepository = new RepositoryRepository(Db, CurrentUser);
         TaskRepository = new TaskRepository(Db, CurrentUser);
         TaskLogRepository = new TaskLogRepository(Db, CurrentUser);
+        TaskStepRepository = new TaskStepRepository(Db, CurrentUser);
         WorkspaceRepository = new RepoSandboxWorkspaceRepository(Db, CurrentUser);
         AgentRepository = new AgentRepository(Db, CurrentUser);
         LLMModelConfigRepository = new LLMModelConfigRepository(Db, CurrentUser);
@@ -186,6 +198,7 @@ public sealed class IntegrationTestContext : IDisposable
         ConfigService = new ConfigService(ConfigRepository, ConfigHistoryRepository, EncryptionService, CurrentUser);
         RepositoryService = new RepositoryService(RepositoryRepository, GitProviderFactory, DataProtectionService);
         RepoSyncService = new RepoSyncService(TaskRepository, TaskLogRepository, RepositoryRepository, WorkspaceRepository, ConfigService);
+        TaskStepService = new TaskStepService(TaskStepRepository, TaskRepository, Db);
         SandboxPathResolver = new SandboxPathResolver();
         AgentService = new AgentService(AgentRepository);
     }
@@ -533,7 +546,9 @@ public sealed class GitTestConfig
                 return GitProvider.GitLab;
             if (Repo.Contains("dev.azure.com", StringComparison.OrdinalIgnoreCase) || Repo.Contains("visualstudio.com", StringComparison.OrdinalIgnoreCase))
                 return GitProvider.AzureDevOps;
-            return GitProvider.Unknown;
+            if (Repo.Contains("bitbucket.org", StringComparison.OrdinalIgnoreCase))
+                return GitProvider.Bitbucket;
+            return GitProvider.GitHub;
         }
     }
 }
