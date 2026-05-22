@@ -51,6 +51,9 @@ public sealed class RepoSyncFullIntegrationTests : IDisposable
 
     // 测试数据 - Azure DevOps 配置
     private readonly AzureDevOpsTestConfig _azureConfig;
+    
+    // 用于 Git 操作的 LibGit2SharpProvider
+    private readonly LibGit2SharpProvider _libGit2SharpProvider;
 
     public RepoSyncFullIntegrationTests()
     {
@@ -93,6 +96,18 @@ public sealed class RepoSyncFullIntegrationTests : IDisposable
 
         // 初始化 GitProviderFactory
         var gitProviderFactory = new GitProviderFactory(new HttpClient());
+        
+        // 初始化 GitOptions 和 LibGit2SharpProvider
+        var gitOptions = new GitOptions
+        {
+            AzureDevOps = new AzureDevOpsOptions
+            {
+                Username = string.Empty, // Azure DevOps PAT 使用空用户名
+                EnableUrlEncoding = true,
+                DomainPatterns = new List<string> { "dev.azure.com", "visualstudio.com" }
+            }
+        };
+        _libGit2SharpProvider = new LibGit2SharpProvider(gitOptions);
 
         // 初始化服务
         _configService = new ConfigService(
@@ -116,14 +131,77 @@ public sealed class RepoSyncFullIntegrationTests : IDisposable
         // 初始化路径解析器
         _pathResolver = new SandboxPathResolver();
 
-        // Azure DevOps 测试配置
-        _azureConfig = new AzureDevOpsTestConfig
+        // 从配置文件读取 Azure DevOps 测试配置
+        _azureConfig = LoadAzureDevOpsConfig();
+    }
+
+    /// <summary>
+    /// 从配置文件加载 Azure DevOps 测试配置
+    /// </summary>
+    private AzureDevOpsTestConfig LoadAzureDevOpsConfig()
+    {
+        // 直接从项目源目录查找配置文件
+        // 从当前测试文件位置向上查找项目根目录
+        var currentFilePath = new System.Diagnostics.StackTrace(true).GetFrame(0)?.GetFileName();
+        var configPath = string.Empty;
+
+        if (!string.IsNullOrEmpty(currentFilePath))
         {
-            Token = "",
-            Organization = "",
-            Project = "",
-            Repository = "",
-            Branch = "",
+            var currentDir = Path.GetDirectoryName(currentFilePath)!;
+            while (!string.IsNullOrEmpty(currentDir))
+            {
+                var possiblePath = Path.Combine(currentDir, "test-configs", "azure-devops-config.json");
+                if (File.Exists(possiblePath))
+                {
+                    configPath = possiblePath;
+                    break;
+                }
+                currentDir = Path.GetDirectoryName(currentDir);
+            }
+        }
+
+        // 如果找不到，尝试使用 Assembly 位置查找
+        if (string.IsNullOrEmpty(configPath) || !File.Exists(configPath))
+        {
+            var assemblyLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            var assemblyDirectory = Path.GetDirectoryName(assemblyLocation)!;
+            var currentDir = assemblyDirectory;
+            
+            while (!string.IsNullOrEmpty(currentDir))
+            {
+                var possiblePath = Path.Combine(currentDir, "test-configs", "azure-devops-config.json");
+                if (File.Exists(possiblePath))
+                {
+                    configPath = possiblePath;
+                    break;
+                }
+                currentDir = Path.GetDirectoryName(currentDir);
+            }
+        }
+
+        if (string.IsNullOrEmpty(configPath) || !File.Exists(configPath))
+        {
+            throw new FileNotFoundException("配置文件不存在: test-configs/azure-devops-config.json。请确保文件存在于测试项目目录中。");
+        }
+
+        Console.WriteLine($"从以下位置加载配置: {configPath}");
+
+        // 读取并解析配置文件
+        var jsonContent = File.ReadAllText(configPath);
+        var configDoc = JsonDocument.Parse(jsonContent);
+        
+        if (!configDoc.RootElement.TryGetProperty("azureDefault", out var azureDefault))
+        {
+            throw new InvalidDataException("配置文件中缺少 azureDefault 节点");
+        }
+
+        return new AzureDevOpsTestConfig
+        {
+            Token = azureDefault.GetProperty("Token").GetString() ?? string.Empty,
+            Organization = azureDefault.GetProperty("Org").GetString() ?? string.Empty,
+            Project = azureDefault.GetProperty("Project").GetString() ?? string.Empty,
+            Repository = azureDefault.GetProperty("Repo").GetString() ?? string.Empty,
+            Branch = azureDefault.GetProperty("Branch").GetString() ?? "main",
         };
     }
 
@@ -740,46 +818,66 @@ public sealed class RepoSyncFullIntegrationTests : IDisposable
                 repositoryUrl,
                 GitProvider.AzureDevOps);
 
-            // Step C: 在本地初始化仓库、创建分支并提交测试文件
+            // Step C: 真正从远程仓库克隆
             var localRepoPath = Path.Combine(tempWorkspaceRoot, "local-repo");
-            Directory.CreateDirectory(localRepoPath);
+            Console.WriteLine($"  正在克隆仓库: {repositoryUrl}");
+            var clonedSha = await _libGit2SharpProvider.CloneOrPullAsync(
+                repositoryUrl, 
+                _azureConfig.Token, 
+                _azureConfig.Branch, 
+                localRepoPath);
+            Console.WriteLine($"  ✓ 仓库克隆成功: {localRepoPath}, SHA: {clonedSha}");
 
-            // 初始化仓库并提交文件
-            Repository.Init(localRepoPath);
-            // prepare branch name ahead so it's visible later
-            var branchName = $"autotest/{Guid.NewGuid():N}";
-
+            // Step D: 在克隆的仓库中创建分支、提交文件
+            var branchName = $"autotest-{Guid.NewGuid():N}";
             using (var repo = new Repository(localRepoPath))
             {
                 // 配置签名
                 var author = new Signature("autocodeforge-test", "test@example.com", DateTimeOffset.UtcNow);
 
+                // 从默认分支创建新分支
+                var mainBranch = repo.Branches[_azureConfig.Branch] ?? repo.Head;
+                Console.WriteLine($"  使用分支: {mainBranch.FriendlyName}");
+
+                // 创建并检出新分支
+                var newBranch = repo.CreateBranch(branchName, mainBranch.Tip);
+                Commands.Checkout(repo, newBranch);
+                Console.WriteLine($"  ✓ 创建并检出分支: {newBranch.FriendlyName}");
+
                 // 新建文件
-                var testFile = Path.Combine(localRepoPath, "autocodeforge_test.txt");
-                File.WriteAllText(testFile, "自动化测试文件 - 内容");
+                var testFile = Path.Combine(localRepoPath, $"autocodeforge_test_{Guid.NewGuid():N}.txt");
+                File.WriteAllText(testFile, $"自动化测试文件 - 内容\n时间: {DateTime.UtcNow}");
 
                 // stage & commit
                 Commands.Stage(repo, testFile);
                 var commit = repo.Commit("chore: add autotest file", author, author);
+                Console.WriteLine($"  ✓ 提交创建成功: {commit.Sha}");
 
-                // 创建并检出新分支
-                var branch = repo.CreateBranch(branchName);
-                Commands.Checkout(repo, branch);
-
-                Console.WriteLine($"  ✓ 本地分支和提交已创建: {branch.FriendlyName} @ {commit.Sha}");
+                // 实际推送到远程仓库
+                Console.WriteLine($"  正在推送分支: {branchName}");
+                var providerType = _libGit2SharpProvider.DetermineProviderType(repositoryUrl);
+                var username = _libGit2SharpProvider.GetUsernameForProvider(providerType);
+                var pushOptions = new PushOptions
+                {
+                    CredentialsProvider = (url, fromUrl, types) => new UsernamePasswordCredentials
+                    {
+                        Username = username,
+                        Password = _azureConfig.Token
+                    }
+                };
+                
+                // 直接推送，使用 refspec
+                var remote = repo.Network.Remotes["origin"];
+                var refspec = $"refs/heads/{branchName}:refs/heads/{branchName}";
+                repo.Network.Push(remote, new[] { refspec }, pushOptions);
+                Console.WriteLine($"  ✓ 分支推送成功: {branchName}");
             }
 
-            // Step D: 调用应用层 Push（Provider 中为 AzureDevOps 返回 true 的 stub）
-            var pushed = await _repositoryService.PushAsync(repoId, localRepoPath, branchName);
-            // PushAsync 的实现会使用默认分支参数，如果 provider 实际执行会根据传入 branch 推送，本测试主要验证调用链无异常
-            Assert.True(pushed);
-            Console.WriteLine("  ✓ Push 调用已返回成功（或被 Provider stub 接受）");
-
-            // Step E: 发起 Pull Request（若网络或权限不可用则模拟 PR）
+            // Step E: 发起 Pull Request（使用真实数据，PR 提交不成功就抛出错误）
             var prRequest = new CreateGitPullRequestRequest
             {
-                Title = "测试",
-                Description = "测试",
+                Title = "测试 PR",
+                Description = "这是一个自动化测试的 Pull Request",
                 SourceBranch = branchName,
                 TargetBranch = _azureConfig.Branch,
             };
@@ -789,32 +887,23 @@ public sealed class RepoSyncFullIntegrationTests : IDisposable
             {
                 createdPr = await _repositoryService.CreatePullRequestAsync(repoId, prRequest);
                 Assert.NotNull(createdPr);
-                Assert.Equal("测试", createdPr.Title);
+                Assert.Equal("测试 PR", createdPr.Title);
                 Console.WriteLine($"  ✓ PR 已创建: {createdPr.Title} #{createdPr.Number}");
-            }
-            catch (Exception ex) when (ex.Message.Contains("credentials") || ex.Message.Contains("verify") || ex.Message.Contains("401") || ex.Message.Contains("403"))
-            {
-                // 网络或权限导致无法真正创建 PR，模拟一个 PR 对象以保证测试逻辑覆盖
-                createdPr = new GitPullRequestDto
+                if (!string.IsNullOrEmpty(createdPr.Url))
                 {
-                    Id = Guid.NewGuid().ToString(),
-                    Number = 0,
-                    Title = prRequest.Title,
-                    Description = prRequest.Description,
-                    SourceBranch = prRequest.SourceBranch,
-                    TargetBranch = prRequest.TargetBranch,
-                    Url = repositoryUrl,
-                    State = "active",
-                    CreatedAtUtc = DateTime.UtcNow,
-                    UpdatedAtUtc = DateTime.UtcNow,
-                };
-
-                Console.WriteLine("  ⚠️ PR 创建被跳过（网络/权限），已使用模拟 PR 继续验证流程");
+                    Console.WriteLine($"  PR 链接: {createdPr.Url}");
+                }
+            }
+            catch (Exception ex)
+            {
+                // PR 提交不成功就抛出错误，不使用模拟
+                Console.WriteLine($"  ❌ PR 创建失败: {ex.Message}");
+                throw new InvalidOperationException($"PR 提交失败，这是一个真实的测试，不使用模拟。错误信息: {ex.Message}", ex);
             }
 
             // 最终断言
             Assert.NotNull(createdPr);
-            Assert.Equal("测试", createdPr.Title);
+            Assert.Equal("测试 PR", createdPr.Title);
             Assert.Equal(prRequest.SourceBranch, createdPr.SourceBranch);
             Assert.Equal(prRequest.TargetBranch, createdPr.TargetBranch);
 

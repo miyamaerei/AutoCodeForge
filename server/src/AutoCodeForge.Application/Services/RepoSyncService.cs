@@ -56,9 +56,17 @@ public class RepoSyncService
             ?? throw new ValidationException("Sandbox config is missing. Configure sandbox first.");
 
         var (owner, repoName) = ExtractOwnerRepo(repository.Url);
-        if (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repoName))
+        if (string.IsNullOrWhiteSpace(owner) && string.IsNullOrWhiteSpace(repoName))
         {
-            throw new ValidationException("Repository URL format is invalid");
+            throw new ValidationException("Repository URL format is invalid. URL cannot be empty.");
+        }
+        if (string.IsNullOrWhiteSpace(owner))
+        {
+            throw new ValidationException("Repository URL is missing owner/organization. Please configure the repository with a valid URL.");
+        }
+        if (string.IsNullOrWhiteSpace(repoName))
+        {
+            throw new ValidationException("Repository URL is missing repository name. Please configure the repository with a valid URL.");
         }
 
         var branch = string.IsNullOrWhiteSpace(request.Branch) 

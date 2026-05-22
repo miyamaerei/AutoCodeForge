@@ -45,3 +45,6 @@ __screenshots__/
 
 # Trae IDE
 # .trae/
+
+# Test configurations (contains sensitive data like tokens)
+server/tests/AutoCodeForge.Tests/test-configs/

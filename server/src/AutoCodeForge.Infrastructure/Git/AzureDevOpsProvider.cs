@@ -162,7 +162,7 @@ public class AzureDevOpsProvider : IGitProvider
         var (org, project, repo) = ExtractOrgProjectRepo(repositoryUrl);
         if (string.IsNullOrWhiteSpace(org) || string.IsNullOrWhiteSpace(project) || string.IsNullOrWhiteSpace(repo))
         {
-            return new GitPullRequestDto();
+            throw new InvalidOperationException($"Repository URL is invalid or empty (org={org}, project={project}, repo={repo})");
         }
 
         try
@@ -187,7 +187,9 @@ public class AzureDevOpsProvider : IGitProvider
             var response = await _httpClient.SendAsync(httpRequest, linkedCts.Token);
             if (!response.IsSuccessStatusCode)
             {
-                return new GitPullRequestDto();
+                var errorContent = await response.Content.ReadAsStringAsync();
+                var statusCode = (int)response.StatusCode;
+                throw new InvalidOperationException($"Azure DevOps API error: API returned {statusCode}. Response: {errorContent}");
             }
 
             var content = await response.Content.ReadAsStringAsync(linkedCts.Token);
@@ -208,8 +210,9 @@ public class AzureDevOpsProvider : IGitProvider
                 Number = pr.GetProperty("pullRequestId").GetInt32(),
                 Title = pr.GetProperty("title").GetString() ?? string.Empty,
                 Description = pr.GetProperty("description").GetString(),
-                SourceBranch = pr.GetProperty("sourceRefName").GetString() ?? string.Empty,
-                TargetBranch = pr.GetProperty("targetRefName").GetString() ?? string.Empty,
+                // 从 sourceRefName 中移除 refs/heads/ 前缀，保持一致
+                SourceBranch = (pr.GetProperty("sourceRefName").GetString() ?? string.Empty).Replace("refs/heads/", string.Empty),
+                TargetBranch = (pr.GetProperty("targetRefName").GetString() ?? string.Empty).Replace("refs/heads/", string.Empty),
                 State = pr.GetProperty("status").GetString() ?? string.Empty,
                 Author = pr.GetProperty("createdBy").GetProperty("displayName").GetString() ?? string.Empty,
                 Url = pr.GetProperty("url").GetString() ?? string.Empty,
@@ -217,9 +220,10 @@ public class AzureDevOpsProvider : IGitProvider
                 UpdatedAtUtc = updatedAtUtc,
             };
         }
-        catch
+        catch (Exception ex)
         {
-            return new GitPullRequestDto();
+            Console.WriteLine($"[AzureDevOpsProvider] CreatePullRequest failed: {ex.Message}");
+            throw; // 重新抛出异常，不返回模拟对象
         }
     }
 
