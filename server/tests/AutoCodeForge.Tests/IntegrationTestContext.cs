@@ -511,6 +511,154 @@ public static class AzureDevOpsConfigLoader
 }
 
 /// <summary>
+/// Git 测试配置（支持 GitHub/GitLab 等）
+/// </summary>
+public sealed class GitTestConfig
+{
+    public string Token { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
+    public string Repo { get; set; } = string.Empty;
+    public string Branch { get; set; } = "main";
+
+    /// <summary>
+    /// 从仓库URL解析Provider类型
+    /// </summary>
+    public GitProvider Provider
+    {
+        get
+        {
+            if (Repo.Contains("github.com", StringComparison.OrdinalIgnoreCase))
+                return GitProvider.GitHub;
+            if (Repo.Contains("gitlab.com", StringComparison.OrdinalIgnoreCase) || Repo.Contains("gitlab", StringComparison.OrdinalIgnoreCase))
+                return GitProvider.GitLab;
+            if (Repo.Contains("dev.azure.com", StringComparison.OrdinalIgnoreCase) || Repo.Contains("visualstudio.com", StringComparison.OrdinalIgnoreCase))
+                return GitProvider.AzureDevOps;
+            return GitProvider.Unknown;
+        }
+    }
+}
+
+/// <summary>
+/// Git 配置加载器
+/// </summary>
+public static class GitTestConfigLoader
+{
+    private static GitTestConfig? _cachedConfig;
+    private static readonly object _lock = new();
+
+    /// <summary>
+    /// 从test-configs/git-config.json加载配置
+    /// </summary>
+    public static GitTestConfig Load()
+    {
+        if (_cachedConfig != null) return _cachedConfig;
+
+        lock (_lock)
+        {
+            if (_cachedConfig != null) return _cachedConfig;
+
+            var configPath = FindConfigPath();
+            if (string.IsNullOrEmpty(configPath) || !File.Exists(configPath))
+            {
+                throw new FileNotFoundException(
+                    "配置文件不存在: test-configs/git-config.json。请确保文件存在于测试项目目录中。",
+                    configPath);
+            }
+
+            var jsonContent = File.ReadAllText(configPath);
+            var configDoc = JsonDocument.Parse(jsonContent);
+
+            if (!configDoc.RootElement.TryGetProperty("gitdefault", out var gitDefault))
+            {
+                throw new InvalidDataException("配置文件中缺少 gitdefault 节点");
+            }
+
+            _cachedConfig = new GitTestConfig
+            {
+                Token = gitDefault.GetProperty("token").GetString() ?? string.Empty,
+                Username = gitDefault.TryGetProperty("username", out var username) ? username.GetString() ?? string.Empty : string.Empty,
+                Repo = gitDefault.GetProperty("repo").GetString() ?? string.Empty,
+                Branch = gitDefault.TryGetProperty("branch", out var branch) ? branch.GetString() ?? "main" : "main",
+            };
+
+            return _cachedConfig;
+        }
+    }
+
+    /// <summary>
+    /// 尝试加载配置，如果文件不存在则返回null
+    /// </summary>
+    public static GitTestConfig? TryLoad()
+    {
+        try
+        {
+            return Load();
+        }
+        catch (FileNotFoundException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 查找配置文件路径
+    /// </summary>
+    private static string FindConfigPath()
+    {
+        var assemblyLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        if (!string.IsNullOrEmpty(assemblyLocation))
+        {
+            var currentDir = Path.GetDirectoryName(assemblyLocation)!;
+            var path = SearchUpwardForConfig(currentDir);
+            if (!string.IsNullOrEmpty(path)) return path;
+        }
+
+        var stackFrame = new System.Diagnostics.StackTrace(true).GetFrame(0);
+        var callerFilePath = stackFrame?.GetFileName();
+        if (!string.IsNullOrEmpty(callerFilePath))
+        {
+            var currentDir = Path.GetDirectoryName(callerFilePath)!;
+            var path = SearchUpwardForConfig(currentDir);
+            if (!string.IsNullOrEmpty(path)) return path;
+        }
+
+        var cwdPath = SearchUpwardForConfig(Environment.CurrentDirectory);
+        if (!string.IsNullOrEmpty(cwdPath)) return cwdPath;
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// 向上搜索配置文件
+    /// </summary>
+    private static string SearchUpwardForConfig(string startDir)
+    {
+        var currentDir = startDir;
+        while (!string.IsNullOrEmpty(currentDir))
+        {
+            var configPath = Path.Combine(currentDir, "test-configs", "git-config.json");
+            if (File.Exists(configPath))
+            {
+                return configPath;
+            }
+            currentDir = Path.GetDirectoryName(currentDir) ?? string.Empty;
+        }
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// 清除缓存的配置（用于测试重新加载）
+    /// </summary>
+    public static void ClearCache()
+    {
+        lock (_lock)
+        {
+            _cachedConfig = null;
+        }
+    }
+}
+
+/// <summary>
 /// Git 选项创建辅助类
 /// </summary>
 public static class GitOptionsFactory

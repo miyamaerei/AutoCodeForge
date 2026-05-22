@@ -54,3 +54,5 @@ server/tests/AutoCodeForge.Tests/test-configs/
 
 # Local server verification artifacts
 server/.build-temp/
+
+.qoder/
