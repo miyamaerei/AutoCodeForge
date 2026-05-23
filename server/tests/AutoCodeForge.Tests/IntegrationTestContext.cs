@@ -1,3 +1,4 @@
+using AutoCodeForge.Application.Configuration;
 using AutoCodeForge.Application.Services;
 using AutoCodeForge.Core.DTOs.Config;
 using AutoCodeForge.Core.DTOs.Repository;
@@ -157,6 +158,16 @@ public sealed class IntegrationTestContext : IDisposable
     /// </summary>
     public AgentDormantRecordRepository AgentDormantRecordRepository { get; }
 
+    /// <summary>
+    /// 任务编排器服务
+    /// </summary>
+    public TaskOrchestrator TaskOrchestrator { get; }
+
+    /// <summary>
+    /// 最小负载选择策略
+    /// </summary>
+    public LeastLoadAgentSelectionStrategy LeastLoadAgentSelectionStrategy { get; }
+
     #endregion
 
     /// <summary>
@@ -232,6 +243,16 @@ public sealed class IntegrationTestContext : IDisposable
             AgentLearningRecordRepository,
             AgentDormantRecordRepository,
             CurrentUser);
+
+        // 初始化任务编排服务
+        var orchestrationSettings = new Microsoft.Extensions.Options.OptionsWrapper<AutoCodeForge.Application.Configuration.OrchestrationSettings>(
+            new AutoCodeForge.Application.Configuration.OrchestrationSettings());
+        LeastLoadAgentSelectionStrategy = new AutoCodeForge.Application.Services.LeastLoadAgentSelectionStrategy(AgentRepository);
+        TaskOrchestrator = new AutoCodeForge.Application.Services.TaskOrchestrator(
+            LeastLoadAgentSelectionStrategy,
+            AgentRepository,
+            TaskStepRepository,
+            orchestrationSettings);
     }
 
     /// <summary>

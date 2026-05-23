@@ -112,6 +112,7 @@ app.MapTaskOrchestrationEndpoints();
 app.MapAgentCommunicationEndpoints();
 app.MapFailureRecoveryEndpoints();
 app.MapAgentRegistrationEndpoints();
+app.MapNotificationEndpoints();
 app.MapHumanGateEndpoints();
 app.MapRepoSyncEndpoints();
 app.MapReviewEndpoints();

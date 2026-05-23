@@ -82,19 +82,30 @@ public class TaskOrchestrator
         };
     }
 
+    private bool IsWithinCapacityByProperty(AgentEntity agent, AgentRole role)
+    {
+        return role switch
+        {
+            AgentRole.Manager => agent.CurrentTaskCount < _settings.MaxConcurrentTasksPerManager,
+            AgentRole.Secretary => agent.CurrentTaskCount < _settings.MaxConcurrentTasksPerSecretary,
+            AgentRole.Worker => agent.CurrentTaskCount < _settings.MaxConcurrentTasksPerWorker,
+            _ => true
+        };
+    }
+
     private async Task<AgentEntity?> TryEscalation(Guid taskId, AgentRole originalRole, CancellationToken cancellationToken)
     {
-        if (originalRole >= AgentRole.Manager)
-            return null;
-
-        var escalationRole = (AgentRole)((int)originalRole + 1);
-        var agent = await _selectionStrategy.SelectAgentAsync(taskId, escalationRole, cancellationToken);
+        var escalationOrder = new[] { AgentRole.Worker, AgentRole.Secretary, AgentRole.Manager };
+        var currentIndex = Array.IndexOf(escalationOrder, originalRole);
         
-        if (agent != null && await IsWithinCapacity(agent, escalationRole, cancellationToken))
-            return agent;
-
-        if (escalationRole < AgentRole.Manager)
-            return await TryEscalation(taskId, escalationRole, cancellationToken);
+        for (int i = currentIndex + 1; i < escalationOrder.Length; i++)
+        {
+            var escalationRole = escalationOrder[i];
+            var agent = await _selectionStrategy.SelectAgentAsync(taskId, escalationRole, cancellationToken);
+            
+            if (agent != null && await IsWithinCapacity(agent, escalationRole, cancellationToken))
+                return agent;
+        }
 
         return null;
     }

@@ -1,6 +1,8 @@
 using AutoCodeForge.Application.Configuration;
+using AutoCodeForge.Application.Models;
 using AutoCodeForge.Application.Security;
 using AutoCodeForge.Application.Services;
+using AutoCodeForge.Core.Entities;
 using AutoCodeForge.Core.Interfaces;
 using AutoCodeForge.Core.Models;
 using AutoCodeForge.Infrastructure.AI;
@@ -9,6 +11,7 @@ using AutoCodeForge.Infrastructure.Data;
 using AutoCodeForge.Infrastructure.Git;
 using AutoCodeForge.Infrastructure.Helpers;
 using AutoCodeForge.Infrastructure.Logging;
+using AutoCodeForge.Infrastructure.Notification.Channels;
 using AutoCodeForge.Infrastructure.Repositories;
 using AutoCodeForge.Infrastructure.Repositories.Base;
 using AutoCodeForge.Infrastructure.Services;
@@ -120,6 +123,40 @@ public static class ServiceCollectionExtensions
         services.AddScoped<FailureRecoveryService>();
         services.AddScoped<AgentRegistrationRepository>();
         services.AddScoped<IAgentRegistryService, AgentRegistryService>();
+        services.AddScoped<NotificationRepository>();
+        services.AddScoped<INotificationChannel, InAppNotificationChannel>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddOptions<NotificationTemplateSettings>()
+            .Configure(options =>
+            {
+                options.Templates = new List<NotificationTemplate>
+                {
+                    new NotificationTemplate
+                    {
+                        TemplateId = "PlanApproval",
+                        Name = "计划审批通知",
+                        Subject = "任务 {{TaskId}} 需要计划审批",
+                        Content = "任务 {{TaskId}} 的计划已完成，需要您进行审批。<a href='{{ActionUrl}}'>点击审批</a>",
+                        Channel = NotificationChannel.InApp
+                    },
+                    new NotificationTemplate
+                    {
+                        TemplateId = "CodeReview",
+                        Name = "代码审核通知",
+                        Subject = "任务 {{TaskId}} 需要代码审核",
+                        Content = "任务 {{TaskId}} 的代码已完成，需要您进行审核。<a href='{{ActionUrl}}'>点击审核</a>",
+                        Channel = NotificationChannel.InApp
+                    },
+                    new NotificationTemplate
+                    {
+                        TemplateId = "Emergency",
+                        Name = "紧急通知",
+                        Subject = "紧急：任务 {{TaskId}} 需要立即处理",
+                        Content = "任务 {{TaskId}} 出现紧急情况，请立即处理。<a href='{{ActionUrl}}'>查看详情</a>",
+                        Channel = NotificationChannel.InApp
+                    }
+                };
+            });
         return services;
     }
 
