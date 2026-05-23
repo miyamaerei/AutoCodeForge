@@ -1,3 +1,4 @@
+using AutoCodeForge.Application.Configuration;
 using AutoCodeForge.Application.Security;
 using AutoCodeForge.Application.Services;
 using AutoCodeForge.Core.Interfaces;
@@ -111,6 +112,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SeedData>();
         services.AddSingleton<PasswordHelper>();
         services.AddScoped<DataProtectionService>();
+        services.AddScoped<IAgentSelectionStrategy, LeastLoadAgentSelectionStrategy>();
+        services.AddScoped<TaskOrchestrator>();
+        services.AddScoped<ITaskEventPublisher, InMemoryTaskEventPublisher>();
+        services.AddScoped<IArtifactStore, DatabaseArtifactStore>();
+        services.AddScoped<ContextChainService>();
+        services.AddScoped<FailureRecoveryService>();
+        services.AddScoped<AgentRegistrationRepository>();
+        services.AddScoped<IAgentRegistryService, AgentRegistryService>();
         return services;
     }
 

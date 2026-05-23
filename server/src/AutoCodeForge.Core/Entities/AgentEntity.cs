@@ -175,6 +175,11 @@ public class AgentEntity : UserOwnedEntity
     public int LearningProgress { get; set; }
 
     /// <summary>
+    /// 当前任务计数（用于负载均衡）
+    /// </summary>
+    public int CurrentTaskCount { get; set; } = 0;
+
+    /// <summary>
     /// 乐观锁版本号
     /// </summary>
     public int Version { get; set; } = 0;

@@ -51,6 +51,21 @@ public class TaskStepRepository : BaseRepository<TaskStepEntity>
     }
 
     /// <summary>
+    /// 获取任务的当前工序（用于任务编排）
+    /// </summary>
+    /// <param name="taskId">任务 ID</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>当前工序</returns>
+    public async Task<TaskStepEntity?> GetCurrentStepAsync(Guid taskId, CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        return await Queryable
+            .Where(step => step.TaskId == taskId)
+            .OrderBy(step => step.Step)
+            .FirstAsync(step => step.Status == TaskStepStatus.Pending);
+    }
+
+    /// <summary>
     /// 获取任务的已完成工序（用于构建上下文）
     /// </summary>
     /// <param name="taskId">任务 ID</param>
@@ -86,5 +101,30 @@ public class TaskStepRepository : BaseRepository<TaskStepEntity>
             .Where(step => step.Status == TaskStepStatus.Handling && step.StartedAtUtc <= timeoutThreshold)
             .OrderBy(step => step.StartedAtUtc)
             .ToListAsync();
+    }
+
+    /// <summary>
+    /// 统计Agent的活跃任务数
+    /// </summary>
+    public async Task<int> CountAgentActiveTasksAsync(Guid agentId, CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        return await Queryable
+            .Where(step => step.WorkerAgentId == agentId && step.Status == TaskStepStatus.Handling)
+            .CountAsync();
+    }
+
+    /// <summary>
+    /// 将Agent分配给任务的当前步骤
+    /// </summary>
+    public async Task AssignAgentAsync(Guid taskId, Guid agentId, CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        await Db.Updateable<TaskStepEntity>()
+            .SetColumns(step => step.WorkerAgentId == agentId)
+            .SetColumns(step => step.Status == TaskStepStatus.Handling)
+            .SetColumns(step => step.StartedAtUtc == DateTime.UtcNow)
+            .Where(step => step.TaskId == taskId && step.Status == TaskStepStatus.Pending)
+            .ExecuteCommandAsync();
     }
 }
