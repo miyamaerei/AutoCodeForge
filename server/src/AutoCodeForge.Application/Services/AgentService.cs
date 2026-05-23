@@ -438,6 +438,23 @@ public class AgentService
         return records.Select(ToDormantRecordResponse).ToList();
     }
 
+    /// <summary>
+    /// 获取所有Agent
+    /// </summary>
+    public async Task<List<AgentResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var agents = await _agentRepository.GetAllAsync(true, cancellationToken);
+        return agents.Select(ToResponse).ToList();
+    }
+
+    /// <summary>
+    /// 获取所有学习记录
+    /// </summary>
+    public async Task<List<AgentLearningRecordEntity>> GetAllLearningRecordsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _learningRecordRepository.GetAllAsync(true, cancellationToken);
+    }
+
     private static int Score(string? keywords, string userInput)
     {
         if (string.IsNullOrWhiteSpace(keywords) || string.IsNullOrWhiteSpace(userInput))

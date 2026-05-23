@@ -121,6 +121,7 @@ app.MapRepositoryEndpoints();
 app.MapPipelineEndpoints();
 app.MapWikiEndpoints();
 app.MapAdminEndpoints();
+app.MapDashboardEndpoints();
 
 app.Run();
 
