@@ -100,6 +100,11 @@ public sealed class IntegrationTestContext : IDisposable
     public AgentRegistrationRepository AgentRegistrationRepository { get; }
 
     /// <summary>
+    /// 通知仓储
+    /// </summary>
+    public NotificationRepository NotificationRepository { get; }
+
+    /// <summary>
     /// LLM模型配置仓储
     /// </summary>
     public LLMModelConfigRepository LLMModelConfigRepository { get; }
@@ -229,7 +234,8 @@ public sealed class IntegrationTestContext : IDisposable
             typeof(AgentDormantRecordEntity),
             typeof(LLMModelConfigEntity),
             typeof(AutoCodeForge.Infrastructure.Services.ArtifactEntity),
-            typeof(AgentRegistrationEntity));
+            typeof(AgentRegistrationEntity),
+            typeof(NotificationEntity));
 
         // 初始化测试用户
         CurrentUser = new TestCurrentUser(userId);
@@ -245,6 +251,7 @@ public sealed class IntegrationTestContext : IDisposable
         WorkspaceRepository = new RepoSandboxWorkspaceRepository(Db, CurrentUser);
         AgentRepository = new AgentRepository(Db, CurrentUser);
         AgentRegistrationRepository = new AgentRegistrationRepository(Db, CurrentUser);
+        NotificationRepository = new NotificationRepository(Db, CurrentUser);
         AgentLearningRecordRepository = new AgentLearningRecordRepository(Db, CurrentUser);
         AgentDormantRecordRepository = new AgentDormantRecordRepository(Db, CurrentUser);
         LLMModelConfigRepository = new LLMModelConfigRepository(Db, CurrentUser);

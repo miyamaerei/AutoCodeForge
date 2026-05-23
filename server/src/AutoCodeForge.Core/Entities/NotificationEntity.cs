@@ -23,10 +23,13 @@ public class NotificationEntity : AuditableEntity
 
     public bool IsRead { get; set; } = false;
 
+    [SugarColumn(IsNullable = true)]
     public DateTime? ReadAt { get; set; }
 
+    [SugarColumn(IsNullable = true)]
     public Guid? TaskId { get; set; }
 
+    [SugarColumn(IsNullable = true)]
     public Guid? GateId { get; set; }
 
     [SugarColumn(Length = 100)]
