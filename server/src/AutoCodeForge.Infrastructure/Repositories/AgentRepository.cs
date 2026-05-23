@@ -33,4 +33,28 @@ public class AgentRepository : BaseRepository<AgentEntity>
             .OrderBy(agent => agent.Name)
             .ToListAsync();
     }
+
+    /// <summary>
+    /// 获取指定状态的Agent列表
+    /// </summary>
+    public async Task<List<AgentEntity>> GetByStateAsync(AgentState state, CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        return await Queryable
+            .Where(agent => agent.State == state && agent.IsEnabled)
+            .OrderBy(agent => agent.Name)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// 获取所有休眠状态的Agent列表
+    /// </summary>
+    public async Task<List<AgentEntity>> GetDormantAgentsAsync(CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        return await Queryable
+            .Where(agent => agent.State == AgentState.Dormant && agent.IsEnabled)
+            .OrderBy(agent => agent.Name)
+            .ToListAsync();
+    }
 }

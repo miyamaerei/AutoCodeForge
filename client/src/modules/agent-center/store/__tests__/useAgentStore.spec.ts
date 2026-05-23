@@ -5,8 +5,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAgentStore } from '../useAgentStore'
 import * as agentApi from '../../agent.api'
-import type { AgentDto, CreateAgentDto, UpdateAgentDto } from '../../agent.api'
-import type { PagedResult } from '../../api/agent.types'
+import type { AgentDto, CreateAgentDto, UpdateAgentDto, PagedResult } from '../../api/agent.types'
+import { AgentState, AgentRole } from '../../api/agent.types'
 
 describe('useAgentStore', () => {
   // 测试数据
@@ -19,6 +19,11 @@ describe('useAgentStore', () => {
       systemPrompt: '你是一个专业的代码审查助手',
       keywords: [{ keyword: 'review', weight: 1.0 }],
       enabled: true,
+      state: AgentState.Idle,
+      role: AgentRole.Worker,
+      stateChangedAt: '2026-05-22 10:00:00',
+      learningProgress: 0,
+      version: 1,
       createdAt: '2026-05-01 10:00:00',
       updatedAt: '2026-05-15 14:30:00',
     },
@@ -30,6 +35,11 @@ describe('useAgentStore', () => {
       systemPrompt: '你是一个资深的系统架构师',
       keywords: [{ keyword: '架构', weight: 1.0 }],
       enabled: true,
+      state: AgentState.Idle,
+      role: AgentRole.Manager,
+      stateChangedAt: '2026-05-22 11:00:00',
+      learningProgress: 0,
+      version: 1,
       createdAt: '2026-05-02 09:00:00',
       updatedAt: '2026-05-16 11:00:00',
     },
@@ -41,6 +51,11 @@ describe('useAgentStore', () => {
       systemPrompt: '我被禁用了',
       keywords: [{ keyword: '禁用', weight: 1.0 }],
       enabled: false,
+      state: AgentState.Idle,
+      role: AgentRole.Worker,
+      stateChangedAt: '2026-05-22 12:00:00',
+      learningProgress: 0,
+      version: 1,
       createdAt: '2026-05-03 08:30:00',
       updatedAt: '2026-05-17 16:00:00',
     },
@@ -194,10 +209,15 @@ describe('useAgentStore', () => {
         systemPrompt: '我是新助手',
         keywords: [{ keyword: '新', weight: 1.0 }],
         enabled: true,
+        role: AgentRole.Worker,
       }
       const createdAgent: AgentDto = {
         ...newAgent,
         id: 'agent-new',
+        state: AgentState.Idle,
+        stateChangedAt: '2026-05-21 10:00:00',
+        learningProgress: 0,
+        version: 1,
         createdAt: '2026-05-21 10:00:00',
         updatedAt: '2026-05-21 10:00:00',
       }
@@ -221,6 +241,7 @@ describe('useAgentStore', () => {
         systemPrompt: '',
         keywords: [],
         enabled: true,
+        role: AgentRole.Worker,
       })
 
       expect(result).toBe(null)

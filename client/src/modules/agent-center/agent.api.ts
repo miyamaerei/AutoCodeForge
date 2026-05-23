@@ -1,58 +1,27 @@
-﻿/**
- * Agent API 模块 - 提供 Agent 的 CRUD 操作
+/**
+ * Agent API 模块 - 提供 Agent 的 CRUD 操作和生命周期管理
  * 支持真实 API 调用和 Mock 数据切换
  */
 
 import { request } from '@/lib/request'
 import { USE_MOCK } from '@/config/runtime'
-import type { PagedResult } from '@/modules/agent-center/api/agent.types'
-
-// ==================== 类型定义 ====================
-
-/** 关键词权重 */
-export interface AgentKeyword {
-  /** 关键词 */
-  keyword: string
-  /** 权重 */
-  weight: number
-}
-
-/** Agent 响应 DTO（对应后端 AgentResponse） */
-export interface AgentDto {
-  /** Agent ID */
-  id: string
-  /** Agent 名称 */
-  name: string
-  /** Agent 描述 */
-  description: string
-  /** 头像/图标（仅前端使用，后端不支持） */
-  icon: string
-  /** 系统提示词 */
-  systemPrompt: string
-  /** 自动选择关键词 */
-  keywords: AgentKeyword[]
-  /** 是否启用 */
-  enabled: boolean
-  /** 创建时间 */
-  createdAt: string
-  /** 更新时间 */
-  updatedAt: string
-}
-
-/** 创建 Agent 请求 */
-export interface CreateAgentDto {
-  name: string
-  description: string
-  icon: string
-  systemPrompt: string
-  keywords: AgentKeyword[]
-  enabled: boolean
-}
-
-/** 更新 Agent 请求 */
-export interface UpdateAgentDto extends Partial<CreateAgentDto> {
-  id: string
-}
+import type {
+  PagedResult,
+  AgentDto,
+  CreateAgentDto,
+  UpdateAgentDto,
+  AssignTaskRequestDto,
+  FailTaskRequestDto,
+  EnterDormantRequestDto,
+  AgentLearningRecordDto,
+  AgentDormantRecordDto,
+} from '@/modules/agent-center/api/agent.types'
+import {
+  AgentState,
+  AgentRole,
+  FailureCategory,
+  LearningTriggerType,
+} from '@/modules/agent-center/api/agent.types'
 
 // ==================== Mock 数据 ====================
 
@@ -71,6 +40,14 @@ const defaultAgents: AgentDto[] = [
       { keyword: '质量', weight: 0.6 },
     ],
     enabled: true,
+    state: AgentState.Idle,
+    role: AgentRole.Worker,
+    stateChangedAt: '2026-05-22 10:00:00',
+    currentTaskId: null,
+    dormantReason: null,
+    skillTags: '代码审查,质量检查',
+    learningProgress: 0,
+    version: 1,
     createdAt: '2026-05-01 10:00:00',
     updatedAt: '2026-05-15 14:30:00',
   },
@@ -88,6 +65,14 @@ const defaultAgents: AgentDto[] = [
       { keyword: '系统设计', weight: 0.9 },
     ],
     enabled: true,
+    state: AgentState.Idle,
+    role: AgentRole.Manager,
+    stateChangedAt: '2026-05-22 11:00:00',
+    currentTaskId: null,
+    dormantReason: null,
+    skillTags: '架构设计,技术方案',
+    learningProgress: 0,
+    version: 1,
     createdAt: '2026-05-02 09:00:00',
     updatedAt: '2026-05-16 11:00:00',
   },
@@ -105,6 +90,14 @@ const defaultAgents: AgentDto[] = [
       { keyword: '慢查询', weight: 0.8 },
     ],
     enabled: true,
+    state: AgentState.Handling,
+    role: AgentRole.Worker,
+    stateChangedAt: '2026-05-23 09:00:00',
+    currentTaskId: 'task-123',
+    dormantReason: null,
+    skillTags: '数据库优化,SQL调优',
+    learningProgress: 0,
+    version: 2,
     createdAt: '2026-05-03 08:30:00',
     updatedAt: '2026-05-17 16:00:00',
   },
@@ -122,31 +115,51 @@ const defaultAgents: AgentDto[] = [
       { keyword: '样式', weight: 0.6 },
     ],
     enabled: true,
+    state: AgentState.Dormant,
+    role: AgentRole.Worker,
+    stateChangedAt: '2026-05-20 18:00:00',
+    currentTaskId: null,
+    dormantReason: '连续学习效果不佳',
+    skillTags: '前端开发,Vue,React',
+    learningProgress: 0,
+    version: 3,
     createdAt: '2026-05-04 14:00:00',
     updatedAt: '2026-05-18 10:00:00',
   },
+]
+
+// Mock 学习记录
+const defaultLearningRecords: AgentLearningRecordDto[] = [
   {
-    id: 'agent-5',
-    name: '文档撰写助手',
-    description: '帮助撰写技术文档和 API 说明',
-    icon: '📝',
-    systemPrompt: '你是一个技术文档专家，擅长撰写清晰、准确的技术文档。',
-    keywords: [
-      { keyword: '文档', weight: 1.0 },
-      { keyword: '说明', weight: 0.8 },
-      { keyword: 'api', weight: 0.7 },
-      { keyword: 'readme', weight: 0.8 },
-      { keyword: '注释', weight: 0.6 },
-    ],
-    enabled: false,
-    createdAt: '2026-05-05 11:00:00',
-    updatedAt: '2026-05-19 09:00:00',
+    id: 'lr-1',
+    agentId: 'agent-1',
+    triggerType: LearningTriggerType.PostTaskReview,
+    summary: '学习了代码审查最佳实践',
+    result: '成功更新了审查规则',
+    isSuccess: true,
+    skillTags: '代码审查',
+    createdAt: '2026-05-21 15:00:00',
+  },
+]
+
+// Mock 休眠记录
+const defaultDormantRecords: AgentDormantRecordDto[] = [
+  {
+    id: 'dr-1',
+    agentId: 'agent-4',
+    reason: '连续学习效果不佳',
+    isWoken: false,
+    wokeUpAt: null,
+    wokenUpBy: null,
+    createdAt: '2026-05-20 18:00:00',
   },
 ]
 
 // ==================== Mock 辅助函数 ====================
 
 let agentsData: AgentDto[] = [...defaultAgents]
+let learningRecordsData: AgentLearningRecordDto[] = [...defaultLearningRecords]
+let dormantRecordsData: AgentDormantRecordDto[] = [...defaultDormantRecords]
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
@@ -162,6 +175,14 @@ function agentResponseToDto(res: {
   keywords?: string | null
   systemPrompt?: string | null
   isEnabled: boolean
+  state: string
+  role: string
+  stateChangedAtUtc: string
+  currentTaskId?: string | null
+  dormantReason?: string | null
+  skillTags?: string | null
+  learningProgress: number
+  version: number
   createdAtUtc: string
   updatedAtUtc: string
 }): AgentDto {
@@ -175,6 +196,14 @@ function agentResponseToDto(res: {
       ? res.keywords.split(',').map((k) => ({ keyword: k.trim(), weight: 1.0 }))
       : [],
     enabled: res.isEnabled,
+    state: res.state as AgentState,
+    role: res.role as AgentRole,
+    stateChangedAt: res.stateChangedAtUtc,
+    currentTaskId: res.currentTaskId,
+    dormantReason: res.dormantReason,
+    skillTags: res.skillTags,
+    learningProgress: res.learningProgress,
+    version: res.version,
     createdAt: res.createdAtUtc,
     updatedAt: res.updatedAtUtc,
   }
@@ -188,6 +217,8 @@ function dtoToCreateRequest(dto: CreateAgentDto): Record<string, unknown> {
     keywords: dto.keywords.map((k) => k.keyword).join(','),
     systemPrompt: dto.systemPrompt,
     isEnabled: dto.enabled,
+    role: dto.role,
+    skillTags: dto.skillTags,
   }
 }
 
@@ -200,6 +231,9 @@ function dtoToUpdateRequest(dto: UpdateAgentDto): Record<string, unknown> {
   if (dto.description !== undefined) req.description = dto.description
   if (dto.keywords !== undefined) req.keywords = dto.keywords.map((k) => k.keyword).join(',')
   if (dto.systemPrompt !== undefined) req.systemPrompt = dto.systemPrompt
+  if (dto.role !== undefined) req.role = dto.role
+  if (dto.skillTags !== undefined) req.skillTags = dto.skillTags
+  if (dto.version !== undefined) req.version = dto.version
   return req
 }
 
@@ -224,6 +258,14 @@ export async function fetchAgents(page = 1, pageSize = 20): Promise<PagedResult<
       keywords?: string | null
       systemPrompt?: string | null
       isEnabled: boolean
+      state: string
+      role: string
+      stateChangedAtUtc: string
+      currentTaskId?: string | null
+      dormantReason?: string | null
+      skillTags?: string | null
+      learningProgress: number
+      version: number
       createdAtUtc: string
       updatedAtUtc: string
     }>
@@ -254,6 +296,14 @@ export async function getAgents(): Promise<AgentDto[]> {
         keywords?: string | null
         systemPrompt?: string | null
         isEnabled: boolean
+        state: string
+        role: string
+        stateChangedAtUtc: string
+        currentTaskId?: string | null
+        dormantReason?: string | null
+        skillTags?: string | null
+        learningProgress: number
+        version: number
         createdAtUtc: string
         updatedAtUtc: string
       }>
@@ -280,6 +330,14 @@ export async function getAgent(id: string): Promise<AgentDto | null> {
         keywords?: string | null
         systemPrompt?: string | null
         isEnabled: boolean
+        state: string
+        role: string
+        stateChangedAtUtc: string
+        currentTaskId?: string | null
+        dormantReason?: string | null
+        skillTags?: string | null
+        learningProgress: number
+        version: number
         createdAtUtc: string
         updatedAtUtc: string
       }
@@ -298,6 +356,12 @@ export async function createAgent(dto: CreateAgentDto): Promise<AgentDto> {
     const agent: AgentDto = {
       id: `agent-${Date.now()}`,
       ...dto,
+      state: AgentState.Idle,
+      stateChangedAt: now,
+      currentTaskId: null,
+      dormantReason: null,
+      learningProgress: 0,
+      version: 1,
       createdAt: now,
       updatedAt: now,
     }
@@ -312,6 +376,14 @@ export async function createAgent(dto: CreateAgentDto): Promise<AgentDto> {
       keywords?: string | null
       systemPrompt?: string | null
       isEnabled: boolean
+      state: string
+      role: string
+      stateChangedAtUtc: string
+      currentTaskId?: string | null
+      dormantReason?: string | null
+      skillTags?: string | null
+      learningProgress: number
+      version: number
       createdAtUtc: string
       updatedAtUtc: string
     }
@@ -330,6 +402,7 @@ export async function updateAgent(dto: UpdateAgentDto): Promise<AgentDto | null>
     const updated: AgentDto = {
       ...existing,
       ...dto,
+      version: dto.version ?? existing.version,
       updatedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
     }
     agentsData[index] = updated
@@ -344,6 +417,14 @@ export async function updateAgent(dto: UpdateAgentDto): Promise<AgentDto | null>
         keywords?: string | null
         systemPrompt?: string | null
         isEnabled: boolean
+        state: string
+        role: string
+        stateChangedAtUtc: string
+        currentTaskId?: string | null
+        dormantReason?: string | null
+        skillTags?: string | null
+        learningProgress: number
+        version: number
         createdAtUtc: string
         updatedAtUtc: string
       }
@@ -371,7 +452,7 @@ export async function deleteAgent(id: string): Promise<boolean> {
 export async function selectAgentByMessage(message: string): Promise<AgentDto | null> {
   if (USE_MOCK) {
     await wait(50)
-    const enabledAgents = agentsData.filter((a) => a.enabled)
+    const enabledAgents = agentsData.filter((a) => a.enabled && a.state === AgentState.Idle)
     if (enabledAgents.length === 0) return null
 
     const lowerMessage = message.toLowerCase()
@@ -401,6 +482,14 @@ export async function selectAgentByMessage(message: string): Promise<AgentDto | 
         keywords?: string | null
         systemPrompt?: string | null
         isEnabled: boolean
+        state: string
+        role: string
+        stateChangedAtUtc: string
+        currentTaskId?: string | null
+        dormantReason?: string | null
+        skillTags?: string | null
+        learningProgress: number
+        version: number
         createdAtUtc: string
         updatedAtUtc: string
       } | null
@@ -409,4 +498,405 @@ export async function selectAgentByMessage(message: string): Promise<AgentDto | 
   } catch {
     return null
   }
+}
+
+// ==================== 生命周期管理 API ====================
+
+/** 根据状态获取 Agent 列表 */
+export async function getAgentsByState(state: AgentState): Promise<AgentDto[]> {
+  if (USE_MOCK) {
+    await wait(150)
+    return agentsData.filter((a) => a.state === state)
+  }
+  const { data } = await request.get<{
+    data: Array<{
+      id: string
+      name: string
+      description?: string | null
+      keywords?: string | null
+      systemPrompt?: string | null
+      isEnabled: boolean
+      state: string
+      role: string
+      stateChangedAtUtc: string
+      currentTaskId?: string | null
+      dormantReason?: string | null
+      skillTags?: string | null
+      learningProgress: number
+      version: number
+      createdAtUtc: string
+      updatedAtUtc: string
+    }>
+  }>(`/v1/agents/state/${state}`)
+  return data.data.map(agentResponseToDto)
+}
+
+/** 获取休眠 Agent 列表 */
+export async function getDormantAgents(): Promise<AgentDto[]> {
+  if (USE_MOCK) {
+    await wait(150)
+    return agentsData.filter((a) => a.state === AgentState.Dormant)
+  }
+  const { data } = await request.get<{
+    data: Array<{
+      id: string
+      name: string
+      description?: string | null
+      keywords?: string | null
+      systemPrompt?: string | null
+      isEnabled: boolean
+      state: string
+      role: string
+      stateChangedAtUtc: string
+      currentTaskId?: string | null
+      dormantReason?: string | null
+      skillTags?: string | null
+      learningProgress: number
+      version: number
+      createdAtUtc: string
+      updatedAtUtc: string
+    }>
+  }>('/v1/agents/dormant')
+  return data.data.map(agentResponseToDto)
+}
+
+/** 分配任务给 Agent */
+export async function assignTask(agentId: string, dto: AssignTaskRequestDto): Promise<AgentDto> {
+  if (USE_MOCK) {
+    await wait(200)
+    const agent = agentsData.find((a) => a.id === agentId)
+    if (!agent) throw new Error('Agent not found')
+    const now = new Date().toLocaleString('zh-CN', { hour12: false })
+    const updated: AgentDto = {
+      ...agent,
+      state: AgentState.Handling,
+      stateChangedAt: now,
+      currentTaskId: dto.taskId,
+      version: agent.version + 1,
+      updatedAt: now,
+    }
+    const index = agentsData.findIndex((a) => a.id === agentId)
+    if (index !== -1) agentsData[index] = updated
+    return updated
+  }
+  const { data } = await request.post<{
+    data: {
+      id: string
+      name: string
+      description?: string | null
+      keywords?: string | null
+      systemPrompt?: string | null
+      isEnabled: boolean
+      state: string
+      role: string
+      stateChangedAtUtc: string
+      currentTaskId?: string | null
+      dormantReason?: string | null
+      skillTags?: string | null
+      learningProgress: number
+      version: number
+      createdAtUtc: string
+      updatedAtUtc: string
+    }
+  }>(`/v1/agents/${agentId}/assign`, dto)
+  return agentResponseToDto(data.data)
+}
+
+/** 完成 Agent 任务 */
+export async function completeTask(agentId: string): Promise<AgentDto> {
+  if (USE_MOCK) {
+    await wait(200)
+    const agent = agentsData.find((a) => a.id === agentId)
+    if (!agent) throw new Error('Agent not found')
+    const now = new Date().toLocaleString('zh-CN', { hour12: false })
+    const updated: AgentDto = {
+      ...agent,
+      state: AgentState.Idle,
+      stateChangedAt: now,
+      currentTaskId: null,
+      version: agent.version + 1,
+      updatedAt: now,
+    }
+    const index = agentsData.findIndex((a) => a.id === agentId)
+    if (index !== -1) agentsData[index] = updated
+    return updated
+  }
+  const { data } = await request.post<{
+    data: {
+      id: string
+      name: string
+      description?: string | null
+      keywords?: string | null
+      systemPrompt?: string | null
+      isEnabled: boolean
+      state: string
+      role: string
+      stateChangedAtUtc: string
+      currentTaskId?: string | null
+      dormantReason?: string | null
+      skillTags?: string | null
+      learningProgress: number
+      version: number
+      createdAtUtc: string
+      updatedAtUtc: string
+    }
+  }>(`/v1/agents/${agentId}/complete`)
+  return agentResponseToDto(data.data)
+}
+
+/** 标记任务失败 */
+export async function failTask(agentId: string, dto: FailTaskRequestDto): Promise<AgentDto> {
+  if (USE_MOCK) {
+    await wait(200)
+    const agent = agentsData.find((a) => a.id === agentId)
+    if (!agent) throw new Error('Agent not found')
+    const now = new Date().toLocaleString('zh-CN', { hour12: false })
+    const updated: AgentDto = {
+      ...agent,
+      state: AgentState.Idle,
+      stateChangedAt: now,
+      currentTaskId: null,
+      version: agent.version + 1,
+      updatedAt: now,
+    }
+    const index = agentsData.findIndex((a) => a.id === agentId)
+    if (index !== -1) agentsData[index] = updated
+    return updated
+  }
+  const { data } = await request.post<{
+    data: {
+      id: string
+      name: string
+      description?: string | null
+      keywords?: string | null
+      systemPrompt?: string | null
+      isEnabled: boolean
+      state: string
+      role: string
+      stateChangedAtUtc: string
+      currentTaskId?: string | null
+      dormantReason?: string | null
+      skillTags?: string | null
+      learningProgress: number
+      version: number
+      createdAtUtc: string
+      updatedAtUtc: string
+    }
+  }>(`/v1/agents/${agentId}/fail`, dto)
+  return agentResponseToDto(data.data)
+}
+
+/** 触发 Agent 学习 */
+export async function startLearning(agentId: string): Promise<AgentDto> {
+  if (USE_MOCK) {
+    await wait(200)
+    const agent = agentsData.find((a) => a.id === agentId)
+    if (!agent) throw new Error('Agent not found')
+    const now = new Date().toLocaleString('zh-CN', { hour12: false })
+    const updated: AgentDto = {
+      ...agent,
+      state: AgentState.Learning,
+      stateChangedAt: now,
+      learningProgress: 0,
+      version: agent.version + 1,
+      updatedAt: now,
+    }
+    const index = agentsData.findIndex((a) => a.id === agentId)
+    if (index !== -1) agentsData[index] = updated
+    return updated
+  }
+  const { data } = await request.post<{
+    data: {
+      id: string
+      name: string
+      description?: string | null
+      keywords?: string | null
+      systemPrompt?: string | null
+      isEnabled: boolean
+      state: string
+      role: string
+      stateChangedAtUtc: string
+      currentTaskId?: string | null
+      dormantReason?: string | null
+      skillTags?: string | null
+      learningProgress: number
+      version: number
+      createdAtUtc: string
+      updatedAtUtc: string
+    }
+  }>(`/v1/agents/${agentId}/learn`)
+  return agentResponseToDto(data.data)
+}
+
+/** Agent 进入休眠 */
+export async function enterDormant(agentId: string, dto: EnterDormantRequestDto): Promise<AgentDto> {
+  if (USE_MOCK) {
+    await wait(200)
+    const agent = agentsData.find((a) => a.id === agentId)
+    if (!agent) throw new Error('Agent not found')
+    const now = new Date().toLocaleString('zh-CN', { hour12: false })
+    const updated: AgentDto = {
+      ...agent,
+      state: AgentState.Dormant,
+      stateChangedAt: now,
+      dormantReason: dto.reason,
+      version: agent.version + 1,
+      updatedAt: now,
+    }
+    const index = agentsData.findIndex((a) => a.id === agentId)
+    if (index !== -1) agentsData[index] = updated
+
+    // 添加休眠记录
+    const record: AgentDormantRecordDto = {
+      id: `dr-${Date.now()}`,
+      agentId,
+      reason: dto.reason,
+      isWoken: false,
+      wokeUpAt: null,
+      wokenUpBy: null,
+      createdAt: now,
+    }
+    dormantRecordsData.push(record)
+
+    return updated
+  }
+  const { data } = await request.post<{
+    data: {
+      id: string
+      name: string
+      description?: string | null
+      keywords?: string | null
+      systemPrompt?: string | null
+      isEnabled: boolean
+      state: string
+      role: string
+      stateChangedAtUtc: string
+      currentTaskId?: string | null
+      dormantReason?: string | null
+      skillTags?: string | null
+      learningProgress: number
+      version: number
+      createdAtUtc: string
+      updatedAtUtc: string
+    }
+  }>(`/v1/agents/${agentId}/dormant`, dto)
+  return agentResponseToDto(data.data)
+}
+
+/** 唤醒休眠的 Agent */
+export async function wakeUpAgent(agentId: string): Promise<AgentDto> {
+  if (USE_MOCK) {
+    await wait(200)
+    const agent = agentsData.find((a) => a.id === agentId)
+    if (!agent) throw new Error('Agent not found')
+    const now = new Date().toLocaleString('zh-CN', { hour12: false })
+    const updated: AgentDto = {
+      ...agent,
+      state: AgentState.Idle,
+      stateChangedAt: now,
+      dormantReason: null,
+      version: agent.version + 1,
+      updatedAt: now,
+    }
+    const index = agentsData.findIndex((a) => a.id === agentId)
+    if (index !== -1) agentsData[index] = updated
+
+    // 更新休眠记录
+    const recordIndex = dormantRecordsData.findIndex((r) => r.agentId === agentId && !r.isWoken)
+    if (recordIndex !== -1) {
+      const existingRecord = dormantRecordsData[recordIndex]
+      if (existingRecord) {
+        dormantRecordsData[recordIndex] = {
+          id: existingRecord.id,
+          agentId: existingRecord.agentId,
+          reason: existingRecord.reason,
+          isWoken: true,
+          wokeUpAt: now,
+          wokenUpBy: 'current-user',
+          createdAt: existingRecord.createdAt,
+        }
+      }
+    }
+
+    return updated
+  }
+  const { data } = await request.post<{
+    data: {
+      id: string
+      name: string
+      description?: string | null
+      keywords?: string | null
+      systemPrompt?: string | null
+      isEnabled: boolean
+      state: string
+      role: string
+      stateChangedAtUtc: string
+      currentTaskId?: string | null
+      dormantReason?: string | null
+      skillTags?: string | null
+      learningProgress: number
+      version: number
+      createdAtUtc: string
+      updatedAtUtc: string
+    }
+  }>(`/v1/agents/${agentId}/wake`)
+  return agentResponseToDto(data.data)
+}
+
+/** 获取 Agent 学习记录 */
+export async function getAgentLearningRecords(agentId: string): Promise<AgentLearningRecordDto[]> {
+  if (USE_MOCK) {
+    await wait(150)
+    return learningRecordsData.filter((r) => r.agentId === agentId)
+  }
+  const { data } = await request.get<{
+    data: Array<{
+      id: string
+      agentId: string
+      triggerType: string
+      summary?: string | null
+      result?: string | null
+      isSuccess: boolean
+      skillTags?: string | null
+      createdAtUtc: string
+    }>
+  }>(`/v1/agents/${agentId}/learning-records`)
+  return data.data.map((r) => ({
+    id: r.id,
+    agentId: r.agentId,
+    triggerType: r.triggerType as LearningTriggerType,
+    summary: r.summary,
+    result: r.result,
+    isSuccess: r.isSuccess,
+    skillTags: r.skillTags,
+    createdAt: r.createdAtUtc,
+  }))
+}
+
+/** 获取 Agent 休眠记录 */
+export async function getAgentDormantRecords(agentId: string): Promise<AgentDormantRecordDto[]> {
+  if (USE_MOCK) {
+    await wait(150)
+    return dormantRecordsData.filter((r) => r.agentId === agentId)
+  }
+  const { data } = await request.get<{
+    data: Array<{
+      id: string
+      agentId: string
+      reason: string
+      isWoken: boolean
+      wokeUpAtUtc?: string | null
+      wokenUpBy?: string | null
+      createdAtUtc: string
+    }>
+  }>(`/v1/agents/${agentId}/dormant-records`)
+  return data.data.map((r) => ({
+    id: r.id,
+    agentId: r.agentId,
+    reason: r.reason,
+    isWoken: r.isWoken,
+    wokeUpAt: r.wokeUpAtUtc,
+    wokenUpBy: r.wokenUpBy,
+    createdAt: r.createdAtUtc,
+  }))
 }

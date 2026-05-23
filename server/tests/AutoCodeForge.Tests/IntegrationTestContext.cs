@@ -137,6 +137,16 @@ public sealed class IntegrationTestContext : IDisposable
     /// </summary>
     public AgentService AgentService { get; }
 
+    /// <summary>
+    /// Agent学习记录仓储
+    /// </summary>
+    public AgentLearningRecordRepository AgentLearningRecordRepository { get; }
+
+    /// <summary>
+    /// Agent休眠记录仓储
+    /// </summary>
+    public AgentDormantRecordRepository AgentDormantRecordRepository { get; }
+
     #endregion
 
     /// <summary>
@@ -167,6 +177,8 @@ public sealed class IntegrationTestContext : IDisposable
             typeof(ConfigurationEntry),
             typeof(ConfigHistoryEntity),
             typeof(AgentEntity),
+            typeof(AgentLearningRecordEntity),
+            typeof(AgentDormantRecordEntity),
             typeof(LLMModelConfigEntity));
 
         // 初始化测试用户
@@ -181,6 +193,8 @@ public sealed class IntegrationTestContext : IDisposable
         TaskStepRepository = new TaskStepRepository(Db, CurrentUser);
         WorkspaceRepository = new RepoSandboxWorkspaceRepository(Db, CurrentUser);
         AgentRepository = new AgentRepository(Db, CurrentUser);
+        AgentLearningRecordRepository = new AgentLearningRecordRepository(Db, CurrentUser);
+        AgentDormantRecordRepository = new AgentDormantRecordRepository(Db, CurrentUser);
         LLMModelConfigRepository = new LLMModelConfigRepository(Db, CurrentUser);
 
         // 初始化基础设施服务
@@ -200,7 +214,11 @@ public sealed class IntegrationTestContext : IDisposable
         RepoSyncService = new RepoSyncService(TaskRepository, TaskLogRepository, RepositoryRepository, WorkspaceRepository, ConfigService);
         TaskStepService = new TaskStepService(TaskStepRepository, TaskRepository, Db);
         SandboxPathResolver = new SandboxPathResolver();
-        AgentService = new AgentService(AgentRepository);
+        AgentService = new AgentService(
+            AgentRepository,
+            AgentLearningRecordRepository,
+            AgentDormantRecordRepository,
+            CurrentUser);
     }
 
     /// <summary>
@@ -371,6 +389,84 @@ public sealed class IntegrationTestContext : IDisposable
         };
 
         return await AgentRepository.CreateAsync(entity);
+    }
+
+    /// <summary>
+    /// 创建带生命周期管理字段的测试 Agent
+    /// </summary>
+    public async Task<AgentEntity> CreateTestAgentWithLifecycleAsync(
+        string name = "Test Agent",
+        AgentState state = AgentState.Idle,
+        AgentRole role = AgentRole.Worker,
+        string? skillTags = null)
+    {
+        var entity = new AgentEntity
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            Description = "Test agent with lifecycle management",
+            SystemPrompt = "You are a helpful assistant.",
+            IsEnabled = true,
+            State = state,
+            Role = role,
+            StateChangedAtUtc = DateTime.UtcNow,
+            SkillTags = skillTags,
+            LearningProgress = 0,
+            Version = 0,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+
+        return await AgentRepository.CreateAsync(entity);
+    }
+
+    /// <summary>
+    /// 创建测试学习记录
+    /// </summary>
+    public async Task<AgentLearningRecordEntity> CreateTestLearningRecordAsync(
+        Guid agentId,
+        LearningTriggerType triggerType = LearningTriggerType.Manual,
+        string? summary = null,
+        bool isSuccess = true)
+    {
+        var entity = new AgentLearningRecordEntity
+        {
+            Id = Guid.NewGuid(),
+            AgentId = agentId,
+            TriggerType = triggerType,
+            TriggerReason = summary,
+            IsSuccessful = isSuccess,
+            EffectivenessScore = isSuccess ? 80 : 30,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+
+        return await AgentLearningRecordRepository.CreateAsync(entity);
+    }
+
+    /// <summary>
+    /// 创建测试休眠记录
+    /// </summary>
+    public async Task<AgentDormantRecordEntity> CreateTestDormantRecordAsync(
+        Guid agentId,
+        string reason = "Test dormancy",
+        bool isWoken = false)
+    {
+        var entity = new AgentDormantRecordEntity
+        {
+            Id = Guid.NewGuid(),
+            AgentId = agentId,
+            ReasonType = DormantReasonType.Manual,
+            ReasonDescription = reason,
+            IsWoken = isWoken,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+
+        return await AgentDormantRecordRepository.CreateAsync(entity);
     }
 
     /// <summary>

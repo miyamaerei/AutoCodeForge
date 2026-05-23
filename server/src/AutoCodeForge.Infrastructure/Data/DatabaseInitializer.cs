@@ -37,6 +37,8 @@ public class DatabaseInitializer
             typeof(ChatSessionEntity),
             typeof(ChatMessageEntity),
             typeof(AgentEntity),
+            typeof(AgentLearningRecordEntity),
+            typeof(AgentDormantRecordEntity),
             typeof(RepositoryEntity),
             typeof(ReviewRuleSetEntity),
             typeof(ReviewTaskEntity),

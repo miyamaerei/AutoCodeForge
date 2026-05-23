@@ -41,4 +41,9 @@ public class CreateAgentRequest
     /// Gets or sets whether the agent is enabled.
     /// </summary>
     public bool IsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Agent 角色
+    /// </summary>
+    public string? Role { get; set; }
 }

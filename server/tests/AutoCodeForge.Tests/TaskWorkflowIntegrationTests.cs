@@ -52,10 +52,17 @@ public sealed class TaskWorkflowIntegrationTests : IDisposable
         var taskRepository = new TaskRepository(_db, currentUser);
         var taskLogRepository = new TaskLogRepository(_db, currentUser);
         var agentRepository = new AgentRepository(_db, currentUser);
+        var agentLearningRecordRepository = new AgentLearningRecordRepository(_db, currentUser);
+        var agentDormantRecordRepository = new AgentDormantRecordRepository(_db, currentUser);
         var modelConfigRepository = new LLMModelConfigRepository(_db, currentUser);
 
+        // 初始化表
+        _db.CodeFirst.InitTables(
+            typeof(AgentLearningRecordEntity),
+            typeof(AgentDormantRecordEntity));
+
         _taskService = new TaskService(taskRepository, taskLogRepository);
-        _agentService = new AgentService(agentRepository);
+        _agentService = new AgentService(agentRepository, agentLearningRecordRepository, agentDormantRecordRepository, currentUser);
 
         // Mock LLM网关，模拟AI响应
         var mockLlmGateway = new Mock<ILlmGateway>();

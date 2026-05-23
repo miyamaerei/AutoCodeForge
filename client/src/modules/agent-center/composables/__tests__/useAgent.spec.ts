@@ -5,7 +5,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAgent } from '../useAgent'
 import * as agentApi from '../../agent.api'
-import type { AgentDto } from '../../agent.api'
+import type { AgentDto } from '../../api/agent.types'
+import { AgentState, AgentRole } from '../../api/agent.types'
 
 describe('useAgent', () => {
   // 测试数据
@@ -17,6 +18,11 @@ describe('useAgent', () => {
     systemPrompt: '你是一个测试助手',
     keywords: [{ keyword: '测试', weight: 1.0 }],
     enabled: true,
+    state: AgentState.Idle,
+    role: AgentRole.Worker,
+    stateChangedAt: '2026-05-22 10:00:00',
+    learningProgress: 0,
+    version: 1,
     createdAt: '2026-05-01 10:00:00',
     updatedAt: '2026-05-15 14:30:00',
   }

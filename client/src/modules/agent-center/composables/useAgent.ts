@@ -5,7 +5,8 @@
 import { computed, ref, toValue } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAgentStore } from '../store/useAgentStore'
-import type { AgentDto } from '../agent.api'
+import type { AgentDto } from '../api/agent.types'
+import { AgentRole } from '../api/agent.types'
 
 export interface AgentFormData {
   /** Agent 名称 */
@@ -123,7 +124,6 @@ export function useAgent() {
         id: currentSelected.id,
         name: fd.name,
         description: fd.description,
-        icon: fd.icon,
         systemPrompt: fd.systemPrompt,
         keywords,
         enabled: fd.enabled,
@@ -141,6 +141,7 @@ export function useAgent() {
         systemPrompt: fd.systemPrompt,
         keywords,
         enabled: fd.enabled,
+        role: AgentRole.Worker,
       })
       if (success) {
         closeDialog()

@@ -43,6 +43,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UserConfigRepository>();
         services.AddScoped<LLMModelConfigRepository>();
         services.AddScoped<AgentRepository>();
+        services.AddScoped<AgentLearningRecordRepository>();
+        services.AddScoped<AgentDormantRecordRepository>();
         services.AddScoped<ChatSessionRepository>();
         services.AddScoped<ChatMessageRepository>();
         services.AddScoped<TaskRepository>();
