@@ -1,5 +1,6 @@
 using AutoCodeForge.Application.Configuration;
 using AutoCodeForge.Application.Services;
+using AutoCodeForge.Infrastructure.Services;
 using AutoCodeForge.Core.DTOs.Config;
 using AutoCodeForge.Core.DTOs.Repository;
 using AutoCodeForge.Core.DTOs.RepoSync;
@@ -168,6 +169,21 @@ public sealed class IntegrationTestContext : IDisposable
     /// </summary>
     public LeastLoadAgentSelectionStrategy LeastLoadAgentSelectionStrategy { get; }
 
+    /// <summary>
+    /// 进程内事件发布器
+    /// </summary>
+    public InMemoryTaskEventPublisher InMemoryTaskEventPublisher { get; }
+
+    /// <summary>
+    /// 数据库产出物存储
+    /// </summary>
+    public AutoCodeForge.Infrastructure.Services.DatabaseArtifactStore DatabaseArtifactStore { get; }
+
+    /// <summary>
+    /// 上下文链式传递服务
+    /// </summary>
+    public ContextChainService ContextChainService { get; }
+
     #endregion
 
     /// <summary>
@@ -253,6 +269,11 @@ public sealed class IntegrationTestContext : IDisposable
             AgentRepository,
             TaskStepRepository,
             orchestrationSettings);
+
+        // 初始化Agent间通信服务
+        InMemoryTaskEventPublisher = new AutoCodeForge.Application.Services.InMemoryTaskEventPublisher();
+        DatabaseArtifactStore = new AutoCodeForge.Infrastructure.Services.DatabaseArtifactStore(Db);
+        ContextChainService = new AutoCodeForge.Application.Services.ContextChainService(TaskStepRepository, DatabaseArtifactStore);
     }
 
     /// <summary>

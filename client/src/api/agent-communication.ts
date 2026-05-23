@@ -38,4 +38,5 @@ export async function listArtifactsByTask(taskId: string): Promise<ArtifactContr
 }
 
 export async function deleteArtifact(artifactId: string): Promise<void> {
-  await request.delete(`/api/v1
+  await request.delete(`/api/v1/artifacts/${artifactId}`)
+}
