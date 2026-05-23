@@ -131,3 +131,44 @@ export interface TaskLogDto {
   taskId: string
   message: string
 }
+
+// Human Gate 相关类型
+export interface HumanGateResponseDto {
+  id: string
+  taskId: string
+  taskStepId?: string | null
+  gateType: string
+  gateTypeName: string
+  status: string
+  reason?: string | null
+  humanResponse?: string | null
+  modifications?: object | null
+  reviewerUserId?: string | null
+  reviewerName?: string | null
+  createdAtUtc: string
+  respondedAtUtc?: string | null
+}
+
+export interface CreateHumanGateRequestDto {
+  taskId: string
+  taskStepId?: string
+  gateType: string
+  reason?: string
+}
+
+export interface ApproveRequestDto {
+  comment?: string
+}
+
+export interface RejectRequestDto {
+  reason?: string
+}
+
+export interface ModifyApproveRequestDto {
+  modifications?: GateModificationsDto
+}
+
+export interface GateModificationsDto {
+  input?: string
+  instructions?: string
+}

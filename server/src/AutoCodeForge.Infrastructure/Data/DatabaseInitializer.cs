@@ -34,6 +34,7 @@ public class DatabaseInitializer
             typeof(TaskEntity),
             typeof(TaskLogEntity),
             typeof(TaskStepEntity),
+            typeof(HumanGateEntity),
             typeof(ChatSessionEntity),
             typeof(ChatMessageEntity),
             typeof(AgentEntity),

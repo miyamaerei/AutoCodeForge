@@ -108,6 +108,7 @@ app.MapChatEndpoints();
 app.MapChatStreamEndpoints();
 app.MapTaskEndpoints();
 app.MapTaskStepEndpoints();
+app.MapHumanGateEndpoints();
 app.MapRepoSyncEndpoints();
 app.MapReviewEndpoints();
 app.MapScheduledTaskEndpoints();

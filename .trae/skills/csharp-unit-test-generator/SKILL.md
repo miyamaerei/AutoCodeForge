@@ -1,6 +1,7 @@
 ---
 name: "csharp-unit-test-generator"
 description: "Generates C# unit tests for AutoCodeForge using IntegrationTestContext. Invoke when user asks to create unit tests, generate tests from requirements, or add test coverage for services/repositories."
+argument-hint: "测试功能名称（如 HumanGateService）"
 ---
 
 # C# Unit Test Generator
@@ -53,14 +54,55 @@ await _context.CreateRepoSyncTaskAsync(
 | `_context.AgentRepository` | `AgentEntity` |
 | `_context.LLMModelConfigRepository` | `LLMModelConfigEntity` |
 
-## 测试文件结构
+## 测试文件命名规则
+
+### 文件命名规范
+
+| 测试类型 | 前缀 | 示例 | 适用场景 |
+|---------|------|------|---------|
+| 单元测试 | `Unit_` | `Unit_HumanGateServiceTests.cs` | 独立组件测试，使用自己的临时数据库或无数据库依赖 |
+| 集成测试 | `Intg_` | `Intg_HumanGateServiceTests.cs` | 多组件协作测试，使用共享的 IntegrationTestContext |
+| 端到端测试 | `E2E_` | `E2E_RealEndToEndTaskTests.cs` | 完整业务流程测试，模拟真实用户操作 |
+| 冒烟测试 | `Smoke_` | `Smoke_AgentChatTests.cs` | 核心功能快速验证，确保主流程正常 |
+| 性能测试 | `Perf_` | `Perf_LlmGatewayTests.cs` | 性能基准测试，测量响应时间和吞吐量 |
+
+### 命名约定
+
+1. **前缀规则**：所有测试文件必须使用以下前缀之一：`Unit_`、`Intg_`、`E2E_`、`Smoke_`、`Perf_`
+2. **主体名称**：使用 `{Service/Feature}Tests` 格式
+3. **文件位置**：所有测试文件统一放在 `server/tests/AutoCodeForge.Tests/` 目录下
+4. **特殊目录**：性能测试可放在 `Performance/` 子目录，但仍需使用 `Perf_` 前缀
+
+### 测试分类判断标准
+
+| 判断条件 | 分类 | 前缀 |
+|---------|------|------|
+| 使用独立临时数据库（每个测试方法有独立的数据库实例） | 单元测试 | `Unit_` |
+| 使用共享的 IntegrationTestContext | 集成测试 | `Intg_` |
+| 使用 TestWebApplicationFactory 进行 API 端点测试 | 集成测试 | `Intg_` |
+| 无数据库依赖，纯逻辑测试 | 单元测试 | `Unit_` |
+| 涉及真实外部服务调用 | 集成测试 | `Intg_` |
+| 完整业务流程测试，模拟真实用户操作 | 端到端测试 | `E2E_` |
+| 核心功能快速验证 | 冒烟测试 | `Smoke_` |
+| 性能基准测试 | 性能测试 | `Perf_` |
+
+### 测试文件结构
 
 ```
 server/tests/AutoCodeForge.Tests/
-├── IntegrationTestContext.cs          # 测试基础设施（已存在）
-├── RepoSyncFullIntegrationTests.cs    # RepoSync完整测试（参考）
-├── RealEndToEndTaskTests.cs            # E2E测试（参考）
-└── [NewTestFile].cs                    # 新增测试文件
+├── Performance/                          # 性能测试目录
+│   └── Perf_LlmGatewayTests.cs           # 性能测试（Perf_前缀）
+├── IntegrationTestContext.cs             # 测试基础设施（无前缀）
+├── TestBase.cs                           # 测试基类（无前缀）
+├── TestWebApplicationFactory.cs          # Web应用工厂（无前缀）
+├── TestDataFactory.cs                    # 测试数据工厂（无前缀）
+├── GlobalUsings.cs                       # 全局引用（无前缀）
+├── Unit_HumanGateServiceTests.cs         # 单元测试（Unit_前缀）
+├── Unit_TaskServiceTests.cs              # 单元测试（Unit_前缀）
+├── Intg_HumanGateServiceTests.cs         # 集成测试（Intg_前缀）
+├── Intg_AgentServiceTests.cs             # 集成测试（Intg_前缀）
+├── E2E_RealEndToEndTaskTests.cs          # 端到端测试（E2E_前缀）
+└── Smoke_AgentChatTests.cs               # 冒烟测试（Smoke_前缀）
 ```
 
 ## 使用流程

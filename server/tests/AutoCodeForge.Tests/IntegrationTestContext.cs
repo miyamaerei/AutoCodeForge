@@ -73,6 +73,16 @@ public sealed class IntegrationTestContext : IDisposable
     public TaskStepService TaskStepService { get; }
 
     /// <summary>
+    /// HumanGate仓储
+    /// </summary>
+    public HumanGateRepository HumanGateRepository { get; }
+
+    /// <summary>
+    /// HumanGate服务
+    /// </summary>
+    public HumanGateService HumanGateService { get; }
+
+    /// <summary>
     /// 工作空间仓储
     /// </summary>
     public RepoSandboxWorkspaceRepository WorkspaceRepository { get; }
@@ -170,6 +180,7 @@ public sealed class IntegrationTestContext : IDisposable
             typeof(TaskEntity),
             typeof(TaskLogEntity),
             typeof(TaskStepEntity),
+            typeof(HumanGateEntity),
             typeof(UserConfigEntity),
             typeof(RepositoryEntity),
             typeof(RepoSandboxWorkspaceEntity),
@@ -191,6 +202,7 @@ public sealed class IntegrationTestContext : IDisposable
         TaskRepository = new TaskRepository(Db, CurrentUser);
         TaskLogRepository = new TaskLogRepository(Db, CurrentUser);
         TaskStepRepository = new TaskStepRepository(Db, CurrentUser);
+        HumanGateRepository = new HumanGateRepository(Db, CurrentUser);
         WorkspaceRepository = new RepoSandboxWorkspaceRepository(Db, CurrentUser);
         AgentRepository = new AgentRepository(Db, CurrentUser);
         AgentLearningRecordRepository = new AgentLearningRecordRepository(Db, CurrentUser);
@@ -213,6 +225,7 @@ public sealed class IntegrationTestContext : IDisposable
         RepositoryService = new RepositoryService(RepositoryRepository, GitProviderFactory, DataProtectionService);
         RepoSyncService = new RepoSyncService(TaskRepository, TaskLogRepository, RepositoryRepository, WorkspaceRepository, ConfigService);
         TaskStepService = new TaskStepService(TaskStepRepository, TaskRepository, Db);
+        HumanGateService = new HumanGateService(HumanGateRepository, TaskRepository, TaskStepRepository, TaskLogRepository);
         SandboxPathResolver = new SandboxPathResolver();
         AgentService = new AgentService(
             AgentRepository,

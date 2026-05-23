@@ -9,8 +9,13 @@ import {
 import type {
   ApiEnvelope,
   AdvanceTaskStepRequestDto,
+  ApproveRequestDto,
+  CreateHumanGateRequestDto,
   CreateTaskRequestDto,
+  HumanGateResponseDto,
+  ModifyApproveRequestDto,
   PagedResult,
+  RejectRequestDto,
   SkipTaskStepRequestDto,
   TaskDetailDto,
   TaskLogDto,
@@ -300,4 +305,53 @@ export async function updateTaskStep(
 ): Promise<TaskStepResponseDto> {
   const { data } = await request.put<ApiEnvelope<TaskStepResponseDto>>(`/v1/tasks/steps/${stepId}`, payload)
   return data.data
+}
+
+// Human Gate API
+export async function fetchPendingHumanGates(): Promise<HumanGateResponseDto[]> {
+  const { data } = await request.get<ApiEnvelope<HumanGateResponseDto[]>>('/v1/human-gates/pending')
+  return data.data
+}
+
+export async function fetchHumanGateById(gateId: string): Promise<HumanGateResponseDto> {
+  const { data } = await request.get<ApiEnvelope<HumanGateResponseDto>>(`/v1/human-gates/${gateId}`)
+  return data.data
+}
+
+export async function fetchHumanGatesByTaskId(taskId: string): Promise<HumanGateResponseDto[]> {
+  const { data } = await request.get<ApiEnvelope<HumanGateResponseDto[]>>(`/v1/human-gates/task/${taskId}`)
+  return data.data
+}
+
+export async function createHumanGate(payload: CreateHumanGateRequestDto): Promise<HumanGateResponseDto> {
+  const { data } = await request.post<ApiEnvelope<HumanGateResponseDto>>('/v1/human-gates', payload)
+  return data.data
+}
+
+export async function approveHumanGate(gateId: string, payload?: ApproveRequestDto): Promise<HumanGateResponseDto> {
+  const { data } = await request.post<ApiEnvelope<HumanGateResponseDto>>(`/v1/human-gates/${gateId}/approve`, payload)
+  return data.data
+}
+
+export async function rejectHumanGate(gateId: string, payload?: RejectRequestDto): Promise<HumanGateResponseDto> {
+  const { data } = await request.post<ApiEnvelope<HumanGateResponseDto>>(`/v1/human-gates/${gateId}/reject`, payload)
+  return data.data
+}
+
+export async function modifyApproveHumanGate(gateId: string, payload?: ModifyApproveRequestDto): Promise<HumanGateResponseDto> {
+  const { data } = await request.post<ApiEnvelope<HumanGateResponseDto>>(`/v1/human-gates/${gateId}/modify-approve`, payload)
+  return data.data
+}
+
+export async function cancelHumanGate(gateId: string): Promise<HumanGateResponseDto> {
+  const { data } = await request.post<ApiEnvelope<HumanGateResponseDto>>(`/v1/human-gates/${gateId}/cancel`)
+  return data.data
+}
+
+export type {
+  HumanGateResponseDto,
+  CreateHumanGateRequestDto,
+  ApproveRequestDto,
+  RejectRequestDto,
+  ModifyApproveRequestDto,
 }
