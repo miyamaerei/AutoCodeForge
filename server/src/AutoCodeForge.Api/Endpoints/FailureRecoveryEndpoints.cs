@@ -49,6 +49,22 @@ public static class FailureRecoveryEndpoints
             return Results.Ok(new { Status = result.Status, Message = result.Message });
         });
 
+        group.MapGet("/history", async (
+            FailureRecoveryService service,
+            CancellationToken cancellationToken) =>
+        {
+            var history = await service.GetFailureHistoryAsync(cancellationToken);
+            return Results.Ok(history);
+        });
+
+        group.MapGet("/stats", async (
+            FailureRecoveryService service,
+            CancellationToken cancellationToken) =>
+        {
+            var stats = await service.GetFailureStatsAsync(cancellationToken);
+            return Results.Ok(stats);
+        });
+
         return app;
     }
 }

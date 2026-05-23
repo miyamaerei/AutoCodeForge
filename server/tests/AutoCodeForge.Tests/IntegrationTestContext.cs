@@ -95,6 +95,11 @@ public sealed class IntegrationTestContext : IDisposable
     public AgentRepository AgentRepository { get; }
 
     /// <summary>
+    /// Agent注册仓储
+    /// </summary>
+    public AgentRegistrationRepository AgentRegistrationRepository { get; }
+
+    /// <summary>
     /// LLM模型配置仓储
     /// </summary>
     public LLMModelConfigRepository LLMModelConfigRepository { get; }
@@ -184,6 +189,11 @@ public sealed class IntegrationTestContext : IDisposable
     /// </summary>
     public ContextChainService ContextChainService { get; }
 
+    /// <summary>
+    /// 失败恢复服务
+    /// </summary>
+    public FailureRecoveryService FailureRecoveryService { get; }
+
     #endregion
 
     /// <summary>
@@ -218,7 +228,8 @@ public sealed class IntegrationTestContext : IDisposable
             typeof(AgentLearningRecordEntity),
             typeof(AgentDormantRecordEntity),
             typeof(LLMModelConfigEntity),
-            typeof(AutoCodeForge.Infrastructure.Services.ArtifactEntity));
+            typeof(AutoCodeForge.Infrastructure.Services.ArtifactEntity),
+            typeof(AgentRegistrationEntity));
 
         // 初始化测试用户
         CurrentUser = new TestCurrentUser(userId);
@@ -233,6 +244,7 @@ public sealed class IntegrationTestContext : IDisposable
         HumanGateRepository = new HumanGateRepository(Db, CurrentUser);
         WorkspaceRepository = new RepoSandboxWorkspaceRepository(Db, CurrentUser);
         AgentRepository = new AgentRepository(Db, CurrentUser);
+        AgentRegistrationRepository = new AgentRegistrationRepository(Db, CurrentUser);
         AgentLearningRecordRepository = new AgentLearningRecordRepository(Db, CurrentUser);
         AgentDormantRecordRepository = new AgentDormantRecordRepository(Db, CurrentUser);
         LLMModelConfigRepository = new LLMModelConfigRepository(Db, CurrentUser);
@@ -275,6 +287,15 @@ public sealed class IntegrationTestContext : IDisposable
         InMemoryTaskEventPublisher = new AutoCodeForge.Application.Services.InMemoryTaskEventPublisher();
         DatabaseArtifactStore = new AutoCodeForge.Infrastructure.Services.DatabaseArtifactStore(Db);
         ContextChainService = new AutoCodeForge.Application.Services.ContextChainService(TaskStepRepository, DatabaseArtifactStore);
+
+        // 初始化失败恢复服务
+        var retryPolicySettings = new Microsoft.Extensions.Options.OptionsWrapper<AutoCodeForge.Application.Configuration.RetryPolicySettings>(
+            new AutoCodeForge.Application.Configuration.RetryPolicySettings());
+        FailureRecoveryService = new AutoCodeForge.Application.Services.FailureRecoveryService(
+            TaskStepRepository,
+            AgentRepository,
+            InMemoryTaskEventPublisher,
+            retryPolicySettings);
     }
 
     /// <summary>

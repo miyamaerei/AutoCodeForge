@@ -11,7 +11,15 @@ public class RetryPolicySettings
         if (RetryPolicies.TryGetValue(category, out var policy))
             return policy;
         
-        return new RetryPolicy { MaxRetries = 1, IntervalMs = 1000 };
+        return category switch
+        {
+            FailureCategory.RequirementIssue => new RetryPolicy { MaxRetries = 0, IntervalMs = 0, DegradationAction = DegradationAction.TriggerHumanGate },
+            FailureCategory.CodeError => new RetryPolicy { MaxRetries = 3, IntervalMs = 5000 },
+            FailureCategory.LlmException => new RetryPolicy { MaxRetries = 5, IntervalMs = 10000 },
+            FailureCategory.ReviewRejection => new RetryPolicy { MaxRetries = 3, IntervalMs = 5000 },
+            FailureCategory.Timeout => new RetryPolicy { MaxRetries = 2, IntervalMs = 30000, BackoffMultiplier = 2 },
+            _ => new RetryPolicy { MaxRetries = 1, IntervalMs = 1000 }
+        };
     }
 }
 

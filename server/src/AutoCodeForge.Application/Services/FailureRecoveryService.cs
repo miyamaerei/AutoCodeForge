@@ -117,6 +117,51 @@ public class FailureRecoveryService
         
         return RecoveryResult.Success("Emergency unbind successful");
     }
+
+    public async Task<List<FailureHistoryItem>> GetFailureHistoryAsync(CancellationToken cancellationToken = default)
+    {
+        var failedSteps = await _taskStepRepository.GetFailedStepsAsync(cancellationToken);
+        
+        return failedSteps.Select(step => new FailureHistoryItem
+        {
+            Id = step.Id,
+            TaskId = step.TaskId,
+            StepId = step.Id,
+            FailureCategory = FailureCategory.Unknown,
+            ErrorMessage = "Unknown error",
+            OccurredAtUtc = step.CompletedAtUtc ?? DateTime.UtcNow
+        }).ToList();
+    }
+
+    public async Task<FailureStats> GetFailureStatsAsync(CancellationToken cancellationToken = default)
+    {
+        var failedSteps = await _taskStepRepository.GetFailedStepsAsync(cancellationToken);
+        
+        var last24Hours = failedSteps.Count(s => 
+            s.CompletedAtUtc.HasValue && s.CompletedAtUtc.Value >= DateTime.UtcNow.AddHours(-24));
+
+        return new FailureStats
+        {
+            TotalFailures = failedSteps.Count,
+            Last24Hours = last24Hours
+        };
+    }
+}
+
+public class FailureHistoryItem
+{
+    public Guid Id { get; set; }
+    public Guid TaskId { get; set; }
+    public Guid StepId { get; set; }
+    public FailureCategory FailureCategory { get; set; }
+    public string ErrorMessage { get; set; } = string.Empty;
+    public DateTime OccurredAtUtc { get; set; }
+}
+
+public class FailureStats
+{
+    public int TotalFailures { get; set; }
+    public int Last24Hours { get; set; }
 }
 
 public class RecoveryResult

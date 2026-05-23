@@ -127,4 +127,18 @@ public class TaskStepRepository : BaseRepository<TaskStepEntity>
             .Where(step => step.TaskId == taskId && step.Status == TaskStepStatus.Pending)
             .ExecuteCommandAsync();
     }
+
+    /// <summary>
+    /// 获取失败的工序列表
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>失败工序列表</returns>
+    public async Task<List<TaskStepEntity>> GetFailedStepsAsync(CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        return await Queryable
+            .Where(step => step.Status == TaskStepStatus.Failed)
+            .OrderByDescending(step => step.CompletedAtUtc)
+            .ToListAsync();
+    }
 }
