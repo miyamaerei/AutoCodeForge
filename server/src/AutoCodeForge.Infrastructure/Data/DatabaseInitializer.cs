@@ -33,6 +33,7 @@ public class DatabaseInitializer
             typeof(UserEntity),
             typeof(TaskEntity),
             typeof(TaskLogEntity),
+            typeof(TaskStepEntity),
             typeof(ChatSessionEntity),
             typeof(ChatMessageEntity),
             typeof(AgentEntity),

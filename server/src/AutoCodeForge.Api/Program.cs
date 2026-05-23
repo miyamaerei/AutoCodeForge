@@ -107,6 +107,7 @@ app.MapAgentSkillEndpoints();
 app.MapChatEndpoints();
 app.MapChatStreamEndpoints();
 app.MapTaskEndpoints();
+app.MapTaskStepEndpoints();
 app.MapRepoSyncEndpoints();
 app.MapReviewEndpoints();
 app.MapScheduledTaskEndpoints();

@@ -8,11 +8,21 @@ export {
 	resumeTask,
 	updateTask,
 	createTask,
+	fetchTaskSteps,
+	fetchTaskActiveStep,
+	fetchTaskStep,
+	initializeTaskSteps,
+	advanceTaskStep,
+	skipTaskStep,
+	unbindTaskStep,
+	fetchTaskStepContext,
+	updateTaskStep,
 } from './task-center.api'
 export type {
 	CreateTaskRequestDto,
 	TaskDetailDto,
 	TaskLogDto,
+	TaskStepResponseDto,
 	TaskSummaryDto,
 	UpdateTaskRequestDto,
 } from './task-center.types'

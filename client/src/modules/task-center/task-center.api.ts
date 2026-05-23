@@ -1,4 +1,4 @@
-﻿import { request } from '../../lib/request'
+import { request } from '../../lib/request'
 import { USE_MOCK } from '../../config/runtime'
 import {
   createTask as createTaskMock,
@@ -8,23 +8,33 @@ import {
 } from '../../mock'
 import type {
   ApiEnvelope,
+  AdvanceTaskStepRequestDto,
   CreateTaskRequestDto,
   PagedResult,
+  SkipTaskStepRequestDto,
   TaskDetailDto,
   TaskLogDto,
   TaskLogResponseDto,
   TaskResponseDto,
   TaskStepDto,
+  TaskStepResponseDto,
   TaskSummaryDto,
+  UnbindTaskStepRequestDto,
   UpdateTaskRequestDto,
+  UpdateTaskStepRequestDto,
 } from './task-center.types'
 
 export type {
+  AdvanceTaskStepRequestDto,
   CreateTaskRequestDto,
+  SkipTaskStepRequestDto,
   TaskDetailDto,
   TaskLogDto,
+  TaskStepResponseDto,
   TaskSummaryDto,
+  UnbindTaskStepRequestDto,
   UpdateTaskRequestDto,
+  UpdateTaskStepRequestDto,
 } from './task-center.types'
 
 function normalizeState(status: string): TaskSummaryDto['state'] {
@@ -223,4 +233,71 @@ export async function deleteTask(taskId: string): Promise<void> {
   }
 
   await request.delete(`/v1/tasks/${taskId}`)
+}
+
+// 工序步骤 API
+export async function fetchTaskSteps(taskId: string): Promise<TaskStepResponseDto[]> {
+  const { data } = await request.get<ApiEnvelope<TaskStepResponseDto[]>>(`/v1/tasks/${taskId}/steps`)
+  return data.data
+}
+
+export async function fetchTaskActiveStep(taskId: string): Promise<TaskStepResponseDto | null> {
+  const { data } = await request.get<ApiEnvelope<TaskStepResponseDto | null>>(`/v1/tasks/${taskId}/steps/active`)
+  return data.data
+}
+
+export async function fetchTaskStep(stepId: string): Promise<TaskStepResponseDto> {
+  const { data } = await request.get<ApiEnvelope<TaskStepResponseDto>>(`/v1/tasks/steps/${stepId}`)
+  return data.data
+}
+
+export async function initializeTaskSteps(taskId: string): Promise<TaskStepResponseDto[]> {
+  const { data } = await request.post<ApiEnvelope<TaskStepResponseDto[]>>(`/v1/tasks/${taskId}/steps/init`)
+  return data.data
+}
+
+export async function advanceTaskStep(
+  taskId: string,
+  stepId: string,
+  payload: AdvanceTaskStepRequestDto,
+): Promise<TaskStepResponseDto> {
+  const { data } = await request.post<ApiEnvelope<TaskStepResponseDto>>(`/v1/tasks/${taskId}/steps/${stepId}/advance`, payload)
+  return data.data
+}
+
+export async function skipTaskStep(
+  taskId: string,
+  stepId: string,
+  payload: SkipTaskStepRequestDto,
+): Promise<TaskStepResponseDto> {
+  const { data } = await request.post<ApiEnvelope<TaskStepResponseDto>>(`/v1/tasks/${taskId}/steps/${stepId}/skip`, payload)
+  return data.data
+}
+
+export async function unbindTaskStep(
+  taskId: string,
+  stepId: string,
+  payload: UnbindTaskStepRequestDto,
+): Promise<TaskStepResponseDto> {
+  const { data } = await request.post<ApiEnvelope<TaskStepResponseDto>>(`/v1/tasks/${taskId}/steps/${stepId}/unbind`, payload)
+  return data.data
+}
+
+export async function fetchTaskStepContext(
+  taskId: string,
+  stepId?: string,
+  maxTokens?: number,
+): Promise<string> {
+  const { data } = await request.get<ApiEnvelope<string>>(`/v1/tasks/${taskId}/steps/context`, {
+    params: { stepId, maxTokens },
+  })
+  return data.data
+}
+
+export async function updateTaskStep(
+  stepId: string,
+  payload: UpdateTaskStepRequestDto,
+): Promise<TaskStepResponseDto> {
+  const { data } = await request.put<ApiEnvelope<TaskStepResponseDto>>(`/v1/tasks/steps/${stepId}`, payload)
+  return data.data
 }

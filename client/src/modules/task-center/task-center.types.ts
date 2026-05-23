@@ -31,8 +31,51 @@ export interface TaskResponseDto {
   dueAtUtc?: string | null
   startedAtUtc?: string | null
   completedAtUtc?: string | null
+  currentStep?: number | null
+  currentStepId?: string | null
   createdAtUtc: string
   updatedAtUtc: string
+}
+
+// 工序步骤相关类型
+export interface TaskStepResponseDto {
+  id: string
+  taskId: string
+  step: number
+  stepType: string
+  status: string
+  workerAgentId?: string | null
+  reviewerAgentId?: string | null
+  input?: string | null
+  output?: string | null
+  skipReason?: string | null
+  startedAtUtc?: string | null
+  completedAtUtc?: string | null
+  retryCount: number
+  createdAtUtc: string
+  updatedAtUtc: string
+}
+
+export interface AdvanceTaskStepRequestDto {
+  output: string
+}
+
+export interface SkipTaskStepRequestDto {
+  reason: string
+}
+
+export interface UnbindTaskStepRequestDto {
+  reason: string
+  failureCategory?: string
+}
+
+export interface UpdateTaskStepRequestDto {
+  status?: string
+  workerAgentId?: string
+  reviewerAgentId?: string
+  input?: string
+  output?: string
+  skipReason?: string
 }
 
 export interface TaskLogResponseDto {

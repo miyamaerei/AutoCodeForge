@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ChatMessageRepository>();
         services.AddScoped<TaskRepository>();
         services.AddScoped<TaskLogRepository>();
+        services.AddScoped<TaskStepRepository>();
         services.AddScoped<RepoSandboxWorkspaceRepository>();
         services.AddScoped<ReviewRepository>();
         services.AddScoped<ReviewRuleSetRepository>();
@@ -82,6 +83,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AgentService>();
         services.AddScoped<ChatService>();
         services.AddScoped<TaskService>();
+        services.AddScoped<TaskStepService>();
         services.AddScoped<ScheduledTaskService>();
         services.AddScoped<PipelineService>();
         services.AddScoped<WikiService>();

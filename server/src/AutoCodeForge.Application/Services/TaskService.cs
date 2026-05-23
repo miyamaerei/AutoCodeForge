@@ -322,6 +322,8 @@ public class TaskService
             DueAtUtc = entity.DueAtUtc,
             StartedAtUtc = entity.StartedAtUtc,
             CompletedAtUtc = entity.CompletedAtUtc,
+            CurrentStep = entity.CurrentStep,
+            CurrentStepId = entity.CurrentStepId,
             CreatedAtUtc = entity.CreatedAtUtc,
             UpdatedAtUtc = entity.UpdatedAtUtc,
         };
