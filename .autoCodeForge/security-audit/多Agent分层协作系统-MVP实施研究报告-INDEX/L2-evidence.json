@@ -1,0 +1,26 @@
+{
+  "verdict": "PARTIAL",
+  "check_items": [
+    {
+      "item": "数据模型",
+      "status": "PARTIAL",
+      "evidence": "数据模型部分实现：\n✅ AgentEntity扩展：[AgentEntity.cs] 新增 State、Role、Version、StateChangedAtUtc\n✅ TaskStepEntity：[TaskStepEntity.cs] 完整定义工序追踪实体\n✅ HumanGateEntity：[HumanGateEntity.cs] 完整定义门控实体\n✅ 枚举定义：[AgentEntity.cs] AgentState、AgentRole、FailureCategory\n❌ TaskReviewEntity：文档要求但不存在（Core/Entities/TaskReviewEntity.cs）"
+    },
+    {
+      "item": "状态机设计",
+      "status": "PARTIAL",
+      "evidence": "状态机设计部分实现：\n✅ Agent四状态：[AgentEntity.cs#L9-27] Idle/Handling/Learning/Dormant\n✅ 状态转换：[AgentService.cs] AssignTaskAsync/CompleteTaskAsync\n✅ 休眠状态：[AgentService.cs] EnterDormantAsync\n✅ 乐观锁保护：[AgentEntity.cs#L185] Version字段\n❌ AgentStateMachine：文档要求的专用状态机类不存在\n❌ Learning状态转换逻辑：文档要求但未实现"
+    },
+    {
+      "item": "服务设计",
+      "status": "PARTIAL",
+      "evidence": "服务设计部分实现：\n✅ TaskStepService：[TaskStepService.cs] 工序管理（文档名为TaskStepFlowService）\n✅ TaskOrchestrator：[TaskOrchestrator.cs] 任务编排（文档名为TaskOrchestrationService）\n✅ HumanGateService：[HumanGateService.cs] 门控核心逻辑\n✅ AgentService：[AgentService.cs] Agent状态管理\n✅ AgentRegistryService：[AgentRegistryService.cs] Agent注册\n❌ AgentStateMachine：文档要求但不存在\n❌ AgentDispatcherService：文档要求但不存在\n❌ TaskReviewService：文档要求但不存在"
+    },
+    {
+      "item": "API端点",
+      "status": "PARTIAL",
+      "evidence": "API端点部分实现：\n✅ TaskStepEndpoints：工序操作\n✅ HumanGateEndpoints：门控操作\n✅ AgentEndpoints：Agent管理\n✅ TaskOrchestrationEndpoints：任务编排\n❌ 缺少部分贯穿式介入API（Pause/Resume/Terminate）"
+    }
+  ],
+  "timestamp": "2026-05-24T15:30:00Z"
+}
