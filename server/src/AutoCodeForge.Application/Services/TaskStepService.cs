@@ -63,9 +63,8 @@ public class TaskStepService
                 TaskId = taskId,
                 Step = 1,
                 StepType = TaskStepType.DemandAnalyse,
-                Status = TaskStepStatus.Handling,
+                Status = TaskStepStatus.Pending,
                 Input = task.Input,
-                StartedAtUtc = DateTime.UtcNow,
                 RetryCount = 0,
                 Version = 1
             },

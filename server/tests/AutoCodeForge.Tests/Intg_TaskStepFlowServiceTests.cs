@@ -41,8 +41,7 @@ public sealed class Intg_TaskStepFlowServiceTests : IDisposable
 
         var steps = await _context.TaskStepRepository.GetByTaskIdAsync(task.Id);
         Assert.Equal(7, steps.Count);
-        Assert.Equal(TaskStepStatus.Handling, steps[0].Status);
-        Assert.All(steps.Skip(1), s => Assert.Equal(TaskStepStatus.Pending, s.Status));
+        Assert.All(steps, s => Assert.Equal(TaskStepStatus.Pending, s.Status));
     }
 
     public void Dispose()

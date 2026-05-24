@@ -121,11 +121,14 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
         {
             Assert.Equal(expectedSteps[i], steps[i].StepType);
             Assert.Equal(i + 1, steps[i].Step);
-            Assert.Equal(i == 0 ? TaskStepStatus.Handling : TaskStepStatus.Pending, steps[i].Status);
+            Assert.Equal(TaskStepStatus.Pending, steps[i].Status);
         }
         Console.WriteLine("  7步工序初始化 ✓");
 
         var firstStep = steps[0];
+        firstStep.Status = TaskStepStatus.Handling;
+        await _context.TaskStepRepository.UpdateAsync(firstStep);
+        
         await _taskStepFlowService.MoveToNextStepAsync(task.Id, firstStep.Id);
         
         var updatedFirstStep = await _context.TaskStepRepository.GetByIdAsync(firstStep.Id);
@@ -440,6 +443,109 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
         
         step.Status = TaskStepStatus.Completed;
         step.WorkerAgentId = agent.Id;
+        await _context.TaskStepRepository.UpdateAsync(step);
+        
+        await _context.AgentService.CompleteTaskAsync(agent.Id);
+    }
+
+    #endregion
+
+    #region 分层任务分配流程
+
+    [Fact]
+    public async Task HierarchicalAssignment_SecretaryToManagerToWorker_Should_Work()
+    {
+        Console.WriteLine("[测试9] 分层任务分配流程 (Secretary → Manager → Worker)");
+
+        var secretary = TestDataFactory.CreateSecretary("HierSec");
+        var manager = TestDataFactory.CreateManager("HierManager");
+        var worker = TestDataFactory.CreateWorker("HierWorker");
+        await _context.AgentRepository.CreateAsync(secretary);
+        await _context.AgentRepository.CreateAsync(manager);
+        await _context.AgentRepository.CreateAsync(worker);
+        Console.WriteLine("  创建三个角色Agent ✓");
+
+        var task = TestDataFactory.CreateTask("HierarchicalTask");
+        await _context.TaskRepository.CreateAsync(task);
+        await _context.TaskStepService.InitializeStepsAsync(task.Id);
+        var steps = await _context.TaskStepRepository.GetByTaskIdAsync(task.Id);
+        Console.WriteLine("  创建任务和步骤 ✓");
+
+        var demandStep = steps.First(s => s.StepType == TaskStepType.DemandAnalyse);
+        await ProcessStep(task.Id, demandStep, secretary);
+        Console.WriteLine("  Secretary完成需求分析 ✓");
+
+        var availableManagers = await _context.AgentRepository.GetAvailableAgentsByRoleAsync(AgentRole.Manager);
+        Assert.Contains(availableManagers, m => m.Id == manager.Id);
+        Console.WriteLine("  Secretary查询到可用Manager ✓");
+
+        var planStep = steps.First(s => s.StepType == TaskStepType.MakePlan);
+        await ProcessStep(task.Id, planStep, manager);
+        Console.WriteLine("  Manager完成方案审批 ✓");
+
+        var availableWorkers = await _context.AgentRepository.GetAvailableAgentsByRoleAsync(AgentRole.Worker);
+        Assert.Contains(availableWorkers, w => w.Id == worker.Id);
+        Console.WriteLine("  Manager查询到可用Worker ✓");
+
+        var devStep = steps.First(s => s.StepType == TaskStepType.Development);
+        await ProcessStep(task.Id, devStep, worker);
+        Console.WriteLine("  Worker完成代码开发 ✓");
+
+        var auditStep = steps.First(s => s.StepType == TaskStepType.FinalAudit);
+        await ProcessStep(task.Id, auditStep, manager);
+        Console.WriteLine("  Manager完成最终审核 ✓");
+
+        Console.WriteLine("[测试9] ✓ 分层任务分配流程测试完成");
+    }
+
+    #endregion
+
+    #region Agent可用性检查
+
+    [Fact]
+    public async Task AgentAvailability_Check_Should_Work()
+    {
+        Console.WriteLine("[测试10] Agent可用性检查");
+
+        var secretary = TestDataFactory.CreateSecretary("AvailSec");
+        var busyManager = TestDataFactory.CreateManager("BusyMgr");
+        busyManager.State = AgentState.Handling;
+        
+        await _context.AgentRepository.CreateAsync(secretary);
+        await _context.AgentRepository.CreateAsync(busyManager);
+
+        var availableSecretaries = await _context.AgentRepository.GetAvailableAgentsByRoleAsync(AgentRole.Secretary);
+        Assert.Single(availableSecretaries);
+        Assert.Equal(secretary.Id, availableSecretaries[0].Id);
+        Console.WriteLine("  Secretary可用 ✓");
+
+        var availableManagers = await _context.AgentRepository.GetAvailableAgentsByRoleAsync(AgentRole.Manager);
+        Assert.Empty(availableManagers);
+        Console.WriteLine("  Manager不可用 ✓");
+
+        busyManager.State = AgentState.Idle;
+        await _context.AgentRepository.UpdateAsync(busyManager);
+        
+        availableManagers = await _context.AgentRepository.GetAvailableAgentsByRoleAsync(AgentRole.Manager);
+        Assert.Single(availableManagers);
+        Assert.Equal(busyManager.Id, availableManagers[0].Id);
+        Console.WriteLine("  Manager恢复可用 ✓");
+
+        Console.WriteLine("[测试10] ✓ Agent可用性检查测试完成");
+    }
+
+    #endregion
+
+    #region 辅助方法
+
+    private async Task ProcessStep(Guid taskId, TaskStepEntity step, AgentEntity agent)
+    {
+        await _context.AgentService.AssignTaskAsync(agent.Id, new AssignTaskRequest { TaskId = taskId });
+        step.Status = TaskStepStatus.Handling;
+        step.WorkerAgentId = agent.Id;
+        await _context.TaskStepRepository.UpdateAsync(step);
+        
+        step.Status = TaskStepStatus.Completed;
         await _context.TaskStepRepository.UpdateAsync(step);
         
         await _context.AgentService.CompleteTaskAsync(agent.Id);

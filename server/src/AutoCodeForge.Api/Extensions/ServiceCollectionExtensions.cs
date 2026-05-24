@@ -184,6 +184,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAgentTool, GitWriteToolset>();
         services.AddScoped<IAgentTool, NotificationTool>();
         services.AddScoped<IAgentTool, SummaryTool>();
+        services.AddScoped<IAgentTool, AgentTaskCompleteTool>();
         return services;
     }
 
