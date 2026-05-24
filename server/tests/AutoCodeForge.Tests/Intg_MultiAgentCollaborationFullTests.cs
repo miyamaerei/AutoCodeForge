@@ -59,7 +59,7 @@ public sealed class Intg_MultiAgentCollaborationFullTests : IDisposable
         await _context.TaskStepService.InitializeStepsAsync(task.Id);
         var steps = await _context.TaskStepRepository.GetByTaskIdAsync(task.Id);
         Assert.Equal(7, steps.Count);
-        Assert.Equal(TaskStepStatus.Pending, steps[0].Status);
+        Assert.Equal(TaskStepStatus.Handling, steps[0].Status);
 
         // ============ 阶段3: Secretary启动任务 ============
         Console.WriteLine("[阶段3] Secretary启动任务");
@@ -67,9 +67,8 @@ public sealed class Intg_MultiAgentCollaborationFullTests : IDisposable
         Assert.NotNull(assignedSecretary);
         Assert.Equal(AgentRole.Secretary, assignedSecretary.Role);
 
-        // 更新第一步状态为Handling
+        // 更新第一步WorkerAgentId
         var step1 = steps[0];
-        step1.Status = TaskStepStatus.Handling;
         step1.WorkerAgentId = assignedSecretary.Id;
         await _context.TaskStepRepository.UpdateAsync(step1);
 

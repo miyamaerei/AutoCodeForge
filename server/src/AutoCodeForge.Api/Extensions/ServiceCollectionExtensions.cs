@@ -182,6 +182,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAgentTool, GitReadToolset>();
         services.AddScoped<IAgentTool, GitWriteToolset>();
+        services.AddScoped<IAgentTool, NotificationTool>();
+        services.AddScoped<IAgentTool, SummaryTool>();
         return services;
     }
 

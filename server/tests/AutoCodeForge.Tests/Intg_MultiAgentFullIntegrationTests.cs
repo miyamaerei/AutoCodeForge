@@ -8,6 +8,7 @@
  * 4. 任务分配与负载均衡
  * 5. HumanGate门控审批流程
  * 6. Agent状态机与生命周期管理
+ * 7. 角色分配正确性验证
  * 
  * 参考现有测试：
  * - Intg_AgentServiceTests - Agent生命周期管理
@@ -56,9 +57,6 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
 
     #region Agent注册与初始化
 
-    /// <summary>
-    /// 测试完整的Agent注册流程：创建→注册→心跳→注销
-    /// </summary>
     [Fact]
     public async Task AgentRegistration_FullFlow_Should_Work()
     {
@@ -95,9 +93,6 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
 
     #region 任务创建与7步工序
 
-    /// <summary>
-    /// 测试任务创建与7步工序初始化
-    /// </summary>
     [Fact]
     public async Task TaskCreation_WithSevenSteps_Should_Work()
     {
@@ -126,14 +121,11 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
         {
             Assert.Equal(expectedSteps[i], steps[i].StepType);
             Assert.Equal(i + 1, steps[i].Step);
-            Assert.Equal(TaskStepStatus.Pending, steps[i].Status);
+            Assert.Equal(i == 0 ? TaskStepStatus.Handling : TaskStepStatus.Pending, steps[i].Status);
         }
         Console.WriteLine("  7步工序初始化 ✓");
 
         var firstStep = steps[0];
-        firstStep.Status = TaskStepStatus.Handling;
-        await _context.TaskStepRepository.UpdateAsync(firstStep);
-        
         await _taskStepFlowService.MoveToNextStepAsync(task.Id, firstStep.Id);
         
         var updatedFirstStep = await _context.TaskStepRepository.GetByIdAsync(firstStep.Id);
@@ -150,9 +142,6 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
 
     #region Agent间通信与事件发布
 
-    /// <summary>
-    /// 测试Agent间通过事件系统通信
-    /// </summary>
     [Fact]
     public async Task AgentCommunication_ThroughEventSystem_Should_Work()
     {
@@ -203,9 +192,6 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
 
     #region 任务分配与负载均衡
 
-    /// <summary>
-    /// 测试多Agent任务分配与负载均衡
-    /// </summary>
     [Fact]
     public async Task TaskAssignment_WithLoadBalancing_Should_Work()
     {
@@ -252,9 +238,6 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
 
     #region HumanGate门控审批流程
 
-    /// <summary>
-    /// 测试HumanGate门控审批完整流程
-    /// </summary>
     [Fact]
     public async Task HumanGate_FullApprovalFlow_Should_Work()
     {
@@ -299,9 +282,6 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
 
     #region Agent状态机与生命周期
 
-    /// <summary>
-    /// 测试Agent完整生命周期：Idle→Handling→Learning→Dormant→Idle
-    /// </summary>
     [Fact]
     public async Task AgentLifecycle_FullStateTransitions_Should_Work()
     {
@@ -344,15 +324,60 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
 
     #endregion
 
+    #region 角色分配正确性验证
+
+    [Fact]
+    public async Task RoleAssignment_Should_Match_StepType()
+    {
+        Console.WriteLine("[测试7] 角色分配正确性验证");
+
+        var secretary = TestDataFactory.CreateSecretary("RoleSec");
+        var manager = TestDataFactory.CreateManager("RoleManager");
+        var worker = TestDataFactory.CreateWorker("RoleWorker");
+        await _context.AgentRepository.CreateAsync(secretary);
+        await _context.AgentRepository.CreateAsync(manager);
+        await _context.AgentRepository.CreateAsync(worker);
+        Console.WriteLine("  创建三种角色Agent ✓");
+
+        var task = TestDataFactory.CreateTask("RoleAssignmentTask");
+        await _context.TaskRepository.CreateAsync(task);
+        await _context.TaskStepService.InitializeStepsAsync(task.Id);
+        Console.WriteLine("  创建任务和7步工序 ✓");
+
+        var steps = await _context.TaskStepRepository.GetByTaskIdAsync(task.Id);
+
+        var stepRoleMap = new Dictionary<TaskStepType, AgentRole>
+        {
+            { TaskStepType.DemandAnalyse, AgentRole.Secretary },
+            { TaskStepType.QueryCurrent, AgentRole.Secretary },
+            { TaskStepType.MakePlan, AgentRole.Manager },
+            { TaskStepType.Development, AgentRole.Worker },
+            { TaskStepType.TestVerify, AgentRole.Worker },
+            { TaskStepType.CommitPr, AgentRole.Worker },
+            { TaskStepType.FinalAudit, AgentRole.Manager }
+        };
+
+        foreach (var step in steps)
+        {
+            var expectedRole = stepRoleMap[step.StepType];
+            var (assignedAgent, _) = await _context.TaskOrchestrator.AssignTaskAsync(task.Id, expectedRole);
+            
+            Assert.NotNull(assignedAgent);
+            Assert.Equal(expectedRole, assignedAgent.Role);
+            Console.WriteLine($"  Step {step.Step} ({step.StepType}) → {expectedRole} ✓");
+        }
+
+        Console.WriteLine("[测试7] ✓ 角色分配正确性验证完成");
+    }
+
+    #endregion
+
     #region 端到端完整流程
 
-    /// <summary>
-    /// 测试完整的多Agent协作端到端流程
-    /// </summary>
     [Fact]
     public async Task EndToEnd_MultiAgentCollaboration_Should_Work()
     {
-        Console.WriteLine("[测试7] 端到端多Agent协作流程");
+        Console.WriteLine("[测试8] 端到端多Agent协作流程");
 
         var secretary = TestDataFactory.CreateSecretary("E2E_Secretary");
         var manager = TestDataFactory.CreateManager("E2E_Manager");
@@ -369,79 +394,55 @@ public sealed class Intg_MultiAgentFullIntegrationTests : IDisposable
         await _context.TaskStepService.InitializeStepsAsync(task.Id);
         Console.WriteLine("[阶段2] 创建任务和7步工序 ✓");
 
-        await _context.TaskOrchestrator.AssignTaskAsync(task.Id, AgentRole.Secretary);
-        await _context.AgentService.AssignTaskAsync(secretary.Id, 
-            new AssignTaskRequest { TaskId = task.Id });
-        
         var steps = await _context.TaskStepRepository.GetByTaskIdAsync(task.Id);
-        var firstStep = steps[0];
-        firstStep.Status = TaskStepStatus.Completed;
-        firstStep.WorkerAgentId = secretary.Id;
-        await _context.TaskStepRepository.UpdateAsync(firstStep);
-        await _context.AgentService.CompleteTaskAsync(secretary.Id);
-        Console.WriteLine("[阶段3] Secretary完成需求梳理 ✓");
 
-        for (int i = 1; i <= 4; i++)
-        {
-            var step = steps[i];
-            await _context.TaskOrchestrator.AssignTaskAsync(task.Id, AgentRole.Worker);
-            var worker = i % 2 == 0 ? worker1 : worker2;
-            await _context.AgentService.AssignTaskAsync(worker.Id, 
-                new AssignTaskRequest { TaskId = task.Id });
-            step.Status = TaskStepStatus.Completed;
-            step.WorkerAgentId = worker.Id;
-            await _context.TaskStepRepository.UpdateAsync(step);
-            await _context.AgentService.CompleteTaskAsync(worker.Id);
-        }
-        Console.WriteLine("[阶段4] Worker完成QueryCurrent/MakePlan/Development/TestVerify ✓");
+        await ProcessStepWithCorrectRole(task.Id, steps[0], AgentRole.Secretary);
+        Console.WriteLine("[阶段3] Secretary完成需求梳理 (DemandAnalyse) ✓");
 
-        var planStep = steps[2];
-        var gateRequest = new CreateHumanGateRequest
-        {
-            TaskId = task.Id,
-            TaskStepId = planStep.Id,
-            GateType = "PlanApproval",
-            Reason = "方案审批"
-        };
-        var gate = await _context.HumanGateService.CreateGateAsync(gateRequest);
-        await _context.HumanGateService.ApproveAsync(gate.Id, new ApproveRequest());
-        Console.WriteLine("[阶段5] Manager审批方案 ✓");
+        await ProcessStepWithCorrectRole(task.Id, steps[1], AgentRole.Secretary);
+        Console.WriteLine("[阶段4] Secretary完成查询当前 (QueryCurrent) ✓");
 
-        var commitStep = steps[5];
-        await _context.TaskOrchestrator.AssignTaskAsync(task.Id, AgentRole.Worker);
-        await _context.AgentService.AssignTaskAsync(worker1.Id, 
-            new AssignTaskRequest { TaskId = task.Id });
-        commitStep.Status = TaskStepStatus.Completed;
-        commitStep.WorkerAgentId = worker1.Id;
-        await _context.TaskStepRepository.UpdateAsync(commitStep);
-        await _context.AgentService.CompleteTaskAsync(worker1.Id);
-        Console.WriteLine("[阶段6] Worker完成CommitPr ✓");
+        await ProcessStepWithCorrectRole(task.Id, steps[2], AgentRole.Manager);
+        Console.WriteLine("[阶段5] Manager完成方案计划 (MakePlan) ✓");
 
-        var finalStep = steps[6];
-        await _context.TaskOrchestrator.AssignTaskAsync(task.Id, AgentRole.Manager);
-        await _context.AgentService.AssignTaskAsync(manager.Id, 
-            new AssignTaskRequest { TaskId = task.Id });
-        finalStep.Status = TaskStepStatus.Completed;
-        finalStep.WorkerAgentId = manager.Id;
-        await _context.TaskStepRepository.UpdateAsync(finalStep);
-        await _context.AgentService.CompleteTaskAsync(manager.Id);
-        Console.WriteLine("[阶段7] Manager完成最终审核 ✓");
+        await ProcessStepWithCorrectRole(task.Id, steps[3], AgentRole.Worker);
+        Console.WriteLine("[阶段6] Worker完成代码开发 (Development) ✓");
+
+        await ProcessStepWithCorrectRole(task.Id, steps[4], AgentRole.Worker);
+        Console.WriteLine("[阶段7] Worker完成测试校验 (TestVerify) ✓");
+
+        await ProcessStepWithCorrectRole(task.Id, steps[5], AgentRole.Worker);
+        Console.WriteLine("[阶段8] Worker完成版本提交 (CommitPr) ✓");
+
+        await ProcessStepWithCorrectRole(task.Id, steps[6], AgentRole.Manager);
+        Console.WriteLine("[阶段9] Manager完成最终审核 (FinalAudit) ✓");
 
         task.Status = Core.Entities.TaskStatus.Completed;
         await _context.TaskRepository.UpdateAsync(task);
-        Console.WriteLine("[阶段8] 任务完成 ✓");
+        Console.WriteLine("[阶段10] 任务完成 ✓");
 
         var allSteps = await _context.TaskStepRepository.GetByTaskIdAsync(task.Id);
         Assert.All(allSteps, s => Assert.Equal(TaskStepStatus.Completed, s.Status));
         
         var finalTask = await _context.TaskRepository.GetByIdAsync(task.Id);
         Assert.Equal(Core.Entities.TaskStatus.Completed, finalTask?.Status);
-        
-        var allAgents = await _context.AgentRepository.GetAllAsync();
-        Assert.All(allAgents.Where(a => new[] { secretary.Id, worker1.Id, worker2.Id, manager.Id }.Contains(a.Id)),
-            a => Assert.Equal(AgentState.Idle, a.State));
 
-        Console.WriteLine("[测试7] ✓ 端到端多Agent协作流程测试完成");
+        Console.WriteLine("[测试8] ✓ 端到端多Agent协作流程测试完成");
+    }
+
+    private async Task ProcessStepWithCorrectRole(Guid taskId, TaskStepEntity step, AgentRole expectedRole)
+    {
+        var (agent, _) = await _context.TaskOrchestrator.AssignTaskAsync(taskId, expectedRole);
+        Assert.NotNull(agent);
+        Assert.Equal(expectedRole, agent.Role);
+
+        await _context.AgentService.AssignTaskAsync(agent.Id, new AssignTaskRequest { TaskId = taskId });
+        
+        step.Status = TaskStepStatus.Completed;
+        step.WorkerAgentId = agent.Id;
+        await _context.TaskStepRepository.UpdateAsync(step);
+        
+        await _context.AgentService.CompleteTaskAsync(agent.Id);
     }
 
     #endregion

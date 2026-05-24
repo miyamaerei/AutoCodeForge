@@ -120,13 +120,13 @@ public class TaskOrchestrator
     {
         return stepType.ToLower() switch
         {
-            "requirementanalysis" => AgentRole.Secretary,
-            "plandesign" => AgentRole.Manager,
-            "taskdecomposition" => AgentRole.Secretary,
-            "implementation" => AgentRole.Worker,
-            "testing" => AgentRole.Worker,
-            "deployment" => AgentRole.Manager,
-            "finalreview" => AgentRole.Manager,
+            "demandanalyse" => AgentRole.Secretary,
+            "querycurrent" => AgentRole.Secretary,
+            "makeplan" => AgentRole.Manager,
+            "development" => AgentRole.Worker,
+            "testverify" => AgentRole.Worker,
+            "commitpr" => AgentRole.Worker,
+            "finalaudit" => AgentRole.Manager,
             _ => AgentRole.Worker
         };
     }
