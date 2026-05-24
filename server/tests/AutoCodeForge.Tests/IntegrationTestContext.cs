@@ -289,6 +289,7 @@ public sealed class IntegrationTestContext : IDisposable
             LeastLoadAgentSelectionStrategy,
             AgentRepository,
             TaskStepRepository,
+            TaskRepository,
             orchestrationSettings);
 
         // 初始化Agent间通信服务

@@ -69,6 +69,45 @@ public static class TaskOrchestrationEndpoints
             return Results.Ok(ApiResponse<OrchestrationSettings>.Ok(settings.Value));
         });
 
+        group.MapPost("/tasks/{taskId:guid}/pause", async (
+            Guid taskId,
+            [FromBody] PauseRequest? request,
+            TaskOrchestrator orchestrator,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await orchestrator.PauseTaskAsync(taskId, request?.Reason, cancellationToken);
+            return Results.Ok(ApiResponse<bool>.Ok(result, "Task paused"));
+        });
+
+        group.MapPost("/tasks/{taskId:guid}/resume", async (
+            Guid taskId,
+            TaskOrchestrator orchestrator,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await orchestrator.ResumeTaskAsync(taskId, cancellationToken);
+            return Results.Ok(ApiResponse<bool>.Ok(result, "Task resumed"));
+        });
+
+        group.MapPost("/tasks/{taskId:guid}/terminate", async (
+            Guid taskId,
+            [FromBody] TerminateRequest? request,
+            TaskOrchestrator orchestrator,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await orchestrator.ForceTerminateTaskAsync(taskId, request?.Reason, cancellationToken);
+            return Results.Ok(ApiResponse<bool>.Ok(result, "Task terminated"));
+        });
+
+        group.MapPost("/tasks/{taskId:guid}/update-requirement", async (
+            Guid taskId,
+            [FromBody] UpdateRequirementRequest request,
+            TaskOrchestrator orchestrator,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await orchestrator.UpdateRequirementAsync(taskId, request.NewRequirement, cancellationToken);
+            return Results.Ok(ApiResponse<bool>.Ok(result, "Requirement updated"));
+        });
+
         return app;
     }
 }
@@ -89,4 +128,19 @@ public class OrchestrationAssignResponse
     public Guid AgentId { get; set; }
     public string AgentName { get; set; } = string.Empty;
     public bool UsedEscalation { get; set; }
+}
+
+public class PauseRequest
+{
+    public string? Reason { get; set; }
+}
+
+public class TerminateRequest
+{
+    public string? Reason { get; set; }
+}
+
+public class UpdateRequirementRequest
+{
+    public string NewRequirement { get; set; } = string.Empty;
 }

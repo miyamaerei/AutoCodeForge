@@ -12,6 +12,7 @@
 using AutoCodeForge.Application.Configuration;
 using AutoCodeForge.Application.Services;
 using AutoCodeForge.Core.Entities;
+using AutoCodeForge.Core.Exceptions;
 using Microsoft.Extensions.Options;
 
 namespace AutoCodeForge.Tests;
@@ -530,6 +531,7 @@ public sealed class Intg_TaskOrchestrationTests : IDisposable
             _context.LeastLoadAgentSelectionStrategy,
             _context.AgentRepository,
             _context.TaskStepRepository,
+            _context.TaskRepository,
             disabledSettings);
 
         var taskId = Guid.NewGuid();
@@ -616,6 +618,432 @@ public sealed class Intg_TaskOrchestrationTests : IDisposable
         Assert.Null(resultAgent);
         Assert.False(usedEscalation);
         Console.WriteLine("[测试16] 没有当前步骤时返回null");
+    }
+
+    #endregion
+
+    #region 贯穿式介入测试
+
+    /// <summary>
+    /// 测试暂停任务 - Running状态任务可以暂停
+    /// </summary>
+    [Fact]
+    public async Task PauseTaskAsync_Should_PauseRunningTask()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Running,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        // Act
+        var result = await _context.TaskOrchestrator.PauseTaskAsync(taskId, "Manual pause");
+
+        // Assert
+        Assert.True(result);
+        var updatedTask = await _context.TaskRepository.GetByIdAsync(taskId, false);
+        Assert.Equal(AutoCodeForge.Core.Entities.TaskStatus.Paused, updatedTask.Status);
+        Assert.Equal("Manual pause", updatedTask.ErrorMessage);
+        Console.WriteLine("[测试17] Running状态任务成功暂停");
+    }
+
+    /// <summary>
+    /// 测试暂停任务 - Pending状态任务可以暂停
+    /// </summary>
+    [Fact]
+    public async Task PauseTaskAsync_Should_PausePendingTask()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Pending,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        // Act
+        var result = await _context.TaskOrchestrator.PauseTaskAsync(taskId);
+
+        // Assert
+        Assert.True(result);
+        var updatedTask = await _context.TaskRepository.GetByIdAsync(taskId, false);
+        Assert.Equal(AutoCodeForge.Core.Entities.TaskStatus.Paused, updatedTask.Status);
+        Console.WriteLine("[测试18] Pending状态任务成功暂停");
+    }
+
+    /// <summary>
+    /// 测试暂停任务 - Completed状态任务不能暂停
+    /// </summary>
+    [Fact]
+    public async Task PauseTaskAsync_Should_ThrowException_WhenTaskCompleted()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Completed,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<AutoCodeForge.Core.Exceptions.ValidationException>(
+            () => _context.TaskOrchestrator.PauseTaskAsync(taskId));
+        Console.WriteLine("[测试19] Completed状态任务无法暂停");
+    }
+
+    /// <summary>
+    /// 测试暂停任务 - 释放绑定的Agent
+    /// </summary>
+    [Fact]
+    public async Task PauseTaskAsync_Should_ReleaseAssignedAgent()
+    {
+        // Arrange
+        var agent = await _context.CreateTestAgentWithLifecycleAsync(
+            name: "Worker Agent",
+            state: AgentState.Handling,
+            role: AgentRole.Worker);
+
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Running,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        var taskStep = new TaskStepEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = taskId,
+            Step = 1,
+            StepType = TaskStepType.Development,
+            Status = TaskStepStatus.Handling,
+            WorkerAgentId = agent.Id,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskStepRepository.CreateAsync(taskStep);
+
+        // Act
+        await _context.TaskOrchestrator.PauseTaskAsync(taskId);
+
+        // Assert
+        var updatedAgent = await _context.AgentRepository.GetByIdAsync(agent.Id, false);
+        Assert.Equal(AgentState.Idle, updatedAgent.State);
+        Console.WriteLine("[测试20] 暂停任务时成功释放绑定的Agent");
+    }
+
+    /// <summary>
+    /// 测试恢复任务 - Paused状态任务可以恢复
+    /// </summary>
+    [Fact]
+    public async Task ResumeTaskAsync_Should_ResumePausedTask()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Paused,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        // Act
+        var result = await _context.TaskOrchestrator.ResumeTaskAsync(taskId);
+
+        // Assert
+        Assert.True(result);
+        var updatedTask = await _context.TaskRepository.GetByIdAsync(taskId, false);
+        Assert.Equal(AutoCodeForge.Core.Entities.TaskStatus.Running, updatedTask.Status);
+        Console.WriteLine("[测试21] Paused状态任务成功恢复");
+    }
+
+    /// <summary>
+    /// 测试恢复任务 - Running状态任务不能恢复
+    /// </summary>
+    [Fact]
+    public async Task ResumeTaskAsync_Should_ThrowException_WhenTaskRunning()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Running,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<AutoCodeForge.Core.Exceptions.ValidationException>(
+            () => _context.TaskOrchestrator.ResumeTaskAsync(taskId));
+        Console.WriteLine("[测试22] Running状态任务无法恢复");
+    }
+
+    /// <summary>
+    /// 测试强制终止任务 - Running状态任务可以终止
+    /// </summary>
+    [Fact]
+    public async Task ForceTerminateTaskAsync_Should_TerminateRunningTask()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Running,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        // Act
+        var result = await _context.TaskOrchestrator.ForceTerminateTaskAsync(taskId, "Manual termination");
+
+        // Assert
+        Assert.True(result);
+        var updatedTask = await _context.TaskRepository.GetByIdAsync(taskId, false);
+        Assert.Equal(AutoCodeForge.Core.Entities.TaskStatus.Canceled, updatedTask.Status);
+        Assert.Equal("Manual termination", updatedTask.ErrorMessage);
+        Assert.NotNull(updatedTask.CompletedAtUtc);
+        Console.WriteLine("[测试23] Running状态任务成功终止");
+    }
+
+    /// <summary>
+    /// 测试强制终止任务 - 释放所有绑定的Agent
+    /// </summary>
+    [Fact]
+    public async Task ForceTerminateTaskAsync_Should_ReleaseAllAgents()
+    {
+        // Arrange
+        var agent1 = await _context.CreateTestAgentWithLifecycleAsync(
+            name: "Worker 1",
+            state: AgentState.Handling,
+            role: AgentRole.Worker);
+        var agent2 = await _context.CreateTestAgentWithLifecycleAsync(
+            name: "Worker 2",
+            state: AgentState.Handling,
+            role: AgentRole.Worker);
+
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Running,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        var step1 = new TaskStepEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = taskId,
+            Step = 1,
+            StepType = TaskStepType.Development,
+            Status = TaskStepStatus.Handling,
+            WorkerAgentId = agent1.Id,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskStepRepository.CreateAsync(step1);
+
+        var step2 = new TaskStepEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = taskId,
+            Step = 2,
+            StepType = TaskStepType.QueryCurrent,
+            Status = TaskStepStatus.Handling,
+            WorkerAgentId = agent2.Id,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskStepRepository.CreateAsync(step2);
+
+        // Act
+        await _context.TaskOrchestrator.ForceTerminateTaskAsync(taskId);
+
+        // Assert
+        var updatedAgent1 = await _context.AgentRepository.GetByIdAsync(agent1.Id, false);
+        var updatedAgent2 = await _context.AgentRepository.GetByIdAsync(agent2.Id, false);
+        Assert.Equal(AgentState.Idle, updatedAgent1.State);
+        Assert.Equal(AgentState.Idle, updatedAgent2.State);
+
+        var updatedStep1 = await _context.TaskStepRepository.GetByIdAsync(step1.Id, false);
+        var updatedStep2 = await _context.TaskStepRepository.GetByIdAsync(step2.Id, false);
+        Assert.Equal(TaskStepStatus.Failed, updatedStep1.Status);
+        Assert.Equal(TaskStepStatus.Failed, updatedStep2.Status);
+        Console.WriteLine("[测试24] 终止任务时成功释放所有绑定的Agent");
+    }
+
+    /// <summary>
+    /// 测试强制终止任务 - Completed状态任务不能终止
+    /// </summary>
+    [Fact]
+    public async Task ForceTerminateTaskAsync_Should_ThrowException_WhenTaskCompleted()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Completed,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<AutoCodeForge.Core.Exceptions.ValidationException>(
+            () => _context.TaskOrchestrator.ForceTerminateTaskAsync(taskId));
+        Console.WriteLine("[测试25] Completed状态任务无法终止");
+    }
+
+    /// <summary>
+    /// 测试更新需求 - Running状态任务可以更新需求
+    /// </summary>
+    [Fact]
+    public async Task UpdateRequirementAsync_Should_UpdateRequirement()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Input = "Original requirement",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Running,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        // Act
+        var result = await _context.TaskOrchestrator.UpdateRequirementAsync(taskId, "Updated requirement");
+
+        // Assert
+        Assert.True(result);
+        var updatedTask = await _context.TaskRepository.GetByIdAsync(taskId, false);
+        Assert.Equal("Updated requirement", updatedTask.Input);
+        Console.WriteLine("[测试26] Running状态任务成功更新需求");
+    }
+
+    /// <summary>
+    /// 测试更新需求 - 更新活跃步骤的输入
+    /// </summary>
+    [Fact]
+    public async Task UpdateRequirementAsync_Should_UpdateActiveStepInput()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Input = "Original requirement",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Running,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        var taskStep = new TaskStepEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = taskId,
+            Step = 1,
+            StepType = TaskStepType.Development,
+            Status = TaskStepStatus.Handling,
+            Input = "Original input",
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+            Version = 1,
+        };
+        await _context.TaskStepRepository.CreateAsync(taskStep);
+
+        // Act
+        await _context.TaskOrchestrator.UpdateRequirementAsync(taskId, "Updated requirement");
+
+        // Assert
+        var updatedStep = await _context.TaskStepRepository.GetByIdAsync(taskStep.Id, false);
+        Assert.Equal("Updated requirement", updatedStep.Input);
+        Assert.Equal(2, updatedStep.Version);
+        Console.WriteLine("[测试27] 更新需求时同步更新活跃步骤的输入");
+    }
+
+    /// <summary>
+    /// 测试更新需求 - Completed状态任务不能更新需求
+    /// </summary>
+    [Fact]
+    public async Task UpdateRequirementAsync_Should_ThrowException_WhenTaskCompleted()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            Title = "Test Task",
+            Input = "Original requirement",
+            Status = AutoCodeForge.Core.Entities.TaskStatus.Completed,
+            TaskType = TaskType.General,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+        await _context.TaskRepository.CreateAsync(task);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<AutoCodeForge.Core.Exceptions.ValidationException>(
+            () => _context.TaskOrchestrator.UpdateRequirementAsync(taskId, "Updated requirement"));
+        Console.WriteLine("[测试28] Completed状态任务无法更新需求");
     }
 
     #endregion

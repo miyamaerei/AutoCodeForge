@@ -4,6 +4,7 @@ using AutoCodeForge.Core.Enums;
 using AutoCodeForge.Core.Interfaces;
 using AutoCodeForge.Infrastructure.Repositories;
 using Microsoft.Extensions.Options;
+using AutoCodeForge.Core.Exceptions;
 
 namespace AutoCodeForge.Application.Services;
 
@@ -12,17 +13,20 @@ public class TaskOrchestrator
     private readonly IAgentSelectionStrategy _selectionStrategy;
     private readonly AgentRepository _agentRepository;
     private readonly TaskStepRepository _taskStepRepository;
+    private readonly TaskRepository _taskRepository;
     private readonly OrchestrationSettings _settings;
 
     public TaskOrchestrator(
         IAgentSelectionStrategy selectionStrategy,
         AgentRepository agentRepository,
         TaskStepRepository taskStepRepository,
+        TaskRepository taskRepository,
         IOptions<OrchestrationSettings> settings)
     {
         _selectionStrategy = selectionStrategy;
         _agentRepository = agentRepository;
         _taskStepRepository = taskStepRepository;
+        _taskRepository = taskRepository;
         _settings = settings.Value;
     }
 
@@ -117,17 +121,132 @@ public class TaskOrchestrator
     }
 
     private AgentRole DetermineRoleFromStep(string stepType)
-    {
-        return stepType.ToLower() switch
         {
-            "demandanalyse" => AgentRole.Secretary,
-            "querycurrent" => AgentRole.Secretary,
-            "makeplan" => AgentRole.Manager,
-            "development" => AgentRole.Worker,
-            "testverify" => AgentRole.Worker,
-            "commitpr" => AgentRole.Worker,
-            "finalaudit" => AgentRole.Manager,
-            _ => AgentRole.Worker
-        };
+            return stepType.ToLower() switch
+            {
+                "demandanalyse" => AgentRole.Secretary,
+                "querycurrent" => AgentRole.Secretary,
+                "makeplan" => AgentRole.Manager,
+                "development" => AgentRole.Worker,
+                "testverify" => AgentRole.Worker,
+                "commitpr" => AgentRole.Worker,
+                "finalaudit" => AgentRole.Manager,
+                _ => AgentRole.Worker
+            };
+        }
+
+        public async Task<bool> PauseTaskAsync(Guid taskId, string? reason = null, CancellationToken cancellationToken = default)
+        {
+            var task = await _taskRepository.GetByIdAsync(taskId, false, cancellationToken)
+                ?? throw new NotFoundException("Task not found");
+
+            if (task.Status != Core.Entities.TaskStatus.Running && task.Status != Core.Entities.TaskStatus.Pending)
+            {
+                throw new ValidationException($"Cannot pause task in {task.Status} state");
+            }
+
+            task.Status = Core.Entities.TaskStatus.Paused;
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                task.ErrorMessage = reason;
+            }
+            task.UpdatedAtUtc = DateTime.UtcNow;
+
+            await _taskRepository.UpdateAsync(task, cancellationToken);
+
+            var activeStep = await _taskStepRepository.GetActiveStepAsync(taskId, cancellationToken);
+            if (activeStep != null && activeStep.WorkerAgentId.HasValue)
+            {
+                await _agentRepository.SetStateAsync(activeStep.WorkerAgentId.Value, AgentState.Idle, cancellationToken);
+                await _agentRepository.DecrementTaskCountAsync(activeStep.WorkerAgentId.Value, cancellationToken);
+            }
+
+            return true;
+        }
+
+        public async Task<bool> ResumeTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
+        {
+            var task = await _taskRepository.GetByIdAsync(taskId, false, cancellationToken)
+                ?? throw new NotFoundException("Task not found");
+
+            if (task.Status != Core.Entities.TaskStatus.Paused)
+            {
+                throw new ValidationException($"Cannot resume task in {task.Status} state");
+            }
+
+            task.Status = Core.Entities.TaskStatus.Running;
+            task.UpdatedAtUtc = DateTime.UtcNow;
+
+            await _taskRepository.UpdateAsync(task, cancellationToken);
+
+            var activeStep = await _taskStepRepository.GetActiveStepAsync(taskId, cancellationToken);
+            if (activeStep != null)
+            {
+                activeStep.Status = TaskStepStatus.Handling;
+                activeStep.StartedAtUtc = DateTime.UtcNow;
+                await _taskStepRepository.UpdateAsync(activeStep, cancellationToken);
+            }
+
+            return true;
+        }
+
+        public async Task<bool> ForceTerminateTaskAsync(Guid taskId, string? reason = null, CancellationToken cancellationToken = default)
+        {
+            var task = await _taskRepository.GetByIdAsync(taskId, false, cancellationToken)
+                ?? throw new NotFoundException("Task not found");
+
+            if (task.Status == Core.Entities.TaskStatus.Completed || task.Status == Core.Entities.TaskStatus.Canceled)
+            {
+                throw new ValidationException($"Cannot terminate task in {task.Status} state");
+            }
+
+            task.Status = Core.Entities.TaskStatus.Canceled;
+            task.ErrorMessage = reason ?? "Task was forcibly terminated";
+            task.CompletedAtUtc = DateTime.UtcNow;
+            task.UpdatedAtUtc = DateTime.UtcNow;
+
+            await _taskRepository.UpdateAsync(task, cancellationToken);
+
+            var steps = await _taskStepRepository.GetByTaskIdAsync(taskId, cancellationToken);
+            foreach (var step in steps.Where(s => s.Status == TaskStepStatus.Handling))
+            {
+                step.Status = TaskStepStatus.Failed;
+                step.CompletedAtUtc = DateTime.UtcNow;
+                await _taskStepRepository.UpdateAsync(step, cancellationToken);
+
+                if (step.WorkerAgentId.HasValue)
+                {
+                    await _agentRepository.SetStateAsync(step.WorkerAgentId.Value, AgentState.Idle, cancellationToken);
+                    await _agentRepository.DecrementTaskCountAsync(step.WorkerAgentId.Value, cancellationToken);
+                }
+            }
+
+            return true;
+        }
+
+        public async Task<bool> UpdateRequirementAsync(Guid taskId, string newRequirement, CancellationToken cancellationToken = default)
+        {
+            var task = await _taskRepository.GetByIdAsync(taskId, false, cancellationToken)
+                ?? throw new NotFoundException("Task not found");
+
+            if (task.Status == Core.Entities.TaskStatus.Completed || task.Status == Core.Entities.TaskStatus.Canceled)
+            {
+                throw new ValidationException($"Cannot update requirement for task in {task.Status} state");
+            }
+
+            task.Input = newRequirement;
+            task.UpdatedAtUtc = DateTime.UtcNow;
+
+            await _taskRepository.UpdateAsync(task, cancellationToken);
+
+            var activeStep = await _taskStepRepository.GetActiveStepAsync(taskId, cancellationToken);
+            if (activeStep != null)
+            {
+                activeStep.Input = newRequirement;
+                activeStep.Version++;
+                await _taskStepRepository.UpdateAsync(activeStep, cancellationToken);
+            }
+
+            return true;
+        }
     }
-}
