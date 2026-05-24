@@ -54,6 +54,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TaskRepository>();
         services.AddScoped<TaskLogRepository>();
         services.AddScoped<TaskStepRepository>();
+        services.AddScoped<TaskReviewRepository>();
         services.AddScoped<HumanGateRepository>();
         services.AddScoped<RepoSandboxWorkspaceRepository>();
         services.AddScoped<ReviewRepository>();
@@ -91,6 +92,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ChatService>();
         services.AddScoped<TaskService>();
         services.AddScoped<TaskStepService>();
+        services.AddScoped<TaskReviewService>();
+        services.AddScoped<TaskStepFlowService>();
         services.AddScoped<HumanGateService>();
         services.AddScoped<ScheduledTaskService>();
         services.AddScoped<PipelineService>();
@@ -120,6 +123,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITaskEventPublisher, InMemoryTaskEventPublisher>();
         services.AddScoped<IArtifactStore, DatabaseArtifactStore>();
         services.AddScoped<ContextChainService>();
+        services.AddSingleton<AutoCodeForge.Application.StateMachines.AgentStateMachine>();
         services.AddScoped<FailureRecoveryService>();
         services.AddScoped<AgentRegistrationRepository>();
         services.AddScoped<IAgentRegistryService, AgentRegistryService>();
@@ -207,6 +211,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<TaskQueueService>();
         services.AddHostedService<CronSchedulerService>();
         services.AddHostedService<PipelineSyncService>();
+        services.AddHostedService<AgentIdleMonitorService>();
         services.AddScoped<AutoCodeForge.Infrastructure.BackgroundServices.Handlers.RepoSyncTaskHandler>();
         services.AddScoped<AutoCodeForge.Infrastructure.BackgroundServices.Handlers.ReviewTaskHandler>();
         return services;

@@ -141,4 +141,20 @@ public class TaskStepRepository : BaseRepository<TaskStepEntity>
             .OrderByDescending(step => step.CompletedAtUtc)
             .ToListAsync();
     }
+
+    /// <summary>
+    /// 批量创建工序步骤
+    /// </summary>
+    /// <param name="entities">工序步骤实体列表</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task CreateManyAsync(List<TaskStepEntity> entities, CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        foreach (var entity in entities)
+        {
+            entity.CreatedAtUtc = DateTime.UtcNow;
+            entity.UpdatedAtUtc = DateTime.UtcNow;
+        }
+        await Db.Insertable(entities).ExecuteCommandAsync();
+    }
 }

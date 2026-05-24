@@ -235,7 +235,8 @@ public sealed class IntegrationTestContext : IDisposable
             typeof(LLMModelConfigEntity),
             typeof(AutoCodeForge.Infrastructure.Services.ArtifactEntity),
             typeof(AgentRegistrationEntity),
-            typeof(NotificationEntity));
+            typeof(NotificationEntity),
+            typeof(TaskReviewEntity));
 
         // 初始化测试用户
         CurrentUser = new TestCurrentUser(userId);
