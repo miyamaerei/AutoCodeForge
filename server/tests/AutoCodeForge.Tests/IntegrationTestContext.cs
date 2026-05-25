@@ -1,4 +1,6 @@
+using AutoCodeForge.Application.Configuration;
 using AutoCodeForge.Application.Services;
+using AutoCodeForge.Infrastructure.Services;
 using AutoCodeForge.Core.DTOs.Config;
 using AutoCodeForge.Core.DTOs.Repository;
 using AutoCodeForge.Core.DTOs.RepoSync;
@@ -63,6 +65,26 @@ public sealed class IntegrationTestContext : IDisposable
     public TaskLogRepository TaskLogRepository { get; }
 
     /// <summary>
+    /// 工序步骤仓储
+    /// </summary>
+    public TaskStepRepository TaskStepRepository { get; }
+
+    /// <summary>
+    /// 工序步骤服务
+    /// </summary>
+    public TaskStepService TaskStepService { get; }
+
+    /// <summary>
+    /// HumanGate仓储
+    /// </summary>
+    public HumanGateRepository HumanGateRepository { get; }
+
+    /// <summary>
+    /// HumanGate服务
+    /// </summary>
+    public HumanGateService HumanGateService { get; }
+
+    /// <summary>
     /// 工作空间仓储
     /// </summary>
     public RepoSandboxWorkspaceRepository WorkspaceRepository { get; }
@@ -71,6 +93,16 @@ public sealed class IntegrationTestContext : IDisposable
     /// Agent仓储
     /// </summary>
     public AgentRepository AgentRepository { get; }
+
+    /// <summary>
+    /// Agent注册仓储
+    /// </summary>
+    public AgentRegistrationRepository AgentRegistrationRepository { get; }
+
+    /// <summary>
+    /// 通知仓储
+    /// </summary>
+    public NotificationRepository NotificationRepository { get; }
 
     /// <summary>
     /// LLM模型配置仓储
@@ -127,6 +159,46 @@ public sealed class IntegrationTestContext : IDisposable
     /// </summary>
     public AgentService AgentService { get; }
 
+    /// <summary>
+    /// Agent学习记录仓储
+    /// </summary>
+    public AgentLearningRecordRepository AgentLearningRecordRepository { get; }
+
+    /// <summary>
+    /// Agent休眠记录仓储
+    /// </summary>
+    public AgentDormantRecordRepository AgentDormantRecordRepository { get; }
+
+    /// <summary>
+    /// 任务编排器服务
+    /// </summary>
+    public TaskOrchestrator TaskOrchestrator { get; }
+
+    /// <summary>
+    /// 最小负载选择策略
+    /// </summary>
+    public LeastLoadAgentSelectionStrategy LeastLoadAgentSelectionStrategy { get; }
+
+    /// <summary>
+    /// 进程内事件发布器
+    /// </summary>
+    public InMemoryTaskEventPublisher InMemoryTaskEventPublisher { get; }
+
+    /// <summary>
+    /// 数据库产出物存储
+    /// </summary>
+    public AutoCodeForge.Infrastructure.Services.DatabaseArtifactStore DatabaseArtifactStore { get; }
+
+    /// <summary>
+    /// 上下文链式传递服务
+    /// </summary>
+    public ContextChainService ContextChainService { get; }
+
+    /// <summary>
+    /// 失败恢复服务
+    /// </summary>
+    public FailureRecoveryService FailureRecoveryService { get; }
+
     #endregion
 
     /// <summary>
@@ -149,6 +221,8 @@ public sealed class IntegrationTestContext : IDisposable
         Db.CodeFirst.InitTables(
             typeof(TaskEntity),
             typeof(TaskLogEntity),
+            typeof(TaskStepEntity),
+            typeof(HumanGateEntity),
             typeof(UserConfigEntity),
             typeof(RepositoryEntity),
             typeof(RepoSandboxWorkspaceEntity),
@@ -156,7 +230,13 @@ public sealed class IntegrationTestContext : IDisposable
             typeof(ConfigurationEntry),
             typeof(ConfigHistoryEntity),
             typeof(AgentEntity),
-            typeof(LLMModelConfigEntity));
+            typeof(AgentLearningRecordEntity),
+            typeof(AgentDormantRecordEntity),
+            typeof(LLMModelConfigEntity),
+            typeof(AutoCodeForge.Infrastructure.Services.ArtifactEntity),
+            typeof(AgentRegistrationEntity),
+            typeof(NotificationEntity),
+            typeof(TaskReviewEntity));
 
         // 初始化测试用户
         CurrentUser = new TestCurrentUser(userId);
@@ -167,8 +247,14 @@ public sealed class IntegrationTestContext : IDisposable
         RepositoryRepository = new RepositoryRepository(Db, CurrentUser);
         TaskRepository = new TaskRepository(Db, CurrentUser);
         TaskLogRepository = new TaskLogRepository(Db, CurrentUser);
+        TaskStepRepository = new TaskStepRepository(Db, CurrentUser);
+        HumanGateRepository = new HumanGateRepository(Db, CurrentUser);
         WorkspaceRepository = new RepoSandboxWorkspaceRepository(Db, CurrentUser);
         AgentRepository = new AgentRepository(Db, CurrentUser);
+        AgentRegistrationRepository = new AgentRegistrationRepository(Db, CurrentUser);
+        NotificationRepository = new NotificationRepository(Db, CurrentUser);
+        AgentLearningRecordRepository = new AgentLearningRecordRepository(Db, CurrentUser);
+        AgentDormantRecordRepository = new AgentDormantRecordRepository(Db, CurrentUser);
         LLMModelConfigRepository = new LLMModelConfigRepository(Db, CurrentUser);
 
         // 初始化基础设施服务
@@ -186,8 +272,39 @@ public sealed class IntegrationTestContext : IDisposable
         ConfigService = new ConfigService(ConfigRepository, ConfigHistoryRepository, EncryptionService, CurrentUser);
         RepositoryService = new RepositoryService(RepositoryRepository, GitProviderFactory, DataProtectionService);
         RepoSyncService = new RepoSyncService(TaskRepository, TaskLogRepository, RepositoryRepository, WorkspaceRepository, ConfigService);
+        TaskStepService = new TaskStepService(TaskStepRepository, TaskRepository, Db);
+        HumanGateService = new HumanGateService(HumanGateRepository, TaskRepository, TaskStepRepository, TaskLogRepository);
         SandboxPathResolver = new SandboxPathResolver();
-        AgentService = new AgentService(AgentRepository);
+        AgentService = new AgentService(
+            AgentRepository,
+            AgentLearningRecordRepository,
+            AgentDormantRecordRepository,
+            CurrentUser);
+
+        // 初始化任务编排服务
+        var orchestrationSettings = new Microsoft.Extensions.Options.OptionsWrapper<AutoCodeForge.Application.Configuration.OrchestrationSettings>(
+            new AutoCodeForge.Application.Configuration.OrchestrationSettings());
+        LeastLoadAgentSelectionStrategy = new AutoCodeForge.Application.Services.LeastLoadAgentSelectionStrategy(AgentRepository);
+        TaskOrchestrator = new AutoCodeForge.Application.Services.TaskOrchestrator(
+            LeastLoadAgentSelectionStrategy,
+            AgentRepository,
+            TaskStepRepository,
+            TaskRepository,
+            orchestrationSettings);
+
+        // 初始化Agent间通信服务
+        InMemoryTaskEventPublisher = new AutoCodeForge.Application.Services.InMemoryTaskEventPublisher();
+        DatabaseArtifactStore = new AutoCodeForge.Infrastructure.Services.DatabaseArtifactStore(Db);
+        ContextChainService = new AutoCodeForge.Application.Services.ContextChainService(TaskStepRepository, DatabaseArtifactStore);
+
+        // 初始化失败恢复服务
+        var retryPolicySettings = new Microsoft.Extensions.Options.OptionsWrapper<AutoCodeForge.Application.Configuration.RetryPolicySettings>(
+            new AutoCodeForge.Application.Configuration.RetryPolicySettings());
+        FailureRecoveryService = new AutoCodeForge.Application.Services.FailureRecoveryService(
+            TaskStepRepository,
+            AgentRepository,
+            InMemoryTaskEventPublisher,
+            retryPolicySettings);
     }
 
     /// <summary>
@@ -358,6 +475,84 @@ public sealed class IntegrationTestContext : IDisposable
         };
 
         return await AgentRepository.CreateAsync(entity);
+    }
+
+    /// <summary>
+    /// 创建带生命周期管理字段的测试 Agent
+    /// </summary>
+    public async Task<AgentEntity> CreateTestAgentWithLifecycleAsync(
+        string name = "Test Agent",
+        AgentState state = AgentState.Idle,
+        AgentRole role = AgentRole.Worker,
+        string? skillTags = null)
+    {
+        var entity = new AgentEntity
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            Description = "Test agent with lifecycle management",
+            SystemPrompt = "You are a helpful assistant.",
+            IsEnabled = true,
+            State = state,
+            Role = role,
+            StateChangedAtUtc = DateTime.UtcNow,
+            SkillTags = skillTags,
+            LearningProgress = 0,
+            Version = 0,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+
+        return await AgentRepository.CreateAsync(entity);
+    }
+
+    /// <summary>
+    /// 创建测试学习记录
+    /// </summary>
+    public async Task<AgentLearningRecordEntity> CreateTestLearningRecordAsync(
+        Guid agentId,
+        LearningTriggerType triggerType = LearningTriggerType.Manual,
+        string? summary = null,
+        bool isSuccess = true)
+    {
+        var entity = new AgentLearningRecordEntity
+        {
+            Id = Guid.NewGuid(),
+            AgentId = agentId,
+            TriggerType = triggerType,
+            TriggerReason = summary,
+            IsSuccessful = isSuccess,
+            EffectivenessScore = isSuccess ? 80 : 30,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+
+        return await AgentLearningRecordRepository.CreateAsync(entity);
+    }
+
+    /// <summary>
+    /// 创建测试休眠记录
+    /// </summary>
+    public async Task<AgentDormantRecordEntity> CreateTestDormantRecordAsync(
+        Guid agentId,
+        string reason = "Test dormancy",
+        bool isWoken = false)
+    {
+        var entity = new AgentDormantRecordEntity
+        {
+            Id = Guid.NewGuid(),
+            AgentId = agentId,
+            ReasonType = DormantReasonType.Manual,
+            ReasonDescription = reason,
+            IsWoken = isWoken,
+            IsDeleted = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+        };
+
+        return await AgentDormantRecordRepository.CreateAsync(entity);
     }
 
     /// <summary>
@@ -533,7 +728,9 @@ public sealed class GitTestConfig
                 return GitProvider.GitLab;
             if (Repo.Contains("dev.azure.com", StringComparison.OrdinalIgnoreCase) || Repo.Contains("visualstudio.com", StringComparison.OrdinalIgnoreCase))
                 return GitProvider.AzureDevOps;
-            return GitProvider.Unknown;
+            if (Repo.Contains("bitbucket.org", StringComparison.OrdinalIgnoreCase))
+                return GitProvider.Bitbucket;
+            return GitProvider.GitHub;
         }
     }
 }

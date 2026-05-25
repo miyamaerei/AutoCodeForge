@@ -32,6 +32,7 @@ const userProfile = computed(() => {
 
 const route = useRoute()
 const isLoginRoute = computed(() => route.path === '/login')
+const isFullscreenRoute = computed(() => route.meta.fullscreen === true)
 
 const userMenuItems = computed<MenuItem[]>(() => [
   {
@@ -287,6 +288,7 @@ function handleOnboardingSkip(): void {
 
 <template>
   <RouterView v-if="isLoginRoute" />
+  <RouterView v-else-if="isFullscreenRoute" />
   <el-container v-else class="app-shell">
     <AppSidebar
       :menu-items="menuItems"

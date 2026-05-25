@@ -1,9 +1,9 @@
 import './assets/main.css'
-import 'element-plus/dist/index.css'
+// Element Plus CSS will be auto-imported by unplugin-vue-components
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
+// ElementPlus will be auto-imported by unplugin-vue-components
 import App from './App.vue'
 import { router } from './router'
 import { installHostBridge } from './host/terminalBridge'
@@ -14,6 +14,6 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-app.use(ElementPlus)
+// ElementPlus components will be auto-imported
 
 app.mount('#app')

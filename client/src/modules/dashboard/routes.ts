@@ -10,4 +10,14 @@ export const dashboardRoutes: RouteRecordRaw[] = [
       title: 'Dashboard',
     },
   },
+  {
+    path: '/dashboard/large-screen',
+    name: 'dashboard.large-screen',
+    component: () => import('./views/DashboardLargeScreenView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '大屏监控',
+      fullscreen: true,
+    },
+  },
 ]

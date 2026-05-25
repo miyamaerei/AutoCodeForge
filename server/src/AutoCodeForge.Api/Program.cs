@@ -107,6 +107,13 @@ app.MapAgentSkillEndpoints();
 app.MapChatEndpoints();
 app.MapChatStreamEndpoints();
 app.MapTaskEndpoints();
+app.MapTaskStepEndpoints();
+app.MapTaskOrchestrationEndpoints();
+app.MapAgentCommunicationEndpoints();
+app.MapFailureRecoveryEndpoints();
+app.MapAgentRegistrationEndpoints();
+app.MapNotificationEndpoints();
+app.MapHumanGateEndpoints();
 app.MapRepoSyncEndpoints();
 app.MapReviewEndpoints();
 app.MapScheduledTaskEndpoints();
@@ -114,6 +121,7 @@ app.MapRepositoryEndpoints();
 app.MapPipelineEndpoints();
 app.MapWikiEndpoints();
 app.MapAdminEndpoints();
+app.MapDashboardEndpoints();
 
 app.Run();
 

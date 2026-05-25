@@ -41,4 +41,14 @@ public class UpdateAgentRequest
     /// Gets or sets whether the agent is enabled.
     /// </summary>
     public bool IsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Agent 角色
+    /// </summary>
+    public string? Role { get; set; }
+
+    /// <summary>
+    /// 乐观锁版本号（用于并发控制）
+    /// </summary>
+    public int? Version { get; set; }
 }

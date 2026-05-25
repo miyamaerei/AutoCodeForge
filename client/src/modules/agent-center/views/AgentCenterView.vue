@@ -2,7 +2,7 @@
 import { onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAgent } from '../composables/useAgent'
-import type { AgentDto } from '../agent.api'
+import type { AgentDto } from '../api/agent.types'
 
 const {
   agents,

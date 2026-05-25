@@ -272,6 +272,28 @@ public class TaskService
     }
 
     /// <summary>
+    /// Gets all tasks.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>All task entities.</returns>
+    public async Task<List<TaskEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _taskRepository.GetAllAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets recent tasks.
+    /// </summary>
+    /// <param name="take">Maximum number of rows.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>Recent task responses.</returns>
+    public async Task<List<TaskResponse>> GetRecentTasksAsync(int take, CancellationToken cancellationToken = default)
+    {
+        var tasks = await _taskRepository.GetRecentAsync(take, cancellationToken);
+        return tasks.Select(ToResponse).ToList();
+    }
+
+    /// <summary>
     /// Adds one task log entry.
     /// </summary>
     /// <param name="taskId">The task identifier.</param>
@@ -322,6 +344,8 @@ public class TaskService
             DueAtUtc = entity.DueAtUtc,
             StartedAtUtc = entity.StartedAtUtc,
             CompletedAtUtc = entity.CompletedAtUtc,
+            CurrentStep = entity.CurrentStep,
+            CurrentStepId = entity.CurrentStepId,
             CreatedAtUtc = entity.CreatedAtUtc,
             UpdatedAtUtc = entity.UpdatedAtUtc,
         };

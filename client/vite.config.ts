@@ -3,6 +3,9 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import Components from 'unplugin-vue-components/vite'
+import AutoImport from 'unplugin-auto-import/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 function getElementPlusChunk(id: string): string {
   const componentMatch = id.match(/element-plus[\\/]es[\\/]components[\\/]([^\\/]+)/)
@@ -33,9 +36,18 @@ function getElementPlusChunk(id: string): string {
 export default defineConfig({
   plugins: [
     vue(),
-    vueDevTools(),
-  ],
+    // Only enable Vue DevTools in development mode
+    process.env.NODE_ENV === 'development' ? vueDevTools() : null,
+    AutoImport({
+      resolvers: [ElementPlusResolver()],
+    }),
+    Components({
+      resolvers: [ElementPlusResolver()],
+    }),
+  ].filter(Boolean),
   build: {
+    // Disable sourcemaps in production
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -101,7 +113,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://localhost:7267',
+        target: 'http://localhost:5254',
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {

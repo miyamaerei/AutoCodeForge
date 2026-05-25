@@ -71,6 +71,16 @@ public class TaskResponse
     public DateTime? CompletedAtUtc { get; set; }
 
     /// <summary>
+    /// Gets or sets the current step number (1-7).
+    /// </summary>
+    public int? CurrentStep { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current step ID.
+    /// </summary>
+    public Guid? CurrentStepId { get; set; }
+
+    /// <summary>
     /// Gets or sets creation timestamp in UTC.
     /// </summary>
     public DateTime CreatedAtUtc { get; set; }

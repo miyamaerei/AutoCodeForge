@@ -1,5 +1,8 @@
+using AutoCodeForge.Application.Configuration;
+using AutoCodeForge.Application.Models;
 using AutoCodeForge.Application.Security;
 using AutoCodeForge.Application.Services;
+using AutoCodeForge.Core.Entities;
 using AutoCodeForge.Core.Interfaces;
 using AutoCodeForge.Core.Models;
 using AutoCodeForge.Infrastructure.AI;
@@ -8,6 +11,7 @@ using AutoCodeForge.Infrastructure.Data;
 using AutoCodeForge.Infrastructure.Git;
 using AutoCodeForge.Infrastructure.Helpers;
 using AutoCodeForge.Infrastructure.Logging;
+using AutoCodeForge.Infrastructure.Notification.Channels;
 using AutoCodeForge.Infrastructure.Repositories;
 using AutoCodeForge.Infrastructure.Repositories.Base;
 using AutoCodeForge.Infrastructure.Services;
@@ -43,10 +47,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UserConfigRepository>();
         services.AddScoped<LLMModelConfigRepository>();
         services.AddScoped<AgentRepository>();
+        services.AddScoped<AgentLearningRecordRepository>();
+        services.AddScoped<AgentDormantRecordRepository>();
         services.AddScoped<ChatSessionRepository>();
         services.AddScoped<ChatMessageRepository>();
         services.AddScoped<TaskRepository>();
         services.AddScoped<TaskLogRepository>();
+        services.AddScoped<TaskStepRepository>();
+        services.AddScoped<TaskReviewRepository>();
+        services.AddScoped<HumanGateRepository>();
         services.AddScoped<RepoSandboxWorkspaceRepository>();
         services.AddScoped<ReviewRepository>();
         services.AddScoped<ReviewRuleSetRepository>();
@@ -82,6 +91,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AgentService>();
         services.AddScoped<ChatService>();
         services.AddScoped<TaskService>();
+        services.AddScoped<TaskStepService>();
+        services.AddScoped<TaskReviewService>();
+        services.AddScoped<TaskStepFlowService>();
+        services.AddScoped<HumanGateService>();
         services.AddScoped<ScheduledTaskService>();
         services.AddScoped<PipelineService>();
         services.AddScoped<WikiService>();
@@ -105,6 +118,49 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SeedData>();
         services.AddSingleton<PasswordHelper>();
         services.AddScoped<DataProtectionService>();
+        services.AddScoped<IAgentSelectionStrategy, LeastLoadAgentSelectionStrategy>();
+        services.AddScoped<TaskOrchestrator>();
+        services.AddScoped<ITaskEventPublisher, InMemoryTaskEventPublisher>();
+        services.AddScoped<IArtifactStore, DatabaseArtifactStore>();
+        services.AddScoped<ContextChainService>();
+        services.AddSingleton<AutoCodeForge.Application.StateMachines.AgentStateMachine>();
+        services.AddScoped<FailureRecoveryService>();
+        services.AddScoped<AgentRegistrationRepository>();
+        services.AddScoped<IAgentRegistryService, AgentRegistryService>();
+        services.AddScoped<NotificationRepository>();
+        services.AddScoped<INotificationChannel, InAppNotificationChannel>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddOptions<NotificationTemplateSettings>()
+            .Configure(options =>
+            {
+                options.Templates = new List<NotificationTemplate>
+                {
+                    new NotificationTemplate
+                    {
+                        TemplateId = "PlanApproval",
+                        Name = "计划审批通知",
+                        Subject = "任务 {{TaskId}} 需要计划审批",
+                        Content = "任务 {{TaskId}} 的计划已完成，需要您进行审批。<a href='{{ActionUrl}}'>点击审批</a>",
+                        Channel = NotificationChannel.InApp
+                    },
+                    new NotificationTemplate
+                    {
+                        TemplateId = "CodeReview",
+                        Name = "代码审核通知",
+                        Subject = "任务 {{TaskId}} 需要代码审核",
+                        Content = "任务 {{TaskId}} 的代码已完成，需要您进行审核。<a href='{{ActionUrl}}'>点击审核</a>",
+                        Channel = NotificationChannel.InApp
+                    },
+                    new NotificationTemplate
+                    {
+                        TemplateId = "Emergency",
+                        Name = "紧急通知",
+                        Subject = "紧急：任务 {{TaskId}} 需要立即处理",
+                        Content = "任务 {{TaskId}} 出现紧急情况，请立即处理。<a href='{{ActionUrl}}'>查看详情</a>",
+                        Channel = NotificationChannel.InApp
+                    }
+                };
+            });
         return services;
     }
 
@@ -126,6 +182,9 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAgentTool, GitReadToolset>();
         services.AddScoped<IAgentTool, GitWriteToolset>();
+        services.AddScoped<IAgentTool, NotificationTool>();
+        services.AddScoped<IAgentTool, SummaryTool>();
+        services.AddScoped<IAgentTool, AgentTaskCompleteTool>();
         return services;
     }
 
@@ -155,6 +214,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<TaskQueueService>();
         services.AddHostedService<CronSchedulerService>();
         services.AddHostedService<PipelineSyncService>();
+        services.AddHostedService<AgentIdleMonitorService>();
         services.AddScoped<AutoCodeForge.Infrastructure.BackgroundServices.Handlers.RepoSyncTaskHandler>();
         services.AddScoped<AutoCodeForge.Infrastructure.BackgroundServices.Handlers.ReviewTaskHandler>();
         return services;

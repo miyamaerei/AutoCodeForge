@@ -61,4 +61,20 @@ public class TaskRepository : BaseRepository<TaskEntity>
 
         return affected > 0;
     }
+
+    public async Task<List<TaskEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        return await Queryable.ToListAsync();
+    }
+
+    public async Task<List<TaskEntity>> GetRecentAsync(int take, CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        var normalizedTake = take <= 0 ? 20 : Math.Min(take, 100);
+        return await Queryable
+            .OrderByDescending(task => task.CreatedAtUtc)
+            .Take(normalizedTake)
+            .ToListAsync();
+    }
 }

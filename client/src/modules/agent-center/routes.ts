@@ -19,4 +19,22 @@ export const agentCenterRoutes: RouteRecordRaw[] = [
       title: 'Agent 通用提示',
     },
   },
+  {
+    path: '/agent-center/:id',
+    name: 'agent.detail',
+    component: () => import('./views/AgentCenterView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Agent 详情',
+    },
+  },
+  {
+    path: '/agent-center/state/:state',
+    name: 'agent.state',
+    component: () => import('./views/AgentCenterView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Agent 状态',
+    },
+  },
 ]

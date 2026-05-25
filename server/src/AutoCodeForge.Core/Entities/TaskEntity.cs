@@ -113,6 +113,18 @@ public class TaskEntity : UserOwnedEntity
     /// </summary>
     [SugarColumn(IsNullable = true)]
     public DateTime? CompletedAtUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current step number (1-7).
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public int? CurrentStep { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current step ID.
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public Guid? CurrentStepId { get; set; }
 }
 
 /// <summary>
