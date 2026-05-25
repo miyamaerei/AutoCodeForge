@@ -70,11 +70,11 @@ jobs:
       
       - name: Build backend
         working-directory: ./server
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build src/AutoCodeForge.Api/AutoCodeForge.Api.csproj --configuration Release --no-restore
       
       - name: Run tests
         working-directory: ./server
-        run: dotnet test --configuration Release --no-build --verbosity normal
+        run: dotnet test tests/AutoCodeForge.Tests/AutoCodeForge.Tests.csproj --configuration Release --no-build --verbosity normal
       
       - name: Publish backend
         working-directory: ./server
