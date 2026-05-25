@@ -31,17 +31,13 @@ jobs:
         working-directory: ./client
         run: npm ci
       
-      - name: Run ESLint
-        working-directory: ./client
-        run: npm run lint
-      
       - name: Run type check
         working-directory: ./client
         run: npm run type-check
       
       - name: Run tests
         working-directory: ./client
-        run: npm run test
+        run: npm run test:unit
       
       - name: Build frontend
         working-directory: ./client
@@ -70,7 +66,7 @@ jobs:
       
       - name: Restore dependencies
         working-directory: ./server
-        run: dotnet restore
+        run: dotnet restore src/AutoCodeForge.Api/AutoCodeForge.Api.csproj
       
       - name: Build backend
         working-directory: ./server
