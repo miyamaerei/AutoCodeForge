@@ -5,6 +5,7 @@ using AutoCodeForge.Core.Interfaces;
 using AutoCodeForge.Infrastructure.Repositories;
 using Microsoft.Extensions.Options;
 using AutoCodeForge.Core.Exceptions;
+using TaskStatus = AutoCodeForge.Core.Entities.TaskStatus;
 
 namespace AutoCodeForge.Application.Services;
 
@@ -140,12 +141,12 @@ public class TaskOrchestrator
             var task = await _taskRepository.GetByIdAsync(taskId, false, cancellationToken)
                 ?? throw new NotFoundException("Task not found");
 
-            if (task.Status != Core.Entities.TaskStatus.Running && task.Status != Core.Entities.TaskStatus.Pending)
+            if (task.Status != TaskStatus.Running && task.Status != TaskStatus.Pending)
             {
                 throw new ValidationException($"Cannot pause task in {task.Status} state");
             }
 
-            task.Status = Core.Entities.TaskStatus.Paused;
+            task.Status = TaskStatus.Paused;
             if (!string.IsNullOrWhiteSpace(reason))
             {
                 task.ErrorMessage = reason;
@@ -169,12 +170,12 @@ public class TaskOrchestrator
             var task = await _taskRepository.GetByIdAsync(taskId, false, cancellationToken)
                 ?? throw new NotFoundException("Task not found");
 
-            if (task.Status != Core.Entities.TaskStatus.Paused)
+            if (task.Status != TaskStatus.Paused)
             {
                 throw new ValidationException($"Cannot resume task in {task.Status} state");
             }
 
-            task.Status = Core.Entities.TaskStatus.Running;
+            task.Status = TaskStatus.Running;
             task.UpdatedAtUtc = DateTime.UtcNow;
 
             await _taskRepository.UpdateAsync(task, cancellationToken);
@@ -195,12 +196,12 @@ public class TaskOrchestrator
             var task = await _taskRepository.GetByIdAsync(taskId, false, cancellationToken)
                 ?? throw new NotFoundException("Task not found");
 
-            if (task.Status == Core.Entities.TaskStatus.Completed || task.Status == Core.Entities.TaskStatus.Canceled)
+            if (task.Status == TaskStatus.Completed || task.Status == TaskStatus.Canceled)
             {
                 throw new ValidationException($"Cannot terminate task in {task.Status} state");
             }
 
-            task.Status = Core.Entities.TaskStatus.Canceled;
+            task.Status = TaskStatus.Canceled;
             task.ErrorMessage = reason ?? "Task was forcibly terminated";
             task.CompletedAtUtc = DateTime.UtcNow;
             task.UpdatedAtUtc = DateTime.UtcNow;
@@ -229,7 +230,7 @@ public class TaskOrchestrator
             var task = await _taskRepository.GetByIdAsync(taskId, false, cancellationToken)
                 ?? throw new NotFoundException("Task not found");
 
-            if (task.Status == Core.Entities.TaskStatus.Completed || task.Status == Core.Entities.TaskStatus.Canceled)
+            if (task.Status == TaskStatus.Completed || task.Status == TaskStatus.Canceled)
             {
                 throw new ValidationException($"Cannot update requirement for task in {task.Status} state");
             }
