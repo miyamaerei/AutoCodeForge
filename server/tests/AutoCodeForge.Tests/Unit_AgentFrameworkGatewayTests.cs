@@ -415,7 +415,7 @@ public sealed class AgentFrameworkGatewayTests : IDisposable
         Assert.False(string.IsNullOrWhiteSpace(response.Content));
     }
 
-    [Fact]
+    [Fact(Skip = "Requires GitHub Copilot CLI executable ('copilot') available in PATH or via CliExecutable")]
     public async Task ChatAsync_GitHubCopilotProvider_RealTest()
     {
         // 使用完整路径（确保dotnet进程能找到copilot）

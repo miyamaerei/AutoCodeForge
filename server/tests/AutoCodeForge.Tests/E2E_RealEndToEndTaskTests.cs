@@ -61,11 +61,11 @@ public sealed class RealEndToEndTaskTests : IDisposable
     /// <summary>
     /// 完整端到端测试：拉取代码 → LLM分析 → 修改代码 → 提交PR
     /// </summary>
-    [Fact]
+    [Fact(Skip = "Requires fully provisioned Azure DevOps credentials, repo permissions, and external PR endpoint availability")]
     public async Task FullEndToEnd_PullCode_AnalyzeWithLLM_CreatePR_ShouldComplete()
     {
         // 声明在try外部，以便在finally中访问（使用固定值初始化）
-        string sandboxRootPath = @"E:\git\AutoFrog\AutoCodeForge\sandbox";
+        string sandboxRootPath = Path.Combine(Path.GetTempPath(), "AutoCodeForge", "sandbox");
         string tempWorkspaceRoot = string.Empty;
         string localRepoPath = string.Empty;
 

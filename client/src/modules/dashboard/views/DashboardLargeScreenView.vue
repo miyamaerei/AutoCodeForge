@@ -1,63 +1,79 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import VChart from 'vue-echarts'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { BarChart, PieChart, LineChart } from 'echarts/charts'
-import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
-import { dashboardApi, type DashboardOverview, type PipelineStepStat, type SystemMetrics, type AgentResponse, type TaskResponse } from '../api/dashboard.api'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { Stage, Layer, Group, Rect, Circle, Line, Text } from 'vue-konva'
+import {
+  dashboardApi,
+  type DashboardAgentLiveDto,
+  type DashboardLivePayloadDto,
+  type DashboardLogItemDto,
+  type DashboardSnapshotDto,
+  type DashboardTaskLiveDto,
+} from '../api/dashboard.api'
 import { DateUtils } from '@/lib/dateUtils'
 
-use([
-  CanvasRenderer,
-  BarChart,
-  PieChart,
-  LineChart,
-  GridComponent,
-  LegendComponent,
-  TooltipComponent,
-])
+interface AnimatedTaskNode extends DashboardTaskLiveDto {
+  x: number
+  y: number
+  targetX: number
+  targetY: number
+  lane: number
+}
 
-const overview = ref<DashboardOverview | null>(null)
-const pipelineStats = ref<PipelineStepStat[]>([])
-const systemMetrics = ref<SystemMetrics | null>(null)
-const agents = ref<AgentResponse[]>([])
-const recentTasks = ref<TaskResponse[]>([])
+interface AnimatedAgentNode extends DashboardAgentLiveDto {
+  x: number
+  y: number
+  targetX: number
+  targetY: number
+}
+
+const snapshot = ref<DashboardSnapshotDto | null>(null)
+const tasks = ref<DashboardTaskLiveDto[]>([])
+const agents = ref<DashboardAgentLiveDto[]>([])
+const logs = ref<DashboardLogItemDto[]>([])
+const selectedLogType = ref<'task' | 'agent' | 'system'>('system')
+const selectedTaskId = ref<string | null>(null)
+const selectedAgentId = ref<string | null>(null)
 const isFullscreen = ref(false)
 const lastUpdateTime = ref('')
-let refreshInterval: number | null = null
+const viewportWidth = ref(1920)
+const viewportHeight = ref(1080)
+
+const stageHost = ref<HTMLElement | null>(null)
+const stageWidth = ref(1280)
+const stageHeight = ref(330)
+
+const animatedTasks = ref<AnimatedTaskNode[]>([])
+const animatedAgents = ref<AnimatedAgentNode[]>([])
+
+let coreRefreshInterval: number | null = null
+let animationFrameId: number | null = null
+let resizeObserver: ResizeObserver | null = null
+let liveStreamDisposer: (() => void) | null = null
+let liveStreamGuardTimeout: number | null = null
+let logsStreamDisposer: (() => void) | null = null
+let hasLiveStreamPayload = false
 
 const pipelineSteps = [
-  { key: 'DemandAnalyse', label: '需求分析', color: '#67c23a' },
-  { key: 'QueryCurrent', label: '现状查询', color: '#409eff' },
-  { key: 'MakePlan', label: '方案制定', color: '#e6a23c' },
-  { key: 'Development', label: '开发实施', color: '#f56c6c' },
-  { key: 'TestVerify', label: '测试验证', color: '#909399' },
-  { key: 'CommitPr', label: '提交PR', color: '#b37feb' },
-  { key: 'FinalAudit', label: '最终审核', color: '#73c0de' },
+  { step: 1, key: 'DemandAnalyse', label: '需求梳理' },
+  { step: 2, key: 'QueryCurrent', label: '信息查询' },
+  { step: 3, key: 'MakePlan', label: '方案制定' },
+  { step: 4, key: 'Development', label: '代码开发' },
+  { step: 5, key: 'TestVerify', label: '测试校验' },
+  { step: 6, key: 'CommitPr', label: '版本提交' },
+  { step: 7, key: 'FinalAudit', label: '最终审核' },
 ]
 
 const stateColors: Record<string, string> = {
-  Idle: '#67c23a',
-  Handling: '#409eff',
-  Learning: '#e6a23c',
-  Dormant: '#909399',
+  Idle: '#6ee7b7',
+  Handling: '#60a5fa',
+  Learning: '#fbbf24',
+  Dormant: '#f87171',
 }
 
-const statusColors: Record<string, string> = {
-  Pending: '#e6a23c',
-  Running: '#409eff',
-  Completed: '#67c23a',
-  Failed: '#f56c6c',
-  Paused: '#909399',
-  Canceled: '#666666',
-}
-
-const stateLabels: Record<string, string> = {
-  Idle: '空闲',
-  Handling: '处理中',
-  Learning: '学习中',
-  Dormant: '休眠',
+const roleLabels: Record<string, string> = {
+  Secretary: '秘书',
+  Manager: '管理者',
+  Worker: '工人',
 }
 
 const statusLabels: Record<string, string> = {
@@ -69,135 +85,280 @@ const statusLabels: Record<string, string> = {
   Canceled: '已取消',
 }
 
-const agentStatsChartOption = computed(() => ({
-  tooltip: { trigger: 'item' },
-  series: [
-    {
-      name: 'Agent状态',
-      type: 'pie',
-      radius: ['50%', '75%'],
-      center: ['50%', '50%'],
-      avoidLabelOverlap: false,
-      itemStyle: { borderRadius: 8, borderColor: 'rgba(255,255,255,0.1)', borderWidth: 2 },
-      label: { show: false },
-      emphasis: {
-        label: { show: true, fontSize: 24, fontWeight: 'bold', color: '#fff' },
-      },
-      labelLine: { show: false },
-      data: [
-        { value: overview.value?.agentStats.idle, name: '空闲', itemStyle: { color: '#67c23a' } },
-        { value: overview.value?.agentStats.handling, name: '处理中', itemStyle: { color: '#409eff' } },
-        { value: overview.value?.agentStats.learning, name: '学习中', itemStyle: { color: '#e6a23c' } },
-        { value: overview.value?.agentStats.dormant, name: '休眠', itemStyle: { color: '#909399' } },
-      ],
-    },
-  ],
+const totalTasks = computed(() => snapshot.value?.taskStats.total ?? 0)
+const runningTasks = computed(() => snapshot.value?.taskStats.running ?? 0)
+const exceptionTasks = computed(() => (snapshot.value?.taskStats.failed ?? 0) + (snapshot.value?.taskStats.canceled ?? 0))
+const completedTasks = computed(() => snapshot.value?.taskStats.completed ?? 0)
+const filteredLogs = computed(() => logs.value.slice(0, 120))
+const isStrictLargeScreen = computed(() => {
+  const ratio = viewportWidth.value / Math.max(viewportHeight.value, 1)
+  return viewportHeight.value <= 1080 && ratio >= 1.6
+})
+
+const stageConfig = computed(() => ({
+  width: stageWidth.value,
+  height: stageHeight.value,
 }))
 
-const taskStatsChartOption = computed(() => ({
-  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-  grid: { left: '5%', right: '5%', bottom: '5%', top: '10%', containLabel: true },
-  xAxis: { type: 'category', data: ['待处理', '进行中', '已完成', '失败', '暂停', '取消'], axisLabel: { color: '#94a3b8', fontSize: 14 } },
-  yAxis: { type: 'value', axisLabel: { color: '#94a3b8', fontSize: 14 } },
-  series: [
-    {
-      type: 'bar',
-      data: [
-        { value: overview.value?.taskStats.pending, itemStyle: { color: '#e6a23c', borderRadius: [4, 4, 0, 0] } },
-        { value: overview.value?.taskStats.running, itemStyle: { color: '#409eff', borderRadius: [4, 4, 0, 0] } },
-        { value: overview.value?.taskStats.completed, itemStyle: { color: '#67c23a', borderRadius: [4, 4, 0, 0] } },
-        { value: overview.value?.taskStats.failed, itemStyle: { color: '#f56c6c', borderRadius: [4, 4, 0, 0] } },
-        { value: overview.value?.taskStats.paused, itemStyle: { color: '#909399', borderRadius: [4, 4, 0, 0] } },
-        { value: overview.value?.taskStats.canceled, itemStyle: { color: '#666666', borderRadius: [4, 4, 0, 0] } },
-      ],
-      barWidth: '50%',
-    },
-  ],
-}))
+const stepStartX = computed(() => 90)
+const stepGap = computed(() => (stageWidth.value - 180) / (pipelineSteps.length - 1))
+const laneStartY = computed(() => 74)
+const laneGap = computed(() => 33)
 
-const pipelineHeatmapOption = computed(() => {
-  const statsMap = new Map<string, PipelineStepStat>()
-  pipelineStats.value.forEach((s: PipelineStepStat) => {
-    statsMap.set(s.stepType, s)
-  })
-  
-  const data = pipelineSteps.map((step) => {
-    const stat = statsMap.get(step.key)
-    const pendingCount = stat?.pending ?? 0
+const stepLabels = computed(() => {
+  return pipelineSteps.map((step) => ({
+    ...step,
+    x: stepStartX.value + (step.step - 1) * stepGap.value,
+    y: 22,
+  }))
+})
+
+const laneGuides = computed(() => {
+  return Array.from({ length: 6 }, (_, index) => ({
+    y: laneStartY.value + index * laneGap.value,
+  }))
+})
+
+const taskNodeTargets = computed(() => {
+  return tasks.value.slice(0, 36).map((task, index) => {
+    const step = Math.max(1, Math.min(7, task.currentStep || 1))
+    const lane = index % 6
+    const progressRatio = Math.min(1, Math.max(0, task.progress / 100))
+    const targetX = stepStartX.value + (step - 1) * stepGap.value + progressRatio * stepGap.value * 0.72
+    const targetY = laneStartY.value + lane * laneGap.value
+
     return {
-      name: step.label,
-      value: pendingCount,
-      itemStyle: {
-        color: pendingCount === 0 ? '#67c23a' : pendingCount <= 3 ? '#e6a23c' : '#f56c6c',
-      },
+      ...task,
+      lane,
+      targetX,
+      targetY,
     }
   })
+})
 
-  return {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
-    xAxis: {
-      type: 'category',
-      data: pipelineSteps.map((s) => s.label),
-      axisLabel: { color: '#94a3b8', fontSize: 14, rotate: 30 },
-    },
-    yAxis: { type: 'value', name: '堆积任务', nameTextStyle: { color: '#94a3b8' }, axisLabel: { color: '#94a3b8' } },
-    series: [
-      {
-        name: '堆积任务',
-        type: 'bar',
-        data: data,
-        barWidth: '60%',
-      },
-    ],
+const agentNodeTargets = computed(() => {
+  return agents.value.slice(0, 18).map((agent, index) => {
+    const step = Math.max(1, Math.min(7, agent.workstationStep || 1))
+    const stack = index % 3
+    const targetX = stepStartX.value + (step - 1) * stepGap.value
+    const targetY = stageHeight.value - 78 + stack * 22
+
+    return {
+      ...agent,
+      targetX,
+      targetY,
+    }
+  })
+})
+
+function getTaskStatusText(status: string): string {
+  return statusLabels[status] || status
+}
+
+function syncAnimatedTasks() {
+  const previous = new Map(animatedTasks.value.map((task) => [task.id, task]))
+
+  animatedTasks.value = taskNodeTargets.value.map((task) => {
+    const oldTask = previous.get(task.id)
+    return {
+      ...task,
+      x: oldTask?.x ?? task.targetX,
+      y: oldTask?.y ?? task.targetY,
+    }
+  })
+}
+
+function syncAnimatedAgents() {
+  const previous = new Map(animatedAgents.value.map((agent) => [agent.id, agent]))
+
+  animatedAgents.value = agentNodeTargets.value.map((agent) => {
+    const oldAgent = previous.get(agent.id)
+    return {
+      ...agent,
+      x: oldAgent?.x ?? agent.targetX,
+      y: oldAgent?.y ?? agent.targetY,
+    }
+  })
+}
+
+function animateFrame() {
+  animatedTasks.value = animatedTasks.value.map((task) => ({
+    ...task,
+    x: task.x + (task.targetX - task.x) * 0.18,
+    y: task.y + (task.targetY - task.y) * 0.2,
+  }))
+
+  animatedAgents.value = animatedAgents.value.map((agent) => ({
+    ...agent,
+    x: agent.x + (agent.targetX - agent.x) * 0.2,
+    y: agent.y + (agent.targetY - agent.y) * 0.2,
+  }))
+
+  animationFrameId = window.requestAnimationFrame(animateFrame)
+}
+
+function setupStageResize() {
+  if (!stageHost.value) {
+    return
   }
-})
 
-const uptimeDisplay = computed(() => {
-  return DateUtils.formatUpTime(systemMetrics.value?.upTime || null)
-})
+  const updateStageSize = () => {
+    if (!stageHost.value) {
+      return
+    }
 
-const successRate = computed(() => {
-  if (!overview.value) return 0
-  const total = overview.value.taskStats.completed + overview.value.taskStats.failed
-  if (total === 0) return 100
-  return Math.round((overview.value.taskStats.completed / total) * 100)
-})
+    stageWidth.value = Math.max(1000, stageHost.value.clientWidth - 2)
+    stageHeight.value = Math.max(240, stageHost.value.clientHeight - 2)
+  }
 
-const gateTypeLabels: Record<string, string> = {
-  RequirementConfirm: '需求确认',
-  PlanApproval: '方案审批',
-  CodeReview: '代码审核',
-  TestAcceptance: '测试验收',
-  MergeApproval: '合并审批',
-  FinalSignoff: '最终签收',
-  Emergency: '紧急介入',
+  updateStageSize()
+  resizeObserver = new ResizeObserver(() => updateStageSize())
+  resizeObserver.observe(stageHost.value)
 }
 
-function getHeatLevel(pending: number): string {
-  if (pending === 0) return 'normal'
-  if (pending <= 3) return 'warning'
-  return 'critical'
+function updateViewportMetrics() {
+  viewportWidth.value = window.innerWidth
+  viewportHeight.value = window.innerHeight
 }
 
-async function loadData() {
+async function refreshCoreData() {
   try {
-    const [overviewRes, pipelineRes, metricsRes, agentsRes, tasksRes] = await Promise.all([
-      dashboardApi.getOverview(),
-      dashboardApi.getPipelineStats(),
-      dashboardApi.getSystemMetrics(),
-      dashboardApi.getAgentList(),
-      dashboardApi.getRecentTasks(),
+    const [snapshotData, taskData, agentData] = await Promise.all([
+      dashboardApi.getSnapshot(),
+      dashboardApi.getTasks(),
+      dashboardApi.getAgents(),
     ])
-    overview.value = overviewRes.data
-    pipelineStats.value = pipelineRes.data
-    systemMetrics.value = metricsRes.data
-    agents.value = agentsRes.data
-    recentTasks.value = tasksRes.data
+
+    snapshot.value = snapshotData
+    tasks.value = taskData
+    agents.value = agentData
     lastUpdateTime.value = new Date().toLocaleTimeString('zh-CN')
   } catch (error) {
-    console.error('Failed to load dashboard data:', error)
+    console.error('Failed to refresh dashboard snapshot/tasks/agents:', error)
   }
+}
+
+function applyLivePayload(payload: DashboardLivePayloadDto) {
+  snapshot.value = payload.snapshot
+  tasks.value = payload.tasks
+  agents.value = payload.agents
+  const timestamp = payload.generatedAtUtc || new Date().toISOString()
+  lastUpdateTime.value = new Date(timestamp).toLocaleTimeString('zh-CN')
+}
+
+function stopCoreFallbackPolling() {
+  if (!coreRefreshInterval) {
+    return
+  }
+
+  clearInterval(coreRefreshInterval)
+  coreRefreshInterval = null
+}
+
+function startCoreFallbackPolling() {
+  if (coreRefreshInterval) {
+    return
+  }
+
+  refreshCoreData()
+  coreRefreshInterval = window.setInterval(refreshCoreData, 5000)
+}
+
+function stopCoreLiveStream() {
+  if (liveStreamGuardTimeout) {
+    clearTimeout(liveStreamGuardTimeout)
+    liveStreamGuardTimeout = null
+  }
+
+  if (!liveStreamDisposer) {
+    return
+  }
+
+  liveStreamDisposer()
+  liveStreamDisposer = null
+}
+
+function startCoreLiveStream() {
+  stopCoreLiveStream()
+  hasLiveStreamPayload = false
+  let consecutiveErrors = 0
+
+  liveStreamDisposer = dashboardApi.connectLiveStream({
+    intervalMs: 4000,
+    onOpen: () => {
+      consecutiveErrors = 0
+    },
+    onLive: (payload) => {
+      hasLiveStreamPayload = true
+      consecutiveErrors = 0
+      stopCoreFallbackPolling()
+      applyLivePayload(payload)
+    },
+    onError: () => {
+      consecutiveErrors += 1
+      if (!hasLiveStreamPayload || consecutiveErrors >= 2) {
+        startCoreFallbackPolling()
+      }
+    },
+  })
+
+  liveStreamGuardTimeout = window.setTimeout(() => {
+    if (!hasLiveStreamPayload) {
+      startCoreFallbackPolling()
+    }
+  }, 7000)
+}
+
+function stopLogsLiveStream() {
+  if (!logsStreamDisposer) {
+    return
+  }
+
+  logsStreamDisposer()
+  logsStreamDisposer = null
+}
+
+function startLogsLiveStream() {
+  stopLogsLiveStream()
+
+  logsStreamDisposer = dashboardApi.connectLogsStream({
+    type: selectedLogType.value,
+    ...(selectedTaskId.value ? { taskId: selectedTaskId.value } : {}),
+    ...(selectedAgentId.value ? { agentId: selectedAgentId.value } : {}),
+    intervalMs: 2500,
+    onLogs: (payload) => {
+      logs.value = payload
+    },
+    onError: () => {
+      // EventSource auto-reconnect handles transient network interruptions.
+    },
+  })
+}
+
+function reconnectLogsLiveStream() {
+  startLogsLiveStream()
+}
+
+function resetSelection(type: 'task' | 'agent' | 'system') {
+  selectedLogType.value = type
+  if (type !== 'task') {
+    selectedTaskId.value = null
+  }
+  if (type !== 'agent') {
+    selectedAgentId.value = null
+  }
+}
+
+function selectTask(taskId: string) {
+  selectedTaskId.value = taskId
+  selectedAgentId.value = null
+  selectedLogType.value = 'task'
+}
+
+function selectAgent(agentId: string) {
+  selectedTaskId.value = null
+  selectedAgentId.value = agentId
+  selectedLogType.value = 'agent'
 }
 
 function toggleFullscreen() {
@@ -214,710 +375,724 @@ function toggleFullscreen() {
   }
 }
 
-function refresh() {
-  loadData()
+function getTaskBaseColor(task: DashboardTaskLiveDto): string {
+  if (task.alertLevel === 'critical') {
+    return '#ef4444'
+  }
+
+  if (task.alertLevel === 'warning') {
+    return '#f59e0b'
+  }
+
+  if (task.status === 'Completed') {
+    return '#22c55e'
+  }
+
+  if (task.status === 'Running') {
+    return '#60a5fa'
+  }
+
+  return '#94a3b8'
 }
 
+watch([taskNodeTargets, stageWidth], () => {
+  syncAnimatedTasks()
+}, { deep: true })
+
+watch([agentNodeTargets, stageWidth], () => {
+  syncAnimatedAgents()
+}, { deep: true })
+
+watch([selectedLogType, selectedTaskId, selectedAgentId], () => {
+  startLogsLiveStream()
+})
+
 onMounted(() => {
-  loadData()
-  refreshInterval = window.setInterval(loadData, 15000)
+  updateViewportMetrics()
+  window.addEventListener('resize', updateViewportMetrics)
+  setupStageResize()
+  startCoreLiveStream()
+  startLogsLiveStream()
+  syncAnimatedTasks()
+  syncAnimatedAgents()
+  animationFrameId = window.requestAnimationFrame(animateFrame)
 })
 
 onUnmounted(() => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
+  window.removeEventListener('resize', updateViewportMetrics)
+  stopCoreLiveStream()
+  stopCoreFallbackPolling()
+  stopLogsLiveStream()
+
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+  }
+
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
   }
 })
 </script>
 
 <template>
-  <div class="dashboard-screen" :class="{ fullscreen: isFullscreen }">
+  <div class="screen" :class="{ fullscreen: isFullscreen, 'screen--strict': isStrictLargeScreen }">
     <header class="screen-header">
-      <div class="header-left">
-        <h1 class="title">多Agent协作系统监控大屏</h1>
-        <span class="update-time">更新时间: {{ lastUpdateTime }}</span>
+      <div>
+        <h1>多 Agent 流水线仿真大屏（Vue-Konva）</h1>
+        <p>更新时间：{{ lastUpdateTime || '--:--:--' }}</p>
       </div>
-      <div class="header-right">
-        <button class="btn-refresh" @click="refresh">
-          <span class="icon">🔄</span> 刷新
-        </button>
-        <button class="btn-fullscreen" @click="toggleFullscreen">
-          <span class="icon">⛶</span> {{ isFullscreen ? '退出全屏' : '全屏' }}
-        </button>
+      <div class="header-actions">
+        <button @click="refreshCoreData">刷新快照</button>
+        <button @click="reconnectLogsLiveStream">刷新日志</button>
+        <button @click="toggleFullscreen">{{ isFullscreen ? '退出全屏' : '全屏' }}</button>
       </div>
     </header>
 
-    <main class="screen-main">
-      <aside class="left-panel">
-        <div class="panel agent-panel">
-          <div class="panel-header">
-            <h2 class="panel-title">👥 Agent状态</h2>
-            <span class="panel-count">共 {{ overview?.agentStats.total || 0 }} 个</span>
-          </div>
-          <div class="stat-grid">
-            <div class="stat-card idle">
-              <div class="stat-value">{{ overview?.agentStats.idle || 0 }}</div>
-              <div class="stat-label">空闲</div>
-            </div>
-            <div class="stat-card handling">
-              <div class="stat-value">{{ overview?.agentStats.handling || 0 }}</div>
-              <div class="stat-label">处理中</div>
-            </div>
-            <div class="stat-card learning">
-              <div class="stat-value">{{ overview?.agentStats.learning || 0 }}</div>
-              <div class="stat-label">学习中</div>
-            </div>
-            <div class="stat-card dormant">
-              <div class="stat-value">{{ overview?.agentStats.dormant || 0 }}</div>
-              <div class="stat-label">休眠</div>
-            </div>
-          </div>
-          <div class="chart-container">
-            <v-chart :option="agentStatsChartOption" autoresize />
-          </div>
-        </div>
+    <section class="stats-row">
+      <article class="stat-card">
+        <span>任务总数</span>
+        <strong>{{ totalTasks }}</strong>
+      </article>
+      <article class="stat-card running">
+        <span>运行中</span>
+        <strong>{{ runningTasks }}</strong>
+      </article>
+      <article class="stat-card warning">
+        <span>异常数</span>
+        <strong>{{ exceptionTasks }}</strong>
+      </article>
+      <article class="stat-card success">
+        <span>完成数</span>
+        <strong>{{ completedTasks }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>待处理门控</span>
+        <strong>{{ snapshot?.gateStats.pendingCount ?? 0 }}</strong>
+      </article>
+    </section>
 
-        <div class="panel gate-panel">
-          <div class="panel-header">
-            <h2 class="panel-title">🚪 门控告警</h2>
-            <span 
-              class="panel-count" 
-              :class="{ warning: (overview?.gateStats.pendingCount ?? 0) > 0 }"
+    <section class="sandbox-panel">
+      <div ref="stageHost" class="konva-host">
+        <Stage :config="stageConfig">
+          <Layer>
+            <Rect :config="{ x: 0, y: 0, width: stageWidth, height: stageHeight, fill: '#071222' }" />
+
+            <Line
+              :config="{
+                points: [0, stageHeight - 108, stageWidth, stageHeight - 108],
+                stroke: 'rgba(148,163,184,0.35)',
+                strokeWidth: 1,
+                dash: [6, 4],
+              }"
+            />
+
+            <Line
+              v-for="guide in laneGuides"
+              :key="`lane-${guide.y}`"
+              :config="{
+                points: [52, guide.y, stageWidth - 52, guide.y],
+                stroke: 'rgba(96,165,250,0.18)',
+                strokeWidth: 1,
+                dash: [5, 8],
+              }"
+            />
+
+            <Line
+              v-for="step in stepLabels"
+              :key="`step-column-${step.step}`"
+              :config="{
+                points: [step.x, 46, step.x, stageHeight - 16],
+                stroke: 'rgba(148,163,184,0.15)',
+                strokeWidth: 1,
+              }"
+            />
+
+            <Group v-for="step in stepLabels" :key="`step-label-${step.step}`">
+              <Circle
+                :config="{
+                  x: step.x,
+                  y: step.y,
+                  radius: 10,
+                  fill: '#0f172a',
+                  stroke: '#64748b',
+                  strokeWidth: 1,
+                }"
+              />
+              <Text
+                :config="{
+                  x: step.x - 3,
+                  y: step.y - 5,
+                  text: String(step.step),
+                  fontSize: 10,
+                  fill: '#cbd5e1',
+                }"
+              />
+              <Text
+                :config="{
+                  x: step.x - 38,
+                  y: step.y + 14,
+                  width: 76,
+                  text: step.label,
+                  align: 'center',
+                  fontSize: 11,
+                  fill: '#dbeafe',
+                }"
+              />
+            </Group>
+
+            <Group
+              v-for="task in animatedTasks"
+              :key="`task-${task.id}`"
+              @click="selectTask(task.id)"
             >
-              {{ overview?.gateStats.pendingCount || 0 }} 个待处理
-            </span>
-          </div>
-          <div class="gate-list">
-            <div 
-              v-for="(count, type) in overview?.gateStats.byType" 
-              :key="type"
-              class="gate-item"
+              <Circle
+                :config="{
+                  x: task.x,
+                  y: task.y,
+                  radius: 7,
+                  fill: getTaskBaseColor(task),
+                  stroke: '#e2e8f0',
+                  strokeWidth: 1,
+                  shadowColor: getTaskBaseColor(task),
+                  shadowBlur: 8,
+                  shadowOpacity: 0.5,
+                }"
+              />
+
+              <Circle
+                v-if="task.isTimeout"
+                :config="{
+                  x: task.x,
+                  y: task.y,
+                  radius: 11,
+                  stroke: '#fb923c',
+                  strokeWidth: 2,
+                  dash: [4, 4],
+                }"
+              />
+
+              <Line
+                v-if="task.hasRejectedGate"
+                :config="{
+                  points: [task.x - 8, task.y - 8, task.x + 8, task.y + 8, task.x - 8, task.y + 8, task.x + 8, task.y - 8],
+                  stroke: '#ef4444',
+                  strokeWidth: 1.8,
+                }"
+              />
+
+              <Circle
+                v-if="task.hasEmergencyGate"
+                :config="{
+                  x: task.x + 10,
+                  y: task.y - 10,
+                  radius: 3.5,
+                  fill: '#f0abfc',
+                  stroke: '#86198f',
+                  strokeWidth: 1,
+                }"
+              />
+
+              <Text
+                :config="{
+                  x: task.x + 10,
+                  y: task.y - 6,
+                  text: `${task.title} (${task.progress}%)`,
+                  fontSize: 10,
+                  fill: '#cbd5e1',
+                }"
+              />
+            </Group>
+
+            <Group
+              v-for="agent in animatedAgents"
+              :key="`agent-${agent.id}`"
+              @click="selectAgent(agent.id)"
             >
-              <span class="gate-type">{{ gateTypeLabels[type as string] || type }}</span>
-              <span class="gate-count-badge">{{ count }}</span>
-            </div>
-            <div v-if="(!overview?.gateStats.byType || Object.keys(overview.gateStats.byType).length === 0)" class="empty-state">
-              暂无待处理门控
-            </div>
+              <Rect
+                :config="{
+                  x: agent.x - 16,
+                  y: agent.y - 10,
+                  width: 32,
+                  height: 20,
+                  cornerRadius: 6,
+                  fill: '#0f172a',
+                  stroke: stateColors[agent.state] || '#60a5fa',
+                  strokeWidth: 1.8,
+                }"
+              />
+
+              <Circle
+                :config="{
+                  x: agent.x - 10,
+                  y: agent.y,
+                  radius: 3,
+                  fill: stateColors[agent.state] || '#60a5fa',
+                }"
+              />
+
+              <Text
+                :config="{
+                  x: agent.x - 5,
+                  y: agent.y - 5,
+                  text: `${agent.name}`,
+                  fontSize: 9,
+                  fill: '#e2e8f0',
+                }"
+              />
+
+              <Circle
+                v-if="agent.state === 'Dormant'"
+                :config="{
+                  x: agent.x,
+                  y: agent.y,
+                  radius: 15,
+                  stroke: '#ef4444',
+                  strokeWidth: 1.5,
+                  dash: [4, 3],
+                }"
+              />
+            </Group>
+          </Layer>
+        </Stage>
+      </div>
+
+      <div class="legend-row">
+        <span class="legend-item"><i class="dot timeout"></i>超时</span>
+        <span class="legend-item"><i class="dot rejected"></i>驳回</span>
+        <span class="legend-item"><i class="dot emergency"></i>紧急门控</span>
+      </div>
+    </section>
+
+    <section class="bottom-grid">
+      <article class="panel">
+        <h2>Agent 状态分布</h2>
+        <div class="agent-stats">
+          <div class="agent-stat idle">
+            <span>空闲</span>
+            <strong>{{ snapshot?.agentStats.idle ?? 0 }}</strong>
+          </div>
+          <div class="agent-stat handling">
+            <span>处理中</span>
+            <strong>{{ snapshot?.agentStats.handling ?? 0 }}</strong>
+          </div>
+          <div class="agent-stat learning">
+            <span>学习中</span>
+            <strong>{{ snapshot?.agentStats.learning ?? 0 }}</strong>
+          </div>
+          <div class="agent-stat dormant">
+            <span>休眠</span>
+            <strong>{{ snapshot?.agentStats.dormant ?? 0 }}</strong>
+          </div>
+        </div>
+        <ul class="mini-list">
+          <li v-for="agent in agents.slice(0, 8)" :key="agent.id">
+            <span>{{ agent.name }}</span>
+            <span>{{ roleLabels[agent.role] || agent.role }} · {{ agent.workstationName }}</span>
+          </li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h2>任务看板</h2>
+        <ul class="mini-list">
+          <li v-for="task in tasks.slice(0, 12)" :key="task.id" :class="{ anomaly: task.alertLevel !== 'normal' }">
+            <span>{{ task.title }}</span>
+            <span>{{ task.currentStepName }} · {{ getTaskStatusText(task.status) }} · {{ task.progress }}%</span>
+          </li>
+        </ul>
+      </article>
+
+      <article class="panel logs-panel">
+        <div class="logs-header">
+          <h2>实时日志</h2>
+          <div class="tabs">
+            <button :class="{ active: selectedLogType === 'task' }" @click="resetSelection('task')">任务日志</button>
+            <button :class="{ active: selectedLogType === 'agent' }" @click="resetSelection('agent')">Agent日志</button>
+            <button :class="{ active: selectedLogType === 'system' }" @click="resetSelection('system')">系统日志</button>
           </div>
         </div>
 
-        <div class="panel metrics-panel">
-          <div class="panel-header">
-            <h2 class="panel-title">📊 系统指标</h2>
+        <div class="logs-list">
+          <div v-for="log in filteredLogs" :key="`${log.type}-${log.time}-${log.content}`" class="log-item" :class="log.level">
+            <span class="log-time">{{ DateUtils.formatDateTime(log.time) }}</span>
+            <span class="log-content">{{ log.content }}</span>
           </div>
-          <div class="metrics-grid">
-            <div class="metric-item">
-              <div class="metric-icon">🎯</div>
-              <div class="metric-info">
-                <div class="metric-label">成功率</div>
-                <div class="metric-value highlight">{{ successRate }}%</div>
-              </div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-icon">⏱️</div>
-              <div class="metric-info">
-                <div class="metric-label">运行时间</div>
-                <div class="metric-value">{{ uptimeDisplay }}</div>
-              </div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-icon">🧠</div>
-              <div class="metric-info">
-                <div class="metric-label">学习时长</div>
-                <div class="metric-value">{{ systemMetrics?.totalLearningHours.toFixed(1) || 0 }}h</div>
-              </div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-icon">📈</div>
-              <div class="metric-info">
-                <div class="metric-label">平均负载</div>
-                <div class="metric-value">{{ systemMetrics?.averageLoad.toFixed(1) || 0 }}</div>
-              </div>
-            </div>
-          </div>
+          <div v-if="filteredLogs.length === 0" class="log-empty">暂无日志</div>
         </div>
-      </aside>
-
-      <section class="center-panel">
-        <div class="panel pipeline-panel">
-          <div class="panel-header">
-            <h2 class="panel-title">🔄 流水线热力图</h2>
-          </div>
-          <div class="pipeline-flow">
-            <div
-              v-for="step in pipelineSteps"
-              :key="step.key"
-              class="pipeline-step"
-              :class="getHeatLevel(pipelineStats.find((s: PipelineStepStat) => s.stepType === step.key)?.pending || 0)"
-            >
-              <div class="step-number">{{ pipelineSteps.indexOf(step) + 1 }}</div>
-              <div class="step-label">{{ step.label }}</div>
-              <div class="step-count">
-                {{ pipelineStats.find((s: PipelineStepStat) => s.stepType === step.key)?.pending || 0 }}
-              </div>
-            </div>
-          </div>
-          <div class="chart-container large">
-            <v-chart :option="pipelineHeatmapOption" autoresize />
-          </div>
-        </div>
-
-        <div class="panel task-panel">
-          <div class="panel-header">
-            <h2 class="panel-title">📋 任务统计</h2>
-            <span class="panel-count">共 {{ overview?.taskStats.total || 0 }} 个任务</span>
-          </div>
-          <div class="task-summary">
-            <div class="summary-item pending">
-              <span class="summary-value">{{ overview?.taskStats.pending || 0 }}</span>
-              <span class="summary-label">待处理</span>
-            </div>
-            <div class="summary-item running">
-              <span class="summary-value">{{ overview?.taskStats.running || 0 }}</span>
-              <span class="summary-label">进行中</span>
-            </div>
-            <div class="summary-item completed">
-              <span class="summary-value">{{ overview?.taskStats.completed || 0 }}</span>
-              <span class="summary-label">已完成</span>
-            </div>
-            <div class="summary-item failed">
-              <span class="summary-value">{{ overview?.taskStats.failed || 0 }}</span>
-              <span class="summary-label">失败</span>
-            </div>
-            <div class="summary-item paused">
-              <span class="summary-value">{{ overview?.taskStats.paused || 0 }}</span>
-              <span class="summary-label">暂停</span>
-            </div>
-            <div class="summary-item canceled">
-              <span class="summary-value">{{ overview?.taskStats.canceled || 0 }}</span>
-              <span class="summary-label">取消</span>
-            </div>
-          </div>
-          <div class="chart-container">
-            <v-chart :option="taskStatsChartOption" autoresize />
-          </div>
-        </div>
-      </section>
-
-      <aside class="right-panel">
-        <div class="panel agent-list-panel">
-          <div class="panel-header">
-            <h2 class="panel-title">👤 Agent列表</h2>
-          </div>
-          <div class="agent-list">
-            <div 
-              v-for="agent in agents.slice(0, 6)" 
-              :key="agent.id" 
-              class="agent-item"
-              :style="{ borderLeftColor: stateColors[agent.state] }"
-            >
-              <div class="agent-status" :style="{ backgroundColor: stateColors[agent.state] }"></div>
-              <div class="agent-info">
-                <div class="agent-name">{{ agent.name }}</div>
-                <div class="agent-role">{{ agent.role }} · {{ stateLabels[agent.state] }}</div>
-              </div>
-              <div class="agent-extra">
-                <span v-if="agent.currentTaskId" class="task-badge">处理中</span>
-              </div>
-            </div>
-            <div v-if="agents.length === 0" class="empty-state">暂无Agent</div>
-          </div>
-        </div>
-
-        <div class="panel task-list-panel">
-          <div class="panel-header">
-            <h2 class="panel-title">📝 最近任务</h2>
-          </div>
-          <div class="task-list">
-            <div 
-              v-for="task in recentTasks.slice(0, 5)" 
-              :key="task.id" 
-              class="task-item"
-            >
-              <div class="task-status" :style="{ backgroundColor: statusColors[task.status] }"></div>
-              <div class="task-info">
-                <div class="task-title">{{ task.title }}</div>
-                <div class="task-meta">
-                  {{ statusLabels[task.status] }} · {{ DateUtils.formatDateTime(task.createdAtUtc) }}
-                </div>
-              </div>
-              <div class="task-progress">
-                <div class="progress-bar">
-                  <div 
-                    class="progress-fill" 
-                    :style="{ width: task.progress + '%', backgroundColor: statusColors[task.status] }"
-                  ></div>
-                </div>
-                <span class="progress-text">{{ task.progress }}%</span>
-              </div>
-            </div>
-            <div v-if="recentTasks.length === 0" class="empty-state">暂无任务</div>
-          </div>
-        </div>
-      </aside>
-    </main>
+      </article>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.dashboard-screen {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0a0e1a 0%, #131b2e 50%, #0a0e1a 100%);
-  background-image: 
-    radial-gradient(circle at 20% 80%, rgba(64, 158, 255, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(103, 194, 58, 0.05) 0%, transparent 50%);
-  padding: 24px;
-  color: #fff;
-  transition: all 0.3s ease;
-}
+.screen {
+  --screen-gap: 14px;
+  --header-padding-y: 16px;
+  --header-padding-x: 18px;
+  --header-title-size: 28px;
+  --stats-gap: 12px;
+  --stat-card-padding: 14px;
+  --stat-value-size: 28px;
+  --section-padding: 16px;
+  --panel-padding: 14px;
+  --panel-title-size: 17px;
+  --list-item-font-size: 12px;
+  --list-item-padding-y: 8px;
+  --header-button-padding: 10px 14px;
+  --header-button-font-size: 14px;
+  --tab-button-padding: 6px 10px;
+  --tab-button-font-size: 12px;
 
-.dashboard-screen.fullscreen {
-  padding: 16px;
+  height: 100vh;
+  min-height: 100vh;
+  min-width: 1280px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--screen-gap);
+  overflow: hidden;
+  color: #e2e8f0;
+  background:
+    radial-gradient(circle at 16% 8%, rgba(59, 130, 246, 0.25), transparent 38%),
+    radial-gradient(circle at 88% 85%, rgba(244, 63, 94, 0.17), transparent 35%),
+    linear-gradient(155deg, #07111f 0%, #0c1d33 45%, #0a1424 100%);
 }
 
 .screen-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  flex: 0 0 auto;
+  min-height: 0;
+  padding: var(--header-padding-y) var(--header-padding-x);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(15, 23, 42, 0.6);
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.title {
-  font-size: 32px;
-  font-weight: bold;
-  background: linear-gradient(90deg, #60a5fa, #a78bfa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.screen-header h1 {
   margin: 0;
+  font-size: var(--header-title-size);
+  letter-spacing: 1px;
 }
 
-.update-time {
-  font-size: 16px;
-  color: #64748b;
-}
-
-.header-right {
-  display: flex;
-  gap: 12px;
-}
-
-.btn-refresh, .btn-fullscreen {
-  padding: 12px 24px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.btn-refresh:hover, .btn-fullscreen:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.screen-main {
-  display: grid;
-  grid-template-columns: 320px 1fr 360px;
-  gap: 20px;
-  height: calc(100vh - 140px);
-}
-
-.left-panel, .right-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.center-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.panel {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  flex-shrink: 0;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.panel-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0;
-  color: #f1f5f9;
-}
-
-.panel-count {
-  font-size: 14px;
-  padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+.screen-header p {
+  margin: 4px 0 0;
   color: #94a3b8;
+  font-size: 13px;
 }
 
-.panel-count.warning {
-  background: rgba(245, 108, 108, 0.2);
-  color: #f56c6c;
+.header-actions {
+  display: flex;
+  gap: 10px;
 }
 
-.stat-grid {
+.header-actions button {
+  padding: var(--header-button-padding);
+  font-size: var(--header-button-font-size);
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(30, 41, 59, 0.7);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.stats-row {
+  flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--stats-gap);
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.03);
+  padding: var(--stat-card-padding);
   border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.55);
 }
 
-.stat-card.idle { border-left: 3px solid #67c23a; }
-.stat-card.handling { border-left: 3px solid #409eff; }
-.stat-card.learning { border-left: 3px solid #e6a23c; }
-.stat-card.dormant { border-left: 3px solid #909399; }
-
-.stat-value {
-  font-size: 36px;
-  font-weight: bold;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 14px;
+.stat-card span {
   color: #94a3b8;
-}
-
-.chart-container {
-  height: 180px;
-}
-
-.chart-container.large {
-  height: 220px;
-}
-
-.gate-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.gate-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.gate-type {
-  font-size: 14px;
-  color: #cbd5e1;
-}
-
-.gate-count-badge {
-  font-size: 14px;
-  font-weight: bold;
-  background: rgba(245, 108, 108, 0.2);
-  color: #f56c6c;
-  padding: 2px 10px;
-  border-radius: 12px;
-}
-
-.empty-state {
-  color: #475569;
-  font-size: 14px;
-  padding: 20px;
-  text-align: center;
-}
-
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.metric-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.metric-icon {
-  font-size: 28px;
-}
-
-.metric-info {
-  flex: 1;
-}
-
-.metric-label {
-  font-size: 13px;
-  color: #64748b;
-  margin-bottom: 4px;
-}
-
-.metric-value {
-  font-size: 20px;
-  font-weight: bold;
-  color: #fff;
-}
-
-.metric-value.highlight {
-  color: #67c23a;
-  font-size: 24px;
-}
-
-.pipeline-flow {
-  display: flex;
-  justify-content: space-between;
-  align-items: stretch;
-  margin-bottom: 20px;
-  padding: 16px 0;
-}
-
-.pipeline-step {
-  flex: 1;
-  text-align: center;
-  padding: 16px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  margin: 0 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s ease;
-}
-
-.pipeline-step.normal { background: rgba(103, 194, 58, 0.1); border-color: rgba(103, 194, 58, 0.2); }
-.pipeline-step.warning { background: rgba(230, 162, 60, 0.1); border-color: rgba(230, 162, 60, 0.3); }
-.pipeline-step.critical { background: rgba(245, 108, 108, 0.1); border-color: rgba(245, 108, 108, 0.4); }
-
-.step-number {
   font-size: 12px;
-  color: #64748b;
-  margin-bottom: 8px;
 }
 
-.step-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #cbd5e1;
-  margin-bottom: 8px;
-}
-
-.step-count {
-  font-size: 24px;
-  font-weight: bold;
-  color: #fff;
-}
-
-.task-summary {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.summary-item {
-  flex: 1;
-  text-align: center;
-  padding: 16px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  margin: 0 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.summary-item.pending { border-top: 3px solid #e6a23c; }
-.summary-item.running { border-top: 3px solid #409eff; }
-.summary-item.completed { border-top: 3px solid #67c23a; }
-.summary-item.failed { border-top: 3px solid #f56c6c; }
-.summary-item.paused { border-top: 3px solid #909399; }
-.summary-item.canceled { border-top: 3px solid #666666; }
-
-.summary-value {
-  font-size: 32px;
-  font-weight: bold;
-  color: #fff;
+.stat-card strong {
   display: block;
-  margin-bottom: 4px;
+  margin-top: 6px;
+  font-size: var(--stat-value-size);
 }
 
-.summary-label {
-  font-size: 13px;
-  color: #64748b;
+.stat-card.running strong {
+  color: #60a5fa;
 }
 
-.agent-list {
-  max-height: 280px;
-  overflow-y: auto;
+.stat-card.warning strong {
+  color: #f87171;
 }
 
-.agent-item {
+.stat-card.success strong {
+  color: #34d399;
+}
+
+.sandbox-panel {
+  flex: 1 1 56%;
+  min-height: 300px;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
-  margin-bottom: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  border-left: 4px solid;
+  flex-direction: column;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.23);
+  background: rgba(15, 23, 42, 0.58);
+  padding: var(--section-padding);
+  overflow: hidden;
 }
 
-.agent-status {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.agent-info {
+.konva-host {
   flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.16);
 }
 
-.agent-name {
-  font-size: 15px;
-  font-weight: 500;
-  color: #fff;
-  margin-bottom: 2px;
-}
-
-.agent-role {
-  font-size: 13px;
-  color: #64748b;
-}
-
-.agent-extra {
-  margin-left: auto;
-}
-
-.task-badge {
+.legend-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 16px;
+  color: #cbd5e1;
   font-size: 12px;
-  padding: 4px 10px;
-  background: rgba(64, 158, 255, 0.2);
-  color: #409eff;
-  border-radius: 12px;
 }
 
-.task-list {
-  max-height: 320px;
-  overflow-y: auto;
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.task-item {
-  padding: 14px;
-  margin-bottom: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.task-status {
+.dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  margin-bottom: 10px;
+  display: inline-block;
 }
 
-.task-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #fff;
-  margin-bottom: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.dot.timeout {
+  border: 2px dashed #fb923c;
+  background: transparent;
 }
 
-.task-meta {
-  font-size: 12px;
-  color: #64748b;
-  margin-bottom: 10px;
+.dot.rejected {
+  background: #ef4444;
 }
 
-.task-progress {
+.dot.emergency {
+  background: #f0abfc;
+}
+
+.bottom-grid {
+  flex: 1 1 44%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 320px 1fr 1.2fr;
+  gap: 12px;
+}
+
+.panel {
+  min-width: 0;
+  min-height: 0;
   display: flex;
+  flex-direction: column;
+  padding: var(--panel-padding);
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: var(--panel-title-size);
+}
+
+.agent-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.agent-stat {
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 8px;
+}
+
+.agent-stat span {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.agent-stat strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 22px;
+}
+
+.agent-stat.idle strong {
+  color: #6ee7b7;
+}
+
+.agent-stat.handling strong {
+  color: #60a5fa;
+}
+
+.agent-stat.learning strong {
+  color: #fbbf24;
+}
+
+.agent-stat.dormant strong {
+  color: #f87171;
+}
+
+.mini-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.mini-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: var(--list-item-padding-y) 0;
+  border-bottom: 1px dashed rgba(148, 163, 184, 0.2);
+  font-size: var(--list-item-font-size);
+}
+
+.mini-list li.anomaly {
+  color: #fecaca;
+}
+
+.logs-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.logs-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  gap: 8px;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tabs button {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(30, 41, 59, 0.7);
+  color: #cbd5e1;
+  border-radius: 999px;
+  padding: var(--tab-button-padding);
+  font-size: var(--tab-button-font-size);
+  cursor: pointer;
+}
+
+.tabs button.active {
+  background: rgba(96, 165, 250, 0.25);
+  color: #dbeafe;
+}
+
+.logs-list {
+  flex: 1;
+  min-height: 0;
+  margin-top: 12px;
+  overflow: auto;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(2, 6, 23, 0.7);
+}
+
+.log-item {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px dashed rgba(148, 163, 184, 0.16);
+  font-size: var(--list-item-font-size);
+}
+
+.log-item.warning .log-content {
+  color: #fbbf24;
+}
+
+.log-item.error .log-content {
+  color: #f87171;
+}
+
+.log-time {
+  color: #64748b;
+}
+
+.log-empty {
+  padding: 16px;
+  color: #64748b;
+  text-align: center;
+}
+
+.screen--strict {
+  --screen-gap: 10px;
+  --header-padding-y: 10px;
+  --header-padding-x: 12px;
+  --header-title-size: 22px;
+  --stats-gap: 8px;
+  --stat-card-padding: 10px;
+  --stat-value-size: 22px;
+  --section-padding: 12px;
+  --panel-padding: 10px;
+  --panel-title-size: 15px;
+  --list-item-font-size: 11px;
+  --list-item-padding-y: 6px;
+  --header-button-padding: 7px 10px;
+  --header-button-font-size: 12px;
+  --tab-button-padding: 5px 8px;
+  --tab-button-font-size: 11px;
+}
+
+.screen--strict .sandbox-panel {
+  flex-basis: 52%;
+  min-height: 260px;
+}
+
+.screen--strict .bottom-grid {
+  flex-basis: 48%;
   gap: 10px;
 }
 
-.progress-bar {
-  flex: 1;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-  overflow: hidden;
+.screen--strict .agent-stats {
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
-.progress-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.5s ease;
+.screen--strict .logs-list {
+  margin-top: 8px;
 }
 
-.progress-text {
-  font-size: 13px;
-  color: #94a3b8;
-  min-width: 40px;
-  text-align: right;
-}
+@media (max-width: 1450px) {
+  .screen {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 
-@media (max-width: 1600px) {
-  .screen-main {
-    grid-template-columns: 280px 1fr 320px;
-    gap: 16px;
-  }
-}
-
-@media (max-width: 1200px) {
-  .screen-main {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-  .left-panel, .center-panel, .right-panel {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  .panel {
-    min-width: 300px;
-  }
-  .pipeline-panel {
-    min-width: 100%;
+  .bottom-grid {
+    grid-template-columns: 300px 1fr 1.1fr;
   }
 }
 </style>
