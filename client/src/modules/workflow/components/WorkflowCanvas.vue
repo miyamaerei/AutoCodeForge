@@ -747,7 +747,8 @@ async function onTerminate() {
 .workflow-canvas {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: calc(100vh - 200px);
+  min-height: 600px;
   background: var(--color-bg-secondary);
 }
 
