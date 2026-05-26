@@ -176,6 +176,34 @@ const userMenuItems = computed<MenuItem[]>(() => [
       },
     ],
   },
+  {
+    id: 'workflow-management',
+    title: '工作流管理',
+    path: '/workflow-designer',
+    highlighted: true,
+    children: [
+      {
+        id: 'workflow-designer',
+        title: '工作流设计器',
+        path: '/workflow-designer',
+      },
+      {
+        id: 'kanban-board',
+        title: '任务看板',
+        path: '/kanban',
+      },
+      {
+        id: 'workflow-list',
+        title: '工作流列表',
+        path: '/workflows',
+      },
+      {
+        id: 'workflow-instances',
+        title: '执行实例',
+        path: '/workflow-instances',
+      },
+    ],
+  },
 ])
 
 const settingsMenuItems = computed<MenuItem[]>(() => [

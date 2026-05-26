@@ -88,7 +88,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// 开发环境禁用 HTTPS 重定向，避免前端代理问题
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseMiddleware<JwtAuthMiddleware>();
 
 using (var scope = app.Services.CreateScope())
