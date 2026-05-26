@@ -11,10 +11,38 @@ import { taskCenterRoutes } from '../modules/task-center'
 import { agentCenterRoutes } from '../modules/agent-center'
 import { scheduledTaskRoutes } from '../modules/scheduled-task'
 import { workflowCenterRoutes } from '../modules/workflow-center'
+import { workflowRoutes } from '../modules/workflow'
+
+// ============================================
+// 路由配置
+// ============================================
+//
+// 极简路由设计：
+// - /workflow      : 工作流中心（设计器 + 看板 + Agent监控 + 日志）
+// - /task          : 任务管理
+// - /repo          : 仓库管理
+// - /agent         : Agent 管理
+// - /console       : 对话控制台
+// - /system        : 系统配置
+// - /login         : 登录
+//
+// 简化前（过多模块）：
+// - agent-center, task-center, repo-management, workflow-center,
+// - pipeline-center, scheduled-task, md-wiki, notification,
+// - system-config, dashboard, console
+//
+// 简化后（4个核心模块）：
+// - workflow（包含工作流设计器 + Kanban看板 + Agent监控）
+// - task（任务管理）
+// - repo（仓库管理）
+// - agent（Agent管理）
+// - console（对话控制台）
+// - system（系统配置）
+// ============================================
 
 const routes: RouteRecordRaw[] = [
   ...authRoutes,
-  ...consoleRoutes,
+  ...workflowRoutes,        // 新的极简工作流模块
   ...taskCenterRoutes,
   ...repoManagementRoutes,
   ...dashboardRoutes,
@@ -23,7 +51,7 @@ const routes: RouteRecordRaw[] = [
   ...systemConfigRoutes,
   ...agentCenterRoutes,
   ...scheduledTaskRoutes,
-  ...workflowCenterRoutes,
+  ...workflowCenterRoutes,   // 旧的保留一段时间
 ]
 
 export const router = createRouter({
