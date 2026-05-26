@@ -10,6 +10,12 @@ namespace AutoCodeForge.Core.Entities;
 public class WorkflowInstanceEntity : UserOwnedEntity
 {
     /// <summary>
+    /// 获取或设置实体标识
+    /// </summary>
+    [SugarColumn(IsPrimaryKey = true)]
+    public new Guid Id { get; set; } = Guid.NewGuid();
+
+    /// <summary>
     /// 关联的工作流定义ID
     /// </summary>
     public Guid WorkflowId { get; set; }
@@ -63,6 +69,7 @@ public class WorkflowInstanceEntity : UserOwnedEntity
     /// <summary>
     /// 关联的Agent ID (可选)
     /// </summary>
+    [SugarColumn(IsNullable = true)]
     public Guid? AgentId { get; set; }
 
     /// <summary>

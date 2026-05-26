@@ -89,4 +89,19 @@ public class TaskResponse
     /// Gets or sets update timestamp in UTC.
     /// </summary>
     public DateTime UpdatedAtUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets associated workflow identifier.
+    /// </summary>
+    public Guid? WorkflowId { get; set; }
+
+    /// <summary>
+    /// Gets or sets associated workflow instance identifier.
+    /// </summary>
+    public Guid? WorkflowInstanceId { get; set; }
+
+    /// <summary>
+    /// Gets or sets current workflow node identifier.
+    /// </summary>
+    public string? WorkflowNodeId { get; set; }
 }

@@ -42,6 +42,7 @@ public class TaskService
             Input = request.Input.Trim(),
             AgentId = request.AgentId,
             DueAtUtc = request.DueAtUtc,
+            WorkflowId = request.WorkflowId,
             Status = AutoCodeForge.Core.Entities.TaskStatus.Pending,
             Progress = 0,
         };
@@ -92,6 +93,7 @@ public class TaskService
 
         entity.AgentId = request.AgentId;
         entity.DueAtUtc = request.DueAtUtc;
+        entity.WorkflowId = request.WorkflowId;
 
         await _taskRepository.UpdateAsync(entity, cancellationToken);
         await AddLogAsync(taskId, "Info", "Task updated", nameof(TaskService), cancellationToken);
@@ -348,6 +350,9 @@ public class TaskService
             CurrentStepId = entity.CurrentStepId,
             CreatedAtUtc = entity.CreatedAtUtc,
             UpdatedAtUtc = entity.UpdatedAtUtc,
+            WorkflowId = entity.WorkflowId,
+            WorkflowInstanceId = entity.WorkflowInstanceId,
+            WorkflowNodeId = entity.WorkflowNodeId,
         };
     }
 

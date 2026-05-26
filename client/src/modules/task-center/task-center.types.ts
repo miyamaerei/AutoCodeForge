@@ -35,6 +35,9 @@ export interface TaskResponseDto {
   currentStepId?: string | null
   createdAtUtc: string
   updatedAtUtc: string
+  workflowId?: string | null
+  workflowInstanceId?: string | null
+  workflowNodeId?: string | null
 }
 
 // 工序步骤相关类型
@@ -95,6 +98,7 @@ export interface CreateTaskRequestDto {
   branch: string
   agentId?: string
   dueAtUtc?: string
+  workflowId?: string
 }
 
 export interface UpdateTaskRequestDto {
@@ -105,6 +109,7 @@ export interface UpdateTaskRequestDto {
   branch?: string
   agentId?: string
   dueAtUtc?: string
+  workflowId?: string
 }
 
 export interface TaskSummaryDto {

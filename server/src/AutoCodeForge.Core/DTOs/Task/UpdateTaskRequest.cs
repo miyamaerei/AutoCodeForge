@@ -34,4 +34,9 @@ public class UpdateTaskRequest
     /// Gets or sets optional due timestamp in UTC.
     /// </summary>
     public DateTime? DueAtUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional workflow identifier to associate with the task.
+    /// </summary>
+    public Guid? WorkflowId { get; set; }
 }

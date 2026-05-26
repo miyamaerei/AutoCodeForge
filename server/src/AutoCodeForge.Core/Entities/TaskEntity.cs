@@ -125,6 +125,24 @@ public class TaskEntity : UserOwnedEntity
     /// </summary>
     [SugarColumn(IsNullable = true)]
     public Guid? CurrentStepId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the associated workflow definition ID.
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public Guid? WorkflowId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the associated workflow instance ID.
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public Guid? WorkflowInstanceId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current workflow node ID.
+    /// </summary>
+    [SugarColumn(Length = 100, IsNullable = true)]
+    public string? WorkflowNodeId { get; set; }
 }
 
 /// <summary>

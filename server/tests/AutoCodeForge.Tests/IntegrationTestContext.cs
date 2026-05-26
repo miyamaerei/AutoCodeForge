@@ -199,6 +199,16 @@ public sealed class IntegrationTestContext : IDisposable
     /// </summary>
     public FailureRecoveryService FailureRecoveryService { get; }
 
+    /// <summary>
+    /// Workflow仓储
+    /// </summary>
+    public WorkflowRepository WorkflowRepository { get; }
+
+    /// <summary>
+    /// WorkflowInstance仓储
+    /// </summary>
+    public WorkflowInstanceRepository WorkflowInstanceRepository { get; }
+
     #endregion
 
     /// <summary>
@@ -236,7 +246,9 @@ public sealed class IntegrationTestContext : IDisposable
             typeof(AutoCodeForge.Infrastructure.Services.ArtifactEntity),
             typeof(AgentRegistrationEntity),
             typeof(NotificationEntity),
-            typeof(TaskReviewEntity));
+            typeof(TaskReviewEntity),
+            typeof(WorkflowEntity),
+            typeof(WorkflowInstanceEntity));
 
         // 初始化测试用户
         CurrentUser = new TestCurrentUser(userId);
@@ -256,6 +268,8 @@ public sealed class IntegrationTestContext : IDisposable
         AgentLearningRecordRepository = new AgentLearningRecordRepository(Db, CurrentUser);
         AgentDormantRecordRepository = new AgentDormantRecordRepository(Db, CurrentUser);
         LLMModelConfigRepository = new LLMModelConfigRepository(Db, CurrentUser);
+        WorkflowRepository = new WorkflowRepository(Db, CurrentUser);
+        WorkflowInstanceRepository = new WorkflowInstanceRepository(Db, CurrentUser);
 
         // 初始化基础设施服务
         EncryptionService = new EncryptionService("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");

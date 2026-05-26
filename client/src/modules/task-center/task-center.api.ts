@@ -184,6 +184,7 @@ export async function createTask(payload: CreateTaskRequestDto): Promise<TaskSum
     input: buildTaskInput(payload),
     agentId: payload.agentId,
     dueAtUtc: payload.dueAtUtc,
+    workflowId: payload.workflowId,
   })
 
   return mapTaskSummary(data.data)
@@ -209,6 +210,7 @@ export async function updateTask(taskId: string, payload: UpdateTaskRequestDto):
     }),
     agentId: payload.agentId,
     dueAtUtc: payload.dueAtUtc,
+    workflowId: payload.workflowId,
   })
 
   return mapTaskDetail(data.data)

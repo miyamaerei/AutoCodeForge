@@ -29,12 +29,4 @@
     <ProjectReference Include="..\..\src\AutoCodeForge.Core\AutoCodeForge.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- 测试配置文件：复制到输出目录，但不会被 Git 跟踪 -->
-    <Content Include="test-configs\azure-devops-config.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>test-configs\azure-devops-config.json</Link>
-    </Content>
-  </ItemGroup>
-
 </Project>

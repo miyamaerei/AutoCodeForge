@@ -56,3 +56,6 @@ server/tests/AutoCodeForge.Tests/test-configs/
 server/.build-temp/
 
 .qoder/
+
+# Sandbox directory
+sandbox/
