@@ -61,7 +61,10 @@ public class DatabaseInitializer
             typeof(GitSkillGrantEntity),
             typeof(AgentToolInvocationEntity),
             typeof(ConfigurationEntry),
-            typeof(ConfigHistoryEntity));
+            typeof(ConfigHistoryEntity),
+            typeof(WorkflowEntity),
+            typeof(WorkflowInstanceEntity),
+            typeof(WorkflowEventEntity));
 
         if (isDevelopment)
         {
