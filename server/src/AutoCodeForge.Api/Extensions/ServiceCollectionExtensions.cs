@@ -70,6 +70,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ConfigRepository>();
         services.AddScoped<ConfigHistoryRepository>();
         services.AddScoped<RepositoryRepository>();
+        services.AddScoped<WorkflowRepository>();
+        services.AddScoped<WorkflowInstanceRepository>();
+        services.AddScoped<WorkflowEventRepository>();
         return services;
     }
 
@@ -130,6 +133,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<NotificationRepository>();
         services.AddScoped<INotificationChannel, InAppNotificationChannel>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<WorkflowService>();
         services.AddOptions<NotificationTemplateSettings>()
             .Configure(options =>
             {

@@ -15,13 +15,13 @@
       <!-- 列头 -->
       <div class="column-header">
         <span class="column-title">{{ column.title }}</span>
-        <span class="column-count">{{ tasksByStatus[column.status].length }}</span>
+        <span class="column-count">{{ (tasksByStatus[column.status] || []).length }}</span>
       </div>
 
       <!-- 任务卡片 -->
       <div class="column-content">
         <div
-          v-for="task in tasksByStatus[column.status]"
+          v-for="task in (tasksByStatus[column.status] || [])"
           :key="task.id"
           class="task-card"
           draggable="true"
@@ -73,7 +73,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useWorkflowStore } from '../store/useWorkflowStore'
-import type { Task, TaskStatus } from '../store/useWorkflowStore'
+import type { Task, TaskStatus } from '../types/workflow'
 
 // ============================================
 // Store

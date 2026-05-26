@@ -13,15 +13,12 @@
 // ============================================
 // 导出组件
 // ============================================
-
-export { default as WorkflowView } from './views/WorkflowView.vue'
 export { default as KanbanBoard } from './components/KanbanBoard.vue'
 export { default as WorkflowCanvas } from './components/WorkflowCanvas.vue'
 
 // ============================================
 // 导出 Store
 // ============================================
-
 export { useWorkflowStore } from './store/useWorkflowStore'
 export type {
   Task,
@@ -30,57 +27,17 @@ export type {
   Repo,
   WorkflowNode,
   WorkflowEdge,
-  WorkflowInstance
-} from './store/useWorkflowStore'
+  WorkflowInstance,
+  WorkflowDefinition,
+  WorkflowStatus,
+  WorkflowEvent
+} from './types/workflow'
 
 // ============================================
 // 路由配置
 // ============================================
-
-import WorkflowView from './views/WorkflowView.vue'
-
-export const workflowRoutes = [
-  {
-    path: '/workflow',
-    name: 'Workflow',
-    component: WorkflowView,
-    meta: {
-      title: '工作流中心',
-      icon: '🎯',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/workflow/designer',
-    name: 'WorkflowDesigner',
-    component: WorkflowView,
-    props: { defaultView: 'designer' },
-    meta: {
-      title: '工作流设计器',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/workflow/kanban',
-    name: 'WorkflowKanban',
-    component: WorkflowView,
-    props: { defaultView: 'kanban' },
-    meta: {
-      title: '任务看板',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/workflow/agents',
-    name: 'WorkflowAgents',
-    component: WorkflowView,
-    props: { defaultView: 'agents' },
-    meta: {
-      title: 'Agent 监控',
-      requiresAuth: true
-    }
-  }
-]
+import { workflowRoutes } from './routes'
+export { workflowRoutes }
 
 // ============================================
 // 模块注册
