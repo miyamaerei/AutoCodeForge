@@ -44,7 +44,7 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 # Trae IDE
-# .trae/
+.trae/skills/build-and-push/
 
 # Test configurations (contains sensitive data like tokens)
 server/tests/AutoCodeForge.Tests/test-configs/
