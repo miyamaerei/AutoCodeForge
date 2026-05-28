@@ -75,14 +75,15 @@ public class GitHubCopilotCliService : IGitHubCopilotService
         CancellationToken cancellationToken)
     {
         using var process = new Process();
-        process.StartInfo.FileName = executable;
-        
+        var resolvedPath = ResolveExecutablePath(executable);
+        process.StartInfo.FileName = resolvedPath;
+
         var arguments = $"-p \"{EscapeForShell(prompt)}\" --allow-all-tools --silent";
         if (!string.IsNullOrWhiteSpace(model.ModelName))
         {
             arguments += $" --model \"{model.ModelName}\"";
         }
-        
+
         process.StartInfo.Arguments = arguments;
         process.StartInfo.RedirectStandardOutput = true;
         process.StartInfo.RedirectStandardError = true;
@@ -99,7 +100,7 @@ public class GitHubCopilotCliService : IGitHubCopilotService
             process.StartInfo.EnvironmentVariables["GITHUB_ORG"] = model.Organization;
         }
 
-        _logger.LogDebug("Executing: {Executable} {Arguments}", executable, arguments);
+        _logger.LogDebug("Executing: {Executable} {Arguments}", resolvedPath, arguments);
 
         process.Start();
 
@@ -156,5 +157,63 @@ public class GitHubCopilotCliService : IGitHubCopilotService
             .Replace("\"", "\\\"")
             .Replace("`", "\\`")
             .Replace("$", "\\$");
+    }
+
+    /// <summary>
+    /// 解析可执行文件路径，支持相对命令名和完整路径
+    /// </summary>
+    private static string ResolveExecutablePath(string executable)
+    {
+        // 如果已经是完整路径，直接返回
+        if (Path.IsPathRooted(executable) && File.Exists(executable))
+        {
+            return executable;
+        }
+
+        // 如果包含路径分隔符，尝试在当前目录查找
+        if (executable.Contains(Path.DirectorySeparatorChar) || executable.Contains(Path.AltDirectorySeparatorChar))
+        {
+            var fullPath = Path.Combine(Environment.CurrentDirectory, executable);
+            if (File.Exists(fullPath))
+                return fullPath;
+        }
+
+        // 在 PATH 环境变量中搜索
+        var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
+        var paths = pathEnv.Split(Path.PathSeparator);
+
+        foreach (var path in paths)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                continue;
+
+            // Windows 上优先尝试 .cmd 后缀（npm 全局脚本）
+            if (Path.DirectorySeparatorChar == '\\' && !executable.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase))
+            {
+                var cmdPath = Path.Combine(path, executable + ".cmd");
+                if (File.Exists(cmdPath))
+                    return cmdPath;
+            }
+
+            // 尝试直接路径
+            var fullPath = Path.Combine(path, executable);
+            if (File.Exists(fullPath))
+            {
+                // 检查是否是有效的可执行文件（不是脚本文件）
+                var ext = Path.GetExtension(fullPath).ToLowerInvariant();
+                if (string.IsNullOrEmpty(ext) || ext == ".exe" || ext == ".cmd" || ext == ".bat")
+                {
+                    return fullPath;
+                }
+                // 如果是脚本文件(.ps1, .js等)，需要通过 shell 执行
+                if (ext == ".ps1")
+                {
+                    return $"powershell.exe \"{fullPath}\"";
+                }
+            }
+        }
+
+        // 最后返回原始命令，让系统自己报错
+        return executable;
     }
 }

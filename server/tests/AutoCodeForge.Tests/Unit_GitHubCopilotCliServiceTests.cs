@@ -18,6 +18,16 @@ public class GitHubCopilotCliServiceTests
 
     public GitHubCopilotCliServiceTests()
     {
+        // 确保 npm 全局 bin 目录在 PATH 中（copilot 是 npm 安装的脚本）
+        var npmGlobalPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "npm");
+        var currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
+        if (!currentPath.Contains(npmGlobalPath, StringComparison.OrdinalIgnoreCase))
+        {
+            Environment.SetEnvironmentVariable("PATH", currentPath + Path.PathSeparator + npmGlobalPath);
+        }
+
         _service = new GitHubCopilotCliService(NullLogger<GitHubCopilotCliService>.Instance);
     }
 
@@ -34,18 +44,17 @@ public class GitHubCopilotCliServiceTests
 
     #region Basic Execution Tests
 
-    [Fact(Skip = "Requires GitHub Copilot CLI installed and configured")]
+    [Fact]
     public async Task ExecuteAsync_WithSimplePrompt_ShouldReturnResponse()
     {
-        var model = CreateTestModel("gpt-5");
+        var model = CreateTestModel("", cliExecutable: "copilot"); // 空字符串使用默认模型
         var prompt = "What is 2 + 2? Answer with only the number.";
 
         var response = await _service.ExecuteAsync(model, prompt, null, CancellationToken.None);
 
         Assert.NotNull(response);
-        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+        Assert.False(string.IsNullOrWhiteSpace(response.Content), "Response content should not be empty");
         Assert.Contains("4", response.Content);
-        Assert.Equal("gpt-5", response.ModelName);
         Assert.True(response.CompletedAtUtc <= DateTime.UtcNow);
     }
 
